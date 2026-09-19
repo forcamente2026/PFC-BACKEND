@@ -5,6 +5,8 @@ import forcamente.api.dto.ExercicioResponseDTO;
 import forcamente.api.entity.ExercicioEntity;
 import forcamente.api.entity.enums.GrupoMuscularEnum;
 import forcamente.api.entity.enums.NivelDificuldadeEnum;
+import forcamente.api.exception.ConflitoException;
+import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.mapper.ExercicioMapper;
 import forcamente.api.repository.IExercicioRepository;
 import forcamente.api.service.impl.ExercicioService;
@@ -71,7 +73,7 @@ class ExercicioServiceTest {
         when(exercicioRepository.existsByNomeIgnoreCase("Supino reto")).thenReturn(true);
 
         assertThatThrownBy(() -> exercicioService.criarExercicio(requestDTO))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflitoException.class)
                 .hasMessageContaining("Ja existe um exercicio cadastrado");
 
         verify(exercicioRepository, never()).save(any(ExercicioEntity.class));
@@ -116,7 +118,7 @@ class ExercicioServiceTest {
         when(exercicioRepository.findById(idInexistente)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> exercicioService.buscarPorId(idInexistente))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(RecursoNaoEncontradoException.class)
                 .hasMessageContaining("Exercicio nao encontrado");
     }
 

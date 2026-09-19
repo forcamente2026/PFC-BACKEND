@@ -6,6 +6,8 @@ import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.entity.ExercicioEntity;
 import forcamente.api.entity.enums.GrupoMuscularEnum;
 import forcamente.api.entity.enums.NivelDificuldadeEnum;
+import forcamente.api.exception.ConflitoException;
+import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.mapper.ExercicioMapper;
 import forcamente.api.repository.IExercicioRepository;
 import forcamente.api.service.IExercicioService;
@@ -33,7 +35,7 @@ public class ExercicioService implements IExercicioService {
         log.info("criarExercicio: {}", exercicioRequestDTO.nome());
 
         if (exercicioRepository.existsByNomeIgnoreCase(exercicioRequestDTO.nome())) {
-            throw new IllegalArgumentException(
+            throw new ConflitoException(
                     "Ja existe um exercicio cadastrado com o nome: " + exercicioRequestDTO.nome());
         }
 
@@ -80,11 +82,11 @@ public class ExercicioService implements IExercicioService {
         ExercicioEntity exercicioEntity = findById(exercicioId);
 
         if (exercicioEntity.getGrupoMuscular() != exercicioRequestDTO.grupoMuscular()) {
-            throw new IllegalArgumentException("O Grupo Muscular não pode ser alterado");
+            throw new ConflitoException("O Grupo Muscular não pode ser alterado");
         }
 
         if (exercicioRepository.existsByNomeIgnoreCaseAndIdNot(exercicioRequestDTO.nome(), exercicioId)) {
-            throw new IllegalArgumentException("Ja existe um exercicio cadastrado com o nome: " +
+            throw new ConflitoException("Ja existe um exercicio cadastrado com o nome: " +
                     exercicioRequestDTO.nome());
         }
 
@@ -103,7 +105,7 @@ public class ExercicioService implements IExercicioService {
 
     private ExercicioEntity findById(UUID exercicioId) {
         return exercicioRepository.findById(exercicioId)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
                         "Exercicio nao encontrado: " + exercicioId));
     }
 

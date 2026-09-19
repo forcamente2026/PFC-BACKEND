@@ -5,6 +5,8 @@ import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.entity.enums.CategoriaProfissionalEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.UsuarioEntity;
+import forcamente.api.exception.ConflitoException;
+import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.mapper.UsuarioMapper;
 import forcamente.api.repository.IUsuarioRepository;
 import forcamente.api.service.impl.UsuarioService;
@@ -105,7 +107,7 @@ class UsuarioServiceTest {
         when(usuarioRepository.existsByEmail("joao@umc.br")).thenReturn(true);
 
         assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflitoException.class)
                 .hasMessageContaining("Ja existe um usuario cadastrado com o e-mail");
 
         verify(usuarioRepository, never()).save(any(UsuarioEntity.class));
@@ -120,7 +122,7 @@ class UsuarioServiceTest {
         when(usuarioRepository.existsByCpf("12345678901")).thenReturn(true);
 
         assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflitoException.class)
                 .hasMessageContaining("CPF");
 
         verify(usuarioRepository, never()).save(any(UsuarioEntity.class));
@@ -134,7 +136,7 @@ class UsuarioServiceTest {
         var requestDTO = umaRequisicaoComPapel(PapelUsuarioEnum.ADMINISTRADOR);
 
         assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(RegraDeNegocioException.class)
                 .hasMessageContaining("Administrador");
 
         verify(usuarioRepository, never()).existsByEmail(any());
@@ -151,7 +153,7 @@ class UsuarioServiceTest {
         when(usuarioRepository.existsByCref("123456-G/SP")).thenReturn(true);
 
         assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflitoException.class)
                 .hasMessageContaining("CREF");
 
         verify(usuarioRepository, never()).save(any(UsuarioEntity.class));

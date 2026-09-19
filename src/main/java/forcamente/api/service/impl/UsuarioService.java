@@ -6,6 +6,9 @@ import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.CategoriaProfissionalEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.exception.ConflitoException;
+import forcamente.api.exception.RecursoNaoEncontradoException;
+import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.mapper.UsuarioMapper;
 import forcamente.api.repository.IUsuarioRepository;
 import forcamente.api.service.IUsuarioService;
@@ -36,18 +39,18 @@ public class UsuarioService implements IUsuarioService {
         log.info("criarUsuario: {}", usuarioRequestDTO.email());
 
         if (usuarioRequestDTO.papel() == PapelUsuarioEnum.ADMINISTRADOR) {
-            throw new IllegalArgumentException("Administrador nao pode ser criado pelo cadastro publico");
+            throw new RegraDeNegocioException("Administrador nao pode ser criado pelo cadastro publico");
         }
 
         if (usuarioRepository.existsByEmail(usuarioRequestDTO.email())) {
-            throw new IllegalArgumentException(
+            throw new ConflitoException(
                     "Ja existe um usuario cadastrado com o e-mail: " + usuarioRequestDTO.email());
         }
         if (usuarioRepository.existsByCpf(usuarioRequestDTO.cpf())) {
-            throw new IllegalArgumentException("Ja existe um usuario cadastrado com este CPF");
+            throw new ConflitoException("Ja existe um usuario cadastrado com este CPF");
         }
         if (usuarioRequestDTO.cref() != null && usuarioRepository.existsByCref(usuarioRequestDTO.cref())) {
-            throw new IllegalArgumentException("Ja existe um professor cadastrado com este CREF");
+            throw new ConflitoException("Ja existe um professor cadastrado com este CREF");
         }
 
         UsuarioEntity usuarioEntity = usuarioMapper.toEntity(usuarioRequestDTO);
@@ -65,7 +68,7 @@ public class UsuarioService implements IUsuarioService {
         log.info("buscarPorId: {}", usuarioId);
 
         UsuarioEntity usuarioEntity = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
                         "Usuario nao encontrado: " + usuarioId));
 
         return usuarioMapper.toDTO(usuarioEntity);

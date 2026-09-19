@@ -6,6 +6,7 @@ import forcamente.api.dto.VolumeTreinoRequestDTO;
 import forcamente.api.dto.VolumeTreinoResponseDTO;
 import forcamente.api.entity.ExercicioEntity;
 import forcamente.api.entity.enums.GrupoMuscularEnum;
+import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.repository.IExercicioRepository;
 import forcamente.api.service.IMetricasService;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class MetricasService implements IMetricasService {
                 .collect(Collectors.toMap(ExercicioEntity::getId, exercicio -> exercicio));
 
         if (exercicios.size() < ids.size()) {
-            throw new IllegalArgumentException("Algum exercício informado não existe");
+            throw new RecursoNaoEncontradoException("Algum exercício informado não existe");
         }
 
         double volumeTotalKg = 0;
