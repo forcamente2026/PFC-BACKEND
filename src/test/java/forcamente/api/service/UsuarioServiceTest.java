@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -81,11 +82,11 @@ class UsuarioServiceTest {
 
         String senhaGravada = captor.getValue().getSenhaHash();
 
-        assertThat(senhaGravada).isNotEqualTo("senhaSegura123");
+        assertThat(senhaGravada).isNotEqualTo("Senha@123");
 
         assertThat(senhaGravada).startsWith("$2");
 
-        assertThat(new BCryptPasswordEncoder().matches("senhaSegura123", senhaGravada)).isTrue();
+        assertThat(new BCryptPasswordEncoder().matches("Senha@123", senhaGravada)).isTrue();
     }
 
     @Test
@@ -121,9 +122,12 @@ class UsuarioServiceTest {
         return new UsuarioRequestDTO(
                 "Joao da Silva",
                 "12345678901",
+                LocalDate.of(2000,1,1),
                 "joao@umc.br",
-                "senhaSegura123",
+                "Senha@123",
                 PapelUsuarioEnum.ALUNO,
+                null,
+                null,
                 "08780000",
                 "Rua das Palmeiras",
                 "100",

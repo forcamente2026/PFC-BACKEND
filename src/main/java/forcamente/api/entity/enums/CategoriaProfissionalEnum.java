@@ -4,8 +4,8 @@ import lombok.Getter;
 
 @Getter
 
-public enum CategorIaProfissionalENUM {
-    ACADEMIA_E_CENTROS_DE_TREINAMENTO ("Academias e Centros de Treinamento"),
+public enum CategoriaProfissionalEnum {
+    ACADEMIAS_E_CENTROS_DE_TREINAMENTO("Academias e Centros de Treinamento"),
     TREINAMENTO_ESPORTIVO("Treinamento Esportivo"),
     SAUDE_E_REABILITACAO("Saúde e Reabilitação"),
     ATIVIDADES_PARA_GRUPOS_ESPECIAIS("Atividades para Grupos Especiais"),
@@ -13,7 +13,7 @@ public enum CategorIaProfissionalENUM {
 
     private final String descricao;
 
-    CategorIaProfissionalENUM(String descricao) {
+    CategoriaProfissionalEnum(String descricao) {
         this.descricao = descricao;
     }
 }

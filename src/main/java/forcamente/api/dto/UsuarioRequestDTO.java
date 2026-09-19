@@ -1,6 +1,6 @@
 package forcamente.api.dto;
 
-import forcamente.api.entity.enums.CategorIaProfissionalENUM;
+import forcamente.api.entity.enums.CategoriaProfissionalEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import jakarta.validation.constraints.*;
 
@@ -26,17 +26,17 @@ public record UsuarioRequestDTO(
         @NotBlank(message = "A senha é obrigatoria")
         @Size(min = 8, message = "A senha deve ter no minimo 8 caracteres")
         @Pattern(
-                regexp = "(?=.*\\p{L1})(?=.*\\p{Lu})(?=.*\\p{N})(?=.*[^\\p{L}\\p{N}\\s]).*",
-                message = "A senha deve ter letra mínuscula, maiusula, número e caracteres especiais."
+                regexp = "(?=.*\\p{Ll})(?=.*\\p{Lu})(?=.*\\p{N})(?=.*[^\\p{L}\\p{N}\\s]).*",
+                message = "A senha deve ter letra mínuscula, maiuscula, número e caracteres especiais."
         )
         String senha,
 
         @NotNull(message = "O papel do usuario e obrigatorio")
         PapelUsuarioEnum papel,
 
-        @Pattern(regexp = "\\d{6}-[A-Z]/[A-Z] {2}", message = "O CREF deve estar no formato 123456-G/SP")
+        @Pattern(regexp = "\\d{6}-[A-Z]/[A-Z]{2}", message = "O CREF deve estar no formato 123456-G/SP")
         String cref,
-        CategorIaProfissionalENUM categoriaIaProfissional,
+        CategoriaProfissionalEnum categoriaProfissional,
 
         @Pattern(regexp = "\\d{8}", message = "O CEP deve conter 8 digitos, apenas numeros")
         String cep,
@@ -46,6 +46,7 @@ public record UsuarioRequestDTO(
         String numero,
 
         String complemento,
+
 
         String bairro,
 
@@ -65,7 +66,7 @@ public record UsuarioRequestDTO(
 
                 }else {
                         cref = null;
-                        categoriaIaProfissional();
+                        categoriaProfissional= null;
 
                 }
         }
@@ -75,7 +76,7 @@ public record UsuarioRequestDTO(
                 if (papel != PapelUsuarioEnum.PROFESSOR) {
                         return true;
                 }
-                return cref != null && !cref.isBlank() && categoriaIaProfissional != null;
+                return cref != null && !cref.isBlank() && categoriaProfissional() != null;
 
         }
 
