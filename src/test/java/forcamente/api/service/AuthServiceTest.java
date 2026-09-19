@@ -62,6 +62,7 @@ class AuthServiceTest {
         var resposta = authService.login(new LoginRequestDTO("  Joao@UMC.br ", "Senha@123"));
 
         assertThat(resposta.nomeCompleto()).isEqualTo("Joao da Silva");
+        assertThat(resposta.papel()).isEqualTo(PapelUsuarioEnum.ALUNO);
 
         var jwt = segurancaConfig.jwtDecoder(SEGREDO).decode(resposta.token());
         assertThat(jwt.getSubject()).isEqualTo(usuario.getId().toString());

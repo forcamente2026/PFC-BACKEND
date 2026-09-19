@@ -52,7 +52,7 @@ public class AuthService  implements IAuthService {
             throw new CredenciaisInvalidasException("E-mail ou senha invalidos");
         }
 
-        return new LoginResponseDTO(gerarToken(usuario), usuario.getNomeCompleto());
+        return new LoginResponseDTO(gerarToken(usuario), usuario.getNomeCompleto(), usuario.getPapel());
     }
 
     private String gerarToken(UsuarioEntity usuario) {

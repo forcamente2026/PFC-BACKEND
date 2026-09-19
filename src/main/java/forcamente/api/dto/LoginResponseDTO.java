@@ -1,4 +1,6 @@
 package forcamente.api.dto;
 
-public record LoginResponseDTO(String token, String nomeCompleto) {
+import forcamente.api.entity.enums.PapelUsuarioEnum;
+
+public record LoginResponseDTO(String token, String nomeCompleto, PapelUsuarioEnum papel) {
 }
