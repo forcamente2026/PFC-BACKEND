@@ -25,3 +25,7 @@ server:
 logging:
   level:
     forcamente.api: DEBUG
+
+jwt:
+  segredo: ${JWT_SECRET:forcamente-segredo-de-desenvolvimento-troque-em-producao}
+  expiracao-minutos: ${JWT_EXPIRACAO_MINUTOS:120}
