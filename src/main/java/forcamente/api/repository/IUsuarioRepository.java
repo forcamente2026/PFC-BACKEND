@@ -15,4 +15,6 @@ public interface IUsuarioRepository extends JpaRepository<UsuarioEntity, UUID> {
     boolean existsByEmail(String email);
 
     boolean existsByCpf(String cpf);
+
+    boolean existsByCref(String cref);
 }

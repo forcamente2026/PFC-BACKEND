@@ -1,5 +1,6 @@
 package forcamente.api.entity;
 
+import forcamente.api.entity.enums.CategoriaProfissionalEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,6 +15,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -45,6 +47,16 @@ public class UsuarioEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "papel", nullable = false, length = 20)
     private PapelUsuarioEnum papel;
+
+    @Column(name = "data_nascimento", nullable = false)
+    private LocalDate dataNascimento;
+
+    @Column(name = "cref", length = 11, unique = true)
+    private String cref;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "categoria_profissional", length = 40)
+    private CategoriaProfissionalEnum categoriaProfissional;
 
     @Column(name = "cep", length = 8)
     private String cep;

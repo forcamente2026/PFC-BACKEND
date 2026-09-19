@@ -2,6 +2,7 @@ package forcamente.api.service;
 
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
+import forcamente.api.entity.enums.CategoriaProfissionalEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.mapper.UsuarioMapper;
@@ -13,8 +14,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
@@ -37,8 +40,13 @@ class UsuarioServiceTest {
     @Mock
     private UsuarioMapper usuarioMapper;
 
+    @Spy
+    private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     @InjectMocks
     private UsuarioService usuarioService;
+
+
 
     @Test
     @DisplayName("deve cadastrar usuario novo e devolver o DTO sem a senha")
@@ -118,6 +126,49 @@ class UsuarioServiceTest {
         verify(usuarioRepository, never()).save(any(UsuarioEntity.class));
     }
 
+
+
+    @Test
+    @DisplayName("nao deve cadastrar administrador pelo cadastro publico")
+    void naoDeveCadastrarAdministrador() {
+        var requestDTO = umaRequisicaoComPapel(PapelUsuarioEnum.ADMINISTRADOR);
+
+        assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Administrador");
+
+        verify(usuarioRepository, never()).existsByEmail(any());
+        verify(usuarioRepository, never()).save(any(UsuarioEntity.class));
+    }
+
+    @Test
+    @DisplayName("nao deve cadastrar professor com CREF ja existente")
+    void naoDeveCadastrarProfessorComCrefDuplicado() {
+        var requestDTO = umProfessor("123456-G/SP");
+
+        when(usuarioRepository.existsByEmail("maria@umc.br")).thenReturn(false);
+        when(usuarioRepository.existsByCpf("98765432100")).thenReturn(false);
+        when(usuarioRepository.existsByCref("123456-G/SP")).thenReturn(true);
+
+        assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("CREF");
+
+        verify(usuarioRepository, never()).save(any(UsuarioEntity.class));
+    }
+
+    @Test
+    @DisplayName("deve listar as cinco categorias profissionais como codigo e descricao")
+    void deveListarCategoriasProfissionais() {
+        var resultado = usuarioService.listarCategoriasProfissionais();
+
+        assertThat(resultado).hasSize(5);
+        assertThat(resultado.getFirst().codigo()).isEqualTo("ACADEMIAS_E_CENTROS_DE_TREINAMENTO");
+        assertThat(resultado.getFirst().descricao()).isEqualTo("Academias e Centros de Treinamento");
+    }
+
+
+
     private UsuarioRequestDTO umaRequisicaoValida() {
         return new UsuarioRequestDTO(
                 "Joao da Silva",
@@ -137,11 +188,53 @@ class UsuarioServiceTest {
                 "SP");
     }
 
+    private UsuarioRequestDTO umaRequisicaoComPapel(PapelUsuarioEnum papel) {
+        return new UsuarioRequestDTO(
+                "Joao da Silva",
+                "12345678901",
+                LocalDate.of(2000, 1, 1),
+                "joao@umc.br",
+                "Senha@123",
+                papel,
+                null,
+                null,
+                "08780000",
+                "Rua das Palmeiras",
+                "100",
+                "Apto 12",
+                "Centro",
+                "Mogi das Cruzes",
+                "SP");
+    }
+
+
+    private UsuarioRequestDTO umProfessor(String cref) {
+        return new UsuarioRequestDTO(
+                "Maria Souza",
+                "98765432100",
+                LocalDate.of(1990,5,20),
+                "maria@umc.br",
+                "Senha@123",
+                PapelUsuarioEnum.PROFESSOR,
+                cref,
+                CategoriaProfissionalEnum.TREINAMENTO_ESPORTIVO,
+                "08780000",
+                "Rua B",
+                "2",
+                null,
+                "Centro",
+                "Mogi das Cruzes",
+                "SP"
+        );
+
+    }
+
     private UsuarioEntity umaEntidade() {
         var entity = new UsuarioEntity();
         entity.setId(UUID.randomUUID());
         entity.setNomeCompleto("Joao da Silva");
         entity.setCpf("12345678901");
+        entity.setDataNascimento(LocalDate.of(2000, 1, 1));
         entity.setEmail("joao@umc.br");
         entity.setPapel(PapelUsuarioEnum.ALUNO);
         entity.setCidade("Mogi das Cruzes");
@@ -155,9 +248,10 @@ class UsuarioServiceTest {
         return new UsuarioResponseDTO(
                 entity.getId(),
                 entity.getNomeCompleto(),
-                entity.getCpf(),
                 entity.getEmail(),
                 entity.getPapel(),
+                entity.getCref(),
+                entity.getCategoriaProfissional(),
                 entity.getCidade(),
                 entity.getEstado(),
                 entity.isAtivo(),

@@ -1,5 +1,6 @@
 package forcamente.api.controller;
 
+import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.service.IUsuarioService;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -35,8 +37,15 @@ public class UsuarioController {
         return ResponseEntity.created(location).body(usuarioResponseDTO);
     }
 
+    @GetMapping("/categorias-profissionais")
+    public ResponseEntity<List<OpcaoDTO>> listarCategoriasProfissionais() {
+        return ResponseEntity.ok(usuarioService.listarCategoriasProfissionais());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(usuarioService.buscarPorId(id));
     }
+
+
 }
