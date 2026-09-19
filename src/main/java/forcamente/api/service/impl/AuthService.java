@@ -40,7 +40,7 @@ public class AuthService  implements IAuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
         log.info("login");
 
