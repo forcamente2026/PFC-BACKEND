@@ -16,8 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -82,5 +81,43 @@ class SegurancaRotasTest {
                 .build();
         return jwtEncoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();
+    }
+
+    @Test
+    @DisplayName("aluno pode listar exercicios")
+    void alunoPodeListarExercicios() throws Exception {
+        mockMvc.perform(get("/api/exercicios").header("Authorization", "Bearer " + tokenDeTeste("ALUNO")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("aluno nao pode criar exercicio: 403 com message, antes de qualquer validacao")
+    void alunoNaoPodeCriarExercicio() throws Exception {
+        mockMvc.perform(post("/api/exercicios")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("Acesso negado"));
+    }
+
+    @Test
+    @DisplayName("aluno nao pode excluir exercicio, mesmo inexistente: 403 vem antes do 404")
+    void alunoNaoPodeExcluirExercicio() throws Exception {
+        mockMvc.perform(delete("/api/exercicios/" + UUID.randomUUID())
+                        .header("Authorization", "Bearer " + tokenDeTeste("ALUNO")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("professor passa pela autorizacao ao criar exercicio: chega ao controller e recebe 400 de validacao")
+    void professorPassaPelaAutorizacaoAoCriar() throws Exception {
+        mockMvc.perform(post("/api/exercicios")
+                        .header("Authorization", "Bearer " + tokenDeTeste("PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Dados invalidos"));
     }
 }
