@@ -1,9 +1,11 @@
 package forcamente.api.config;
 
 
+import forcamente.api.exception.TratadorDeErrosDeSeguranca;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -34,15 +36,18 @@ public class SegurancaConfig {
     }
 
     @Bean
-    public SecurityFilterChain cadeiaDeFiltros(HttpSecurity http) throws Exception {
+    public SecurityFilterChain cadeiaDeFiltros(HttpSecurity http, TratadorDeErrosDeSeguranca tratador) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(rotas -> rotas
-                        .requestMatchers("/api/auth/**", "/api/usuarios/**", "/api/exercicios/**", "/api/metricas/**", "/error").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/usuarios").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
-                .oauth2ResourceServer(recurso -> recurso.jwt(Customizer.withDefaults()));
+                .oauth2ResourceServer(recurso -> recurso .jwt(Customizer.withDefaults()).authenticationEntryPoint(tratador).accessDeniedHandler(tratador))
+                .exceptionHandling(erros -> erros .authenticationEntryPoint(tratador).accessDeniedHandler(tratador));
+
 
         return http.build();
     }

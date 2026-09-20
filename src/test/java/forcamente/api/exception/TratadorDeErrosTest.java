@@ -68,6 +68,21 @@ class TratadorDeErrosTest {
         assertThat(resposta.getBody().campos().getFirst().campo()).isEqualTo("cpf");
         assertThat(resposta.getBody().campos().getFirst().mensagem()).isEqualTo("O CPF deve conter 11 digitos");
     }
+
+
+    @Test
+    @DisplayName("nao autenticado vira 401 e acesso negado vira 403, ambos com message fixa")
+    void deveResponder401E403DoSecurity() {
+        var naoAutenticado = tratador.tratarNaoAutenticado(
+                new org.springframework.security.authentication.BadCredentialsException("detalhe-interno-do-spring"));
+        var negado = tratador.tratarAcessoNegado(
+                new org.springframework.security.access.AccessDeniedException("detalhe-interno-do-spring"));
+
+        assertThat(naoAutenticado.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(naoAutenticado.getBody().message()).doesNotContain("detalhe-interno-do-spring");
+        assertThat(negado.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(negado.getBody().message()).doesNotContain("detalhe-interno-do-spring");
+    }
 }
 
 

@@ -6,10 +6,12 @@ import forcamente.api.dto.CampoErroDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import org.springframework.security.core.AuthenticationException;
 import java.util.List;
 
 @RestControllerAdvice
@@ -33,6 +35,16 @@ public class TratadorDeErros {
     @ExceptionHandler(CredenciaisInvalidasException.class)
     public ResponseEntity<ApiErroDTO> tratarCredenciaisInvalidas(CredenciaisInvalidasException ex) {
         return responder (HttpStatus.UNAUTHORIZED, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiErroDTO> tratarNaoAutenticado(AuthenticationException ex) {
+        return responder(HttpStatus.UNAUTHORIZED, "Autenticacao necessaria: token ausente, invalido ou expirado",List.of());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErroDTO> tratarAcessoNegado(AccessDeniedException ex) {
+        return responder(HttpStatus.FORBIDDEN, "Acesso negado",List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
