@@ -120,4 +120,13 @@ class SegurancaRotasTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Dados invalidos"));
     }
+
+    @Test
+    @DisplayName("documentos legais sao publicos: sem token devolve os dois vigentes")
+    void documentosLegaisSaoPublicos() throws Exception {
+        mockMvc.perform(get("/api/documentos-legais"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].versao").isNotEmpty());
+    }
 }

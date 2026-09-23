@@ -62,6 +62,7 @@ public class SegurancaConfig {
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(rotas -> rotas
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/usuarios").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/documentos-legais/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/exercicios/**").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.PUT, "/api/exercicios/**").hasAnyRole(EDITORES)
