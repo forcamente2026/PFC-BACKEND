@@ -6,6 +6,7 @@ package forcamente.api.exception;
 
 import forcamente.api.controller.UsuarioController;
 import forcamente.api.dto.UsuarioRequestDTO;
+import forcamente.api.entity.enums.TipoDocumentoLegalEnum;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -82,6 +84,18 @@ class TratadorDeErrosTest {
         assertThat(naoAutenticado.getBody().message()).doesNotContain("detalhe-interno-do-spring");
         assertThat(negado.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(negado.getBody().message()).doesNotContain("detalhe-interno-do-spring");
+    }
+    @Test
+    @DisplayName("tipo invalido na URL vira 400 com o nome do parametro, nao 500")
+    void deveResponder400ParaTipoInvalido() {
+        var excecao = new MethodArgumentTypeMismatchException(
+                "VALOR_INEXISTENTE", TipoDocumentoLegalEnum.class, "tipo", null, null);
+
+        var resposta = tratador.tratarTipoInvalido(excecao);
+
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(resposta.getBody().message()).contains("tipo");
+        assertThat(resposta.getBody().message()).doesNotContain("VALOR_INEXISTENTE");
     }
 }
 

@@ -15,7 +15,12 @@ public interface UsuarioMapper {
 
     @Mapping(target = "ativo", constant = "true")
     @Mapping(target = "criadoEm", expression = "java(java.time.LocalDateTime.now())")
+    @Mapping(target = "aceitouTermosUsoEm", ignore = true)
+    @Mapping(target = "versaoTermosUso", ignore = true)
+    @Mapping(target = "aceitouPoliticaPrivacidadeEm", ignore = true)
+    @Mapping(target = "versaoPoliticaPrivacidade", ignore = true)
     UsuarioEntity toEntity(UsuarioRequestDTO usuarioRequestDTO);
+
 
     UsuarioResponseDTO toDTO(UsuarioEntity usuarioEntity);
 }

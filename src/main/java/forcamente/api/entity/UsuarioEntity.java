@@ -58,6 +58,19 @@ public class UsuarioEntity {
     @Column(name = "categoria_profissional", length = 40)
     private CategoriaProfissionalEnum categoriaProfissional;
 
+    @Column(name = "aceitou_termos_uso_em")
+    private LocalDateTime aceitouTermosUsoEm;
+
+    @Column(name = "versao_termos_uso", length = 10)
+    private String versaoTermosUso;
+
+    @Column(name = "aceitou_politica_privacidade_em")
+    private LocalDateTime aceitouPoliticaPrivacidadeEm;
+
+    @Column(name = "versao_politica_privacidade", length = 10)
+    private String versaoPoliticaPrivacidade;
+
+
     @Column(name = "cep", length = 8)
     private String cep;
 

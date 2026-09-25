@@ -53,8 +53,17 @@ public record UsuarioRequestDTO(
         String cidade,
 
         @Size(max = 2, message = "O estado deve ser a sigla com 2 letras")
-        String estado
-) {
+        String estado,
+
+        @NotNull(message = "O aceite dos termos de uso e obrigatorio")
+        @AssertTrue(message = "E necessario aceitar os termos de uso")
+        Boolean aceitouTermosUso,
+
+        @NotNull(message = "O aceite de politica de privacidade e obrigatorio")
+        @AssertTrue(message = "E necessario aceitar a politica de privacidade")
+        Boolean aceitouPoliticaPrivacidade
+){
+
         public UsuarioRequestDTO{
                 nomeCompleto = nomeCompleto == null ? null : nomeCompleto.trim();
                 cpf = somenteDigitos(cpf);

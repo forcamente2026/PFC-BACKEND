@@ -6,11 +6,13 @@ import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.CategoriaProfissionalEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.TipoDocumentoLegalEnum;
 import forcamente.api.exception.ConflitoException;
 import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.mapper.UsuarioMapper;
 import forcamente.api.repository.IUsuarioRepository;
+import forcamente.api.service.IDocumentoLegalService;
 import forcamente.api.service.IUsuarioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +36,11 @@ public class UsuarioService implements IUsuarioService {
     private final UsuarioMapper usuarioMapper;
 
     private final PasswordEncoder passwordEncoder;
+
+    private final Clock clock;
+
+    private final IDocumentoLegalService documentoLegalService;
+
 
     @Override
     @Transactional
@@ -57,6 +66,9 @@ public class UsuarioService implements IUsuarioService {
 
         usuarioEntity.setSenhaHash(passwordEncoder.encode(usuarioRequestDTO.senha()));
 
+        registrarAceites(usuarioEntity);
+
+
         UsuarioEntity usuarioSalvo = usuarioRepository.save(usuarioEntity);
 
         return usuarioMapper.toDTO(usuarioSalvo);
@@ -78,5 +90,17 @@ public class UsuarioService implements IUsuarioService {
     public List<OpcaoDTO> listarCategoriasProfissionais() {
         log.info("listarCategoriasProfissionais");
         return Arrays.stream(CategoriaProfissionalEnum.values()).map(categoria -> new OpcaoDTO(categoria.name(), categoria.getDescricao())).toList();
+    }
+
+    private void registrarAceites(UsuarioEntity usuarioEntity){
+        LocalDateTime agora = LocalDateTime.now(clock);
+
+        usuarioEntity.setAceitouTermosUsoEm(agora);
+        usuarioEntity.setVersaoTermosUso(
+                documentoLegalService.versaoVigente(TipoDocumentoLegalEnum.TERMOS_USO));
+        usuarioEntity.setAceitouPoliticaPrivacidadeEm(agora);
+        usuarioEntity.setVersaoPoliticaPrivacidade(
+                documentoLegalService.versaoVigente(TipoDocumentoLegalEnum.POLITICA_PRIVACIDADE)
+        );
     }
 }

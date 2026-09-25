@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
 import java.util.List;
 
 @RestControllerAdvice
@@ -58,6 +60,11 @@ public class TratadorDeErros {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErroDTO> tratarCorpoIlegivel(HttpMessageNotReadableException ex) {
         return responder(HttpStatus.BAD_REQUEST, "Corpo da requisicao invalido ou com valor nao reconhecido", List.of());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErroDTO> tratarTipoInvalido(MethodArgumentTypeMismatchException ex){
+        return responder(HttpStatus.BAD_REQUEST,"Valor invalido para o paramentro" + ex.getName(), List.of());
     }
 
     private ResponseEntity<ApiErroDTO> responder(HttpStatus status, String message,

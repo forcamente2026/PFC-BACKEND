@@ -25,7 +25,7 @@ class UsuarioMapperTest {
         var request = new UsuarioRequestDTO(
                 "Maria Souza", "98765432100", LocalDate.of(1990, 5, 20), "maria@umc.br", "Senha@123",
                 PapelUsuarioEnum.PROFESSOR, "123456-G/SP", CategoriaProfissionalEnum.TREINAMENTO_ESPORTIVO,
-                "08780000", "Rua B", "2", null, "Centro", "Mogi das Cruzes", "SP");
+                "08780000", "Rua B", "2", null, "Centro", "Mogi das Cruzes", "SP", true, true);
 
         var entity = mapper.toEntity(request);
 
@@ -36,6 +36,8 @@ class UsuarioMapperTest {
         assertThat(entity.getCategoriaProfissional()).isEqualTo(CategoriaProfissionalEnum.TREINAMENTO_ESPORTIVO);
         assertThat(entity.isAtivo()).isTrue();
         assertThat(entity.getCriadoEm()).isNotNull();
+        assertThat(entity.getAceitouTermosUsoEm()).isNull();
+        assertThat(entity.getVersaoTermosUso()).isNull();
     }
 
     @Test

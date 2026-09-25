@@ -2,16 +2,26 @@ package forcamente.api.dto;
 
 import forcamente.api.entity.enums.CategoriaProfissionalEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.service.IDocumentoLegalService;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Spy;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
+
+
+
 
 @DisplayName("UsuarioRequestDTO - normalizacao e validacao do cadastro")
 class UsuarioRequestDTOTest {
@@ -77,11 +87,37 @@ class UsuarioRequestDTOTest {
                 "Joao da Silva", "12345678901", LocalDate.of(2000, 1, 1), "joao@umc.br",
                 "Senha@123", PapelUsuarioEnum.ALUNO,
                 "123456-G/SP", CategoriaProfissionalEnum.TREINAMENTO_ESPORTIVO,
-                "08780000", "Rua A", "1", null, "Centro", "Mogi das Cruzes", "SP");
+                "08780000", "Rua A", "1", null, "Centro", "Mogi das Cruzes", "SP", true, true);
 
         assertThat(dto.cref()).isNull();
         assertThat(dto.categoriaProfissional()).isNull();
         assertThat(validar(dto)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("deve rejeitar cadastro sem aceitar os dois documentos")
+    void deveRejeitarSemAceite() {
+        var dto = umAlunoComAceite(false, false);
+
+        assertThat(campos(validar(dto)))
+                .contains("aceitouTermosUso", "aceitouPoliticaPrivacidade");
+    }
+
+    @Test
+    @DisplayName("deve rejeitar cadastro com o aceite ausente, nao so falso")
+    void deveRejeitarAceiteAusente() {
+        var dto = umAlunoComAceite(null, null);
+
+        assertThat(campos(validar(dto)))
+                .contains("aceitouTermosUso", "aceitouPoliticaPrivacidade");
+    }
+
+    private UsuarioRequestDTO umAlunoComAceite(Boolean termos, Boolean privacidade) {
+        return new UsuarioRequestDTO(
+                "Joao da Silva", "12345678901", LocalDate.of(2000, 1, 1), "joao@umc.br",
+                "Senha@123", PapelUsuarioEnum.ALUNO, null, null,
+                "08780000", "Rua A", "1", null, "Centro", "Mogi das Cruzes", "SP",
+                termos, privacidade);
     }
 
     private Set<ConstraintViolation<UsuarioRequestDTO>> validar(UsuarioRequestDTO dto) {
@@ -98,13 +134,13 @@ class UsuarioRequestDTOTest {
         return new UsuarioRequestDTO(
                 "Joao da Silva", cpf, LocalDate.of(2000, 1, 1), email, senha,
                 PapelUsuarioEnum.ALUNO, null, null,
-                cep, "Rua A", "1", null, "Centro", "Mogi das Cruzes", "SP");
+                cep, "Rua A", "1", null, "Centro", "Mogi das Cruzes", "SP", true, true);
     }
 
     private UsuarioRequestDTO umProfessor(String cref, CategoriaProfissionalEnum categoria) {
         return new UsuarioRequestDTO(
                 "Maria Souza", "98765432100", LocalDate.of(1990, 5, 20), "maria@umc.br", "Senha@123",
                 PapelUsuarioEnum.PROFESSOR, cref, categoria,
-                "08780000", "Rua B", "2", null, "Centro", "Mogi das Cruzes", "SP");
+                "08780000", "Rua B", "2", null, "Centro", "Mogi das Cruzes", "SP", true, true);
     }
 }

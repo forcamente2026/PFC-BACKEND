@@ -5,6 +5,7 @@ import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.entity.enums.CategoriaProfissionalEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.UsuarioEntity;
+import forcamente.api.entity.enums.TipoDocumentoLegalEnum;
 import forcamente.api.exception.ConflitoException;
 import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.mapper.UsuarioMapper;
@@ -21,8 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
-import java.time.LocalDate;
+import java.time.*;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,6 +47,12 @@ class UsuarioServiceTest {
 
     @InjectMocks
     private UsuarioService usuarioService;
+
+    @Mock
+    private IDocumentoLegalService documentoLegalService;
+
+    @Spy
+    private Clock clock = Clock.fixed(Instant.parse("2026-09-22T13:00:00Z"), ZoneOffset.UTC);
 
 
 
@@ -168,6 +174,31 @@ class UsuarioServiceTest {
         assertThat(resultado.getFirst().codigo()).isEqualTo("ACADEMIAS_E_CENTROS_DE_TREINAMENTO");
         assertThat(resultado.getFirst().descricao()).isEqualTo("Academias e Centros de Treinamento");
     }
+    @Test
+    @DisplayName("deve registrar data e versao do aceite dos dois documentos")
+    void deveRegistrarAceiteComDataEVersao() {
+        var requestDTO = umaRequisicaoValida();
+        var entity = umaEntidade();
+
+        when(usuarioRepository.existsByEmail("joao@umc.br")).thenReturn(false);
+        when(usuarioRepository.existsByCpf("12345678901")).thenReturn(false);
+        when(usuarioMapper.toEntity(requestDTO)).thenReturn(entity);
+        when(usuarioRepository.save(any(UsuarioEntity.class))).thenReturn(entity);
+        when(usuarioMapper.toDTO(entity)).thenReturn(umaResposta(entity));
+        when(documentoLegalService.versaoVigente(TipoDocumentoLegalEnum.TERMOS_USO)).thenReturn("1.0");
+        when(documentoLegalService.versaoVigente(TipoDocumentoLegalEnum.POLITICA_PRIVACIDADE)).thenReturn("2.0");
+
+        usuarioService.criarUsuario(requestDTO);
+
+        ArgumentCaptor<UsuarioEntity> captor = ArgumentCaptor.forClass(UsuarioEntity.class);
+        verify(usuarioRepository).save(captor.capture());
+        var salvo = captor.getValue();
+
+        assertThat(salvo.getVersaoTermosUso()).isEqualTo("1.0");
+        assertThat(salvo.getVersaoPoliticaPrivacidade()).isEqualTo("2.0");
+        assertThat(salvo.getAceitouTermosUsoEm()).isEqualTo(LocalDateTime.now(clock));
+        assertThat(salvo.getAceitouPoliticaPrivacidadeEm()).isEqualTo(LocalDateTime.now(clock));
+    }
 
 
 
@@ -187,7 +218,9 @@ class UsuarioServiceTest {
                 "Apto 12",
                 "Centro",
                 "Mogi das Cruzes",
-                "SP");
+                "SP",
+                true,
+                true);
     }
 
     private UsuarioRequestDTO umaRequisicaoComPapel(PapelUsuarioEnum papel) {
@@ -206,7 +239,9 @@ class UsuarioServiceTest {
                 "Apto 12",
                 "Centro",
                 "Mogi das Cruzes",
-                "SP");
+                "SP",
+                true,
+                true);
     }
 
 
@@ -226,7 +261,9 @@ class UsuarioServiceTest {
                 null,
                 "Centro",
                 "Mogi das Cruzes",
-                "SP"
+                "SP",
+                true,
+                true
         );
 
     }
