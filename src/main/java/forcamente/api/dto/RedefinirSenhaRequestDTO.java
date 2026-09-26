@@ -15,7 +15,7 @@ public record RedefinirSenhaRequestDTO(
         String codigo,
 
         @NotBlank(message = "A nova senha e obrigatoria")
-        @Size(min = RegrasSenha.TAMANHO_MINIMO, message = "A senha deve ter no minimo 8 caracateres")
+        @Size(min = RegrasSenha.TAMANHO_MINIMO, message = "A senha deve ter no minimo 8 caracacteres")
         @Pattern(regexp = RegrasSenha.PADRAO, message = RegrasSenha.MENSAGEM)
         String novaSenha
 ) {

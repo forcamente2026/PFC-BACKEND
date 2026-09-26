@@ -32,7 +32,7 @@ public class EmailService implements IEmailService {
 
     enviadorDeEmail.send(mensagem);
 
-    log.info("Email enviado para: {}", assunto);
+    log.info("E-mail enviado: assunto={}", assunto);
 
     }
 

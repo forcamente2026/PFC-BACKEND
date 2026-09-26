@@ -62,7 +62,7 @@ public class AuthService  implements IAuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = LimiteDeTentativasException.class)
     public LoginPendenteResponseDTO login(LoginRequestDTO loginRequestDTO) {
         log.info("login");
 
@@ -129,7 +129,7 @@ public class AuthService  implements IAuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = {CredenciaisInvalidasException.class, LimiteDeTentativasException.class})
     public void redefinirSenha(RedefinirSenhaRequestDTO redefinirSenhaRequestDTO) {
         log.info("Redefinicao de senha recebida");
 
@@ -148,7 +148,7 @@ public class AuthService  implements IAuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = {CredenciaisInvalidasException.class, LimiteDeTentativasException.class})
     public LoginResponseDTO verificarCodigo(VerificarCodigoRequestDTO verificarCodigoRequestDTO) {
         log.info("Verificacao de codigo de login recebida");
 
