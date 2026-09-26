@@ -2,6 +2,7 @@ package forcamente.api.entity;
 
 import forcamente.api.entity.enums.CategoriaProfissionalEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.TipoCodigoEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -70,6 +71,42 @@ public class UsuarioEntity {
     @Column(name = "versao_politica_privacidade", length = 10)
     private String versaoPoliticaPrivacidade;
 
+    @Column(name = "codigo_hash", length = 60)
+    private String codigoHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "codigo_tipo", length = 20)
+    private TipoCodigoEnum codigoTipo;
+
+    @Column(name = "codigo_expira_em")
+    private LocalDateTime codigoExpiraEm;
+
+    @Column(name = "codigo_tentativas")
+    private Integer codigoTentativas;
+
+    @Column(name = "mfa_pedidos")
+    private Integer mfaPedidos;
+
+    @Column(name = "mfa_janela_inicio")
+    private LocalDateTime mfaJanelaInicio;
+
+    @Column(name = "mfa_bloqueado_ate")
+    private LocalDateTime mfaBloqueadoAte;
+
+    @Column(name = "mfa_ocorrencias_bloqueio")
+    private Integer mfaOcorrenciasBloqueio;
+
+    @Column(name = "redefinicao_pedidos")
+    private Integer redefinicaoPedidos;
+
+    @Column(name = "redefinicao_dia")
+    private LocalDate redefinicaoDia;
+
+    @Column(name = "redefinicao_bloqueado_ate")
+    private LocalDateTime redefinicaoBloqueadoAte;
+
+    @Column(name = "redefinicao_erros_consecutivos")
+    private Integer redefinicaoErrosConsecutivos;
 
     @Column(name = "cep", length = 8)
     private String cep;

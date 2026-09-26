@@ -76,6 +76,11 @@ public class TratadorDeErros {
         return responder(HttpStatus.SERVICE_UNAVAILABLE, "Nao foi possivel enviar o e-mail. Tente novamente mais tarde", List.of());
     }
 
+    @ExceptionHandler(LimiteDeTentativasException.class)
+    public ResponseEntity<ApiErroDTO> tratarLimiteDeTentativas(LimiteDeTentativasException ex) {
+        return responder(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), List.of());
+    }
+
     private ResponseEntity<ApiErroDTO> responder(HttpStatus status, String message,
                                                  List<CampoErroDTO> campos) {
         return ResponseEntity.status(status).body(new ApiErroDTO(status.value(), message, campos));
