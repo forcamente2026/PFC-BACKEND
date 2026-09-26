@@ -61,7 +61,7 @@ public class SegurancaConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(rotas -> rotas
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login","/api/auth/esqueci-senha","/api/auth/redefinir-senha", "/api/usuarios" ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login","/api/auth/login/verificar","/api/auth/esqueci-senha","/api/auth/redefinir-senha", "/api/usuarios" ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/documentos-legais/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/exercicios/**").hasAnyRole(EDITORES)

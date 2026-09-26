@@ -95,6 +95,10 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
         log.info("Codigo validado: tipo={} usuario={}",tipo,usuario.getId());
 
     }
+    @Override
+    public int validadeEmSegundos(TipoCodigoEnum tipo) {
+        return validadeEmMinutos(tipo) * 60;
+    }
 
     private int validadeEmMinutos(TipoCodigoEnum tipo) {
         return tipo == TipoCodigoEnum.MFA ? MFA_VALIDADE_MINUTOS : REDEFINICAO_VALIDADE_MINUTOS;

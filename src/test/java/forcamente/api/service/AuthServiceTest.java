@@ -4,6 +4,7 @@ import forcamente.api.config.SegurancaConfig;
 import forcamente.api.dto.EsqueciSenhaRequestDTO;
 import forcamente.api.dto.LoginRequestDTO;
 import forcamente.api.dto.RedefinirSenhaRequestDTO;
+import forcamente.api.dto.VerificarCodigoRequestDTO;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.TipoCodigoEnum;
@@ -66,14 +67,37 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("deve autenticar, devolver o nome e um token com id, papel e expiracao")
-    void deveAutenticarEDevolverToken() {
+    @DisplayName("login valida a senha, gera codigo, envia e-mail sincrono e nao devolve token")
+    void loginGeraCodigoEEnviaEmail() {
         var usuario = umUsuarioAtivo();
         when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("Senha@123", "$2a$10$hash")).thenReturn(true);
+        when(codigoVerificacaoService.gerarCodigo(usuario, TipoCodigoEnum.MFA)).thenReturn("1234");
+        when(codigoVerificacaoService.validadeEmSegundos(TipoCodigoEnum.MFA)).thenReturn(120);
+
 
         var resposta = authService.login(new LoginRequestDTO("  Joao@UMC.br ", "Senha@123"));
 
+        assertThat(resposta.mfaNecessario()).isTrue();
+        assertThat(resposta.expiraEmSegundos()).isEqualTo(120);
+
+        ArgumentCaptor<String> texto = ArgumentCaptor.forClass(String.class);
+        verify(emailService).enviar(eq("joao@umc.br"), anyString(), texto.capture());
+        assertThat(texto.getValue()).contains("1234");
+        verify(emailService, never()).enviarAssincrono(any(), any(), any());
+
+    }
+
+    @Test
+    @DisplayName("codigo correto devolve token com id e papel, e o nome do usuario")
+    void verificarCodigoDevolveToken() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+
+        var resposta = authService.verificarCodigo(
+                new VerificarCodigoRequestDTO("  Joao@UMC.br ", " 1234 "));
+
+        verify(codigoVerificacaoService).validarCodigo(usuario, TipoCodigoEnum.MFA, "1234");
         assertThat(resposta.nomeCompleto()).isEqualTo("Joao da Silva");
         assertThat(resposta.papel()).isEqualTo(PapelUsuarioEnum.ALUNO);
 
@@ -83,7 +107,9 @@ class AuthServiceTest {
         assertThat(jwt.getExpiresAt()).isBetween(
                 Instant.now().plus(EXPIRACAO_MINUTOS - 1, ChronoUnit.MINUTES),
                 Instant.now().plus(EXPIRACAO_MINUTOS + 1, ChronoUnit.MINUTES));
+
     }
+
 
     @Test
     @DisplayName("deve recusar e-mail inexistente sem consultar a senha")
@@ -95,6 +121,7 @@ class AuthServiceTest {
                 .hasMessage("E-mail ou senha invalidos");
 
         verify(passwordEncoder, never()).matches(any(), any());
+        verify(codigoVerificacaoService, never()).gerarCodigo(any(), any());
     }
 
     @Test
@@ -106,6 +133,7 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(new LoginRequestDTO("joao@umc.br", "errada")))
                 .isInstanceOf(CredenciaisInvalidasException.class)
                 .hasMessage("E-mail ou senha invalidos");
+        verify(codigoVerificacaoService, never()).gerarCodigo(any(), any());
     }
 
     @Test
@@ -120,6 +148,7 @@ class AuthServiceTest {
                 .hasMessage("E-mail ou senha invalidos");
 
         verify(passwordEncoder, never()).matches(any(), any());
+        verify(codigoVerificacaoService, never()).gerarCodigo(any(), any());
     }
 
     @Test
@@ -196,6 +225,34 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.redefinirSenha(
                 new RedefinirSenhaRequestDTO("ninguem@umc.br", "1234", "NovaSenha@1")))
+                .isInstanceOf(CredenciaisInvalidasException.class)
+                .hasMessage("Codigo invalido ou expirado");
+
+        verify(codigoVerificacaoService, never()).validarCodigo(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("no login, o bloqueio por limite chega ao chamador como 429")
+    void bloqueioNoLoginNaoEhEngolido() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("Senha@123", "$2a$10$hash")).thenReturn(true);
+        when(codigoVerificacaoService.gerarCodigo(usuario, TipoCodigoEnum.MFA))
+                .thenThrow(new LimiteDeTentativasException("Muitos pedidos"));
+
+        assertThatThrownBy(() -> authService.login(new LoginRequestDTO("joao@umc.br", "Senha@123")))
+                .isInstanceOf(LimiteDeTentativasException.class);
+
+        verify(emailService, never()).enviar(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("verificar codigo com e-mail inexistente devolve a mesma mensagem de codigo invalido")
+    void verificarCodigoComEmailInexistente() {
+        when(usuarioRepository.findByEmail("ninguem@umc.br")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.verificarCodigo(
+                new VerificarCodigoRequestDTO("ninguem@umc.br", "1234")))
                 .isInstanceOf(CredenciaisInvalidasException.class)
                 .hasMessage("Codigo invalido ou expirado");
 

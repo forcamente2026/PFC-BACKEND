@@ -1,10 +1,7 @@
 package forcamente.api.controller;
 
 
-import forcamente.api.dto.EsqueciSenhaRequestDTO;
-import forcamente.api.dto.LoginRequestDTO;
-import forcamente.api.dto.LoginResponseDTO;
-import forcamente.api.dto.RedefinirSenhaRequestDTO;
+import forcamente.api.dto.*;
 import forcamente.api.service.IAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +24,7 @@ public class AuthController {
     private final IAuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequestDTO) {
+    public ResponseEntity<LoginPendenteResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequestDTO) {
         return ResponseEntity.ok(authService.login(loginRequestDTO));
     }
 
@@ -44,4 +41,11 @@ public class AuthController {
         authService.redefinirSenha(redefinirSenhaRequestDTO);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/login/verificar")
+    public ResponseEntity<LoginResponseDTO> verificarCodigo(
+            @Valid @RequestBody VerificarCodigoRequestDTO verificarCodigoRequestDTO) {
+        return ResponseEntity.ok(authService.verificarCodigo(verificarCodigoRequestDTO));
+    }
+
 }

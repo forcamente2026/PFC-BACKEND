@@ -8,4 +8,7 @@ public interface ICodigoVerificacaoService {
     String gerarCodigo(UsuarioEntity usuario, TipoCodigoEnum tipo);
 
     void validarCodigo(UsuarioEntity usuario, TipoCodigoEnum tipo, String codigo);
+
+    int validadeEmSegundos(TipoCodigoEnum tipo);
 }
+

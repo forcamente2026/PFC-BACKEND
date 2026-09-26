@@ -1,10 +1,7 @@
 package forcamente.api.service.impl;
 
 
-import forcamente.api.dto.EsqueciSenhaRequestDTO;
-import forcamente.api.dto.LoginRequestDTO;
-import forcamente.api.dto.LoginResponseDTO;
-import forcamente.api.dto.RedefinirSenhaRequestDTO;
+import forcamente.api.dto.*;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.TipoCodigoEnum;
 import forcamente.api.exception.CredenciaisInvalidasException;
@@ -36,6 +33,19 @@ public class AuthService  implements IAuthService {
     private final long expiracaoMinutos;
     private final ICodigoVerificacaoService codigoVerificacaoService;
     private final IEmailService emailService;
+    private static final String MENSAGEM_CODIGO_INVALIDO = "Codigo invalido ou expirado";
+    private static final String ASSUNTO_MFA = "ForcaMente - seu codigo de acesso";
+    private String textoMfa(String codigo) {
+        return """
+                Alguem esta entrando na sua conta do ForcaMente.
+
+                Seu codigo de acesso e: %s
+
+                Ele vale por 2 minutos e pode ser usado uma unica vez.
+
+                Se nao foi voce, ignore esta mensagem e troque a sua senha.
+                """.formatted(codigo);
+    }
 
     public AuthService(IUsuarioRepository usuarioRepository,
                        PasswordEncoder passwordEncoder,
@@ -52,8 +62,8 @@ public class AuthService  implements IAuthService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
+    @Transactional
+    public LoginPendenteResponseDTO login(LoginRequestDTO loginRequestDTO) {
         log.info("login");
 
         UsuarioEntity usuario = usuarioRepository.findByEmail(loginRequestDTO.email()).orElse(null);
@@ -61,10 +71,17 @@ public class AuthService  implements IAuthService {
         if (usuario == null
                 || !usuario.isAtivo()
                 || !passwordEncoder.matches(loginRequestDTO.senha(), usuario.getSenhaHash())) {
-            throw new CredenciaisInvalidasException("E-mail ou senha invalidos");
-        }
+                    throw new CredenciaisInvalidasException("E-mail ou senha invalidos");
 
-        return new LoginResponseDTO(gerarToken(usuario), usuario.getNomeCompleto(), usuario.getPapel());
+        }
+        String codigo = codigoVerificacaoService.gerarCodigo(usuario, TipoCodigoEnum.MFA);
+                usuarioRepository.save(usuario);
+                emailService.enviar(usuario.getEmail(), ASSUNTO_MFA, textoMfa(codigo));
+                return new LoginPendenteResponseDTO(
+                        true, codigoVerificacaoService.validadeEmSegundos(TipoCodigoEnum.MFA)
+                );
+
+
     }
 
     private String gerarToken(UsuarioEntity usuario) {
@@ -128,5 +145,25 @@ public class AuthService  implements IAuthService {
         usuarioRepository.save(usuario);
 
     log.info("Senha redefinida: usuario={}", usuario.getId());
+    }
+
+    @Override
+    @Transactional
+    public LoginResponseDTO verificarCodigo(VerificarCodigoRequestDTO verificarCodigoRequestDTO) {
+        log.info("Verificacao de codigo de login recebida");
+
+        UsuarioEntity usuario = usuarioRepository.findByEmail(verificarCodigoRequestDTO.email()).orElseThrow(() -> new CredenciaisInvalidasException(MENSAGEM_CODIGO_INVALIDO));
+
+        if (!usuario.isAtivo()) {
+            throw new CredenciaisInvalidasException(MENSAGEM_CODIGO_INVALIDO);
+        }
+        codigoVerificacaoService.validarCodigo(
+                usuario, TipoCodigoEnum.MFA, verificarCodigoRequestDTO.codigo()
+        );
+
+        usuarioRepository.save(usuario);
+
+        return new LoginResponseDTO(gerarToken(usuario), usuario.getNomeCompleto(),usuario.getPapel());
+
     }
 }

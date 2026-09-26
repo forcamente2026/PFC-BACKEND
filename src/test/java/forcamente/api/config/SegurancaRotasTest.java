@@ -137,4 +137,14 @@ class SegurancaRotasTest {
                         .content("{\"email\":\"ninguem-mesmo@umc.br\"}"))
                 .andExpect(status().isOk());
     }
+    @Test
+    @DisplayName("login/verificar e publica e responde 401 para e-mail inexistente")
+    void loginVerificarEhPublica() throws Exception {
+        mockMvc.perform(post("/api/auth/login/verificar")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"ninguem-mesmo@umc.br\",\"codigo\":\"1234\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Codigo invalido ou expirado"));
+    }
+
 }
