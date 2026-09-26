@@ -3,9 +3,11 @@ package forcamente.api.exception;
 
 import forcamente.api.dto.ApiErroDTO;
 import forcamente.api.dto.CampoErroDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mail.MailException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,6 +18,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.List;
 
+@Slf4j
 @RestControllerAdvice
 public class TratadorDeErros {
 
@@ -65,6 +68,12 @@ public class TratadorDeErros {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiErroDTO> tratarTipoInvalido(MethodArgumentTypeMismatchException ex){
         return responder(HttpStatus.BAD_REQUEST,"Valor invalido para o paramentro" + ex.getName(), List.of());
+    }
+
+    @ExceptionHandler(MailException.class)
+    public ResponseEntity<ApiErroDTO> tratarFalhaDeEmail(MailException ex) {
+        log.error("Falaha ao enviar e-mail", ex);
+        return responder(HttpStatus.SERVICE_UNAVAILABLE, "Nao foi possivel enviar o e-mail. Tente novamente mais tarde", List.of());
     }
 
     private ResponseEntity<ApiErroDTO> responder(HttpStatus status, String message,
