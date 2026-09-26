@@ -129,4 +129,12 @@ class SegurancaRotasTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].versao").isNotEmpty());
     }
+    @Test
+    @DisplayName("esqueci-senha e publica e responde 200 mesmo para e-mail inexistente")
+    void esqueciSenhaEhPublica() throws Exception {
+        mockMvc.perform(post("/api/auth/esqueci-senha")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"ninguem-mesmo@umc.br\"}"))
+                .andExpect(status().isOk());
+    }
 }

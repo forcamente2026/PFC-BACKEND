@@ -24,11 +24,8 @@ public record UsuarioRequestDTO(
         String email,
 
         @NotBlank(message = "A senha e obrigatoria")
-        @Size(min = 8, message = "A senha deve ter no minimo 8 caracteres")
-        @Pattern(
-                regexp = "(?=.*\\p{Ll})(?=.*\\p{Lu})(?=.*\\p{N})(?=.*[^\\p{L}\\p{N}\\s]).*",
-                message = "A senha deve ter letra minuscula, maiuscula, numero e caractere especial"
-        )
+        @Size(min = RegrasSenha.TAMANHO_MINIMO, message = "A senha deve ter no minimo 8 caracteres")
+        @Pattern( regexp = RegrasSenha.PADRAO, message = RegrasSenha.MENSAGEM)
         String senha,
 
         @NotNull(message = "O papel do usuario e obrigatorio")

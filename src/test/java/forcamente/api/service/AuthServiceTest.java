@@ -1,16 +1,21 @@
 package forcamente.api.service;
 
 import forcamente.api.config.SegurancaConfig;
+import forcamente.api.dto.EsqueciSenhaRequestDTO;
 import forcamente.api.dto.LoginRequestDTO;
+import forcamente.api.dto.RedefinirSenhaRequestDTO;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.TipoCodigoEnum;
 import forcamente.api.exception.CredenciaisInvalidasException;
+import forcamente.api.exception.LimiteDeTentativasException;
 import forcamente.api.repository.IUsuarioRepository;
 import forcamente.api.service.impl.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,9 +30,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthService - login com e-mail e senha")
@@ -42,6 +49,12 @@ class AuthServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private ICodigoVerificacaoService codigoVerificacaoService;
+
+    @Mock
+    private IEmailService emailService;
+
     private final SegurancaConfig segurancaConfig = new SegurancaConfig();
 
     private AuthService authService;
@@ -49,7 +62,7 @@ class AuthServiceTest {
     @BeforeEach
     void configurar() {
         authService = new AuthService(
-                usuarioRepository, passwordEncoder, segurancaConfig.jwtEncoder(SEGREDO), EXPIRACAO_MINUTOS);
+                usuarioRepository, passwordEncoder, segurancaConfig.jwtEncoder(SEGREDO),codigoVerificacaoService, emailService, EXPIRACAO_MINUTOS);
     }
 
     @Test
@@ -107,6 +120,86 @@ class AuthServiceTest {
                 .hasMessage("E-mail ou senha invalidos");
 
         verify(passwordEncoder, never()).matches(any(), any());
+    }
+
+    @Test
+    @DisplayName("deve gerar codigo e enviar e-mail quando o e-mail existe")
+    void deveEnviarCodigoDeRedefinicao() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(codigoVerificacaoService.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA))
+                .thenReturn("1234");
+
+        authService.esqueciSenha(new EsqueciSenhaRequestDTO("  Joao@UMC.br "));
+
+        ArgumentCaptor<String> texto = ArgumentCaptor.forClass(String.class);
+        verify(emailService).enviarAssincrono(eq("joao@umc.br"), anyString(), texto.capture());
+        assertThat(texto.getValue()).contains("1234").contains("15 minutos");
+    }
+
+    @Test
+    @DisplayName("e-mail inexistente nao gera codigo nem envia nada, e nao lanca excecao")
+    void naoDeveRevelarEmailInexistente() {
+        when(usuarioRepository.findByEmail("ninguem@umc.br")).thenReturn(Optional.empty());
+
+        authService.esqueciSenha(new EsqueciSenhaRequestDTO("ninguem@umc.br"));
+
+        verify(codigoVerificacaoService, never()).gerarCodigo(any(), any());
+        verify(emailService, never()).enviarAssincrono(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("usuario inativo recebe a mesma resposta, sem e-mail")
+    void naoDeveEnviarParaUsuarioInativo() {
+        var inativo = umUsuarioAtivo();
+        inativo.setAtivo(false);
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(inativo));
+
+        authService.esqueciSenha(new EsqueciSenhaRequestDTO("joao@umc.br"));
+
+        verify(emailService, never()).enviarAssincrono(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("pedido bloqueado por limite nao vaza o 429 nem envia e-mail")
+    void bloqueioNaoVazaNoPedido() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(codigoVerificacaoService.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA))
+                .thenThrow(new LimiteDeTentativasException("Limite diario"));
+
+        authService.esqueciSenha(new EsqueciSenhaRequestDTO("joao@umc.br"));
+
+        verify(emailService, never()).enviarAssincrono(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("deve trocar o hash da senha quando o codigo e valido")
+    void deveRedefinirSenha() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.encode("NovaSenha@1")).thenReturn("$2a$10$novo");
+
+        authService.redefinirSenha(
+                new RedefinirSenhaRequestDTO("joao@umc.br", "1234", "NovaSenha@1"));
+
+        verify(codigoVerificacaoService)
+                .validarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA, "1234");
+        assertThat(usuario.getSenhaHash()).isEqualTo("$2a$10$novo");
+        verify(usuarioRepository).save(usuario);
+    }
+
+    @Test
+    @DisplayName("redefinicao com e-mail inexistente devolve a mesma mensagem de codigo invalido")
+    void naoDeveRedefinirComEmailInexistente() {
+        when(usuarioRepository.findByEmail("ninguem@umc.br")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.redefinirSenha(
+                new RedefinirSenhaRequestDTO("ninguem@umc.br", "1234", "NovaSenha@1")))
+                .isInstanceOf(CredenciaisInvalidasException.class)
+                .hasMessage("Codigo invalido ou expirado");
+
+        verify(codigoVerificacaoService, never()).validarCodigo(any(), any(), any());
     }
 
     private UsuarioEntity umUsuarioAtivo() {
