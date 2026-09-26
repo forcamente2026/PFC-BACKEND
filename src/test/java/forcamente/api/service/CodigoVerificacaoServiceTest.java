@@ -210,6 +210,35 @@ class CodigoVerificacaoServiceTest {
         assertThat(usuario.getMfaPedidos()).isZero();
         assertThat(usuario.getMfaJanelaInicio()).isNull();
     }
+    @Test
+    @DisplayName("o bloqueio do MFA nao passa de 12 horas, mesmo na 13a ocorrencia")
+    void bloqueioDeMfaTemTetoDeDozeHoras() {
+        for (int i = 0; i < 12; i++) {
+            estourarPedidosDeMfa();
+            relogio.avancar(Duration.ofHours(13));
+        }
+
+        estourarPedidosDeMfa();
+
+        assertThat(usuario.getMfaOcorrenciasBloqueio()).isEqualTo(13);
+        assertThat(usuario.getMfaBloqueadoAte())
+                .isEqualTo(java.time.LocalDateTime.now(relogio).plusHours(12));
+    }
+
+    @Test
+    @DisplayName("ocorrencias de bloqueio caducam 7 dias depois do ultimo bloqueio")
+    void ocorrenciasCaducamEmSeteDias() {
+        estourarPedidosDeMfa();
+        relogio.avancar(Duration.ofHours(2));
+        estourarPedidosDeMfa();
+
+        assertThat(usuario.getMfaOcorrenciasBloqueio()).isEqualTo(2);
+
+        relogio.avancar(Duration.ofDays(7).plusHours(3));
+
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).hasSize(4);
+        assertThat(usuario.getMfaOcorrenciasBloqueio()).isNull();
+    }
 
     private void estourarPedidosDeMfa() {
         for (int i = 0; i < 6; i++) {

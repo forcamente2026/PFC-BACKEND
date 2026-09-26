@@ -36,6 +36,10 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
 
     private static final int REDEFINICAO_BLOQUEIO_HORAS = 4;
 
+    private static final int MFA_BLOQUEIO_MAXIMO_HORAS = 12;
+
+    private static final int MFA_OCORRENCIAS_CADUCAM_DIAS = 7;
+
     private final PasswordEncoder passwordEncoder;
 
     private final Clock clock;
@@ -112,6 +116,7 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
     }
 
     private void contarPedido(UsuarioEntity usuario, TipoCodigoEnum tipo, LocalDateTime agora) {
+
         if (tipo == TipoCodigoEnum.MFA) {
             contarPedidoMfa(usuario, agora);
         } else {
@@ -120,6 +125,8 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
     }
 
     private void contarPedidoMfa(UsuarioEntity usuario, LocalDateTime agora) {
+        caducarOcorrenciasDeBloqueio(usuario, agora);
+
         if (usuario.getMfaJanelaInicio() == null
         || usuario.getMfaJanelaInicio().plusHours(1).isBefore(agora)) {
             usuario.setMfaJanelaInicio(agora);
@@ -127,13 +134,14 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
         }
         if (usuario.getMfaPedidos() >= MFA_PEDIDOS_POR_HORA) {
             int ocorrencias = usuario.getMfaOcorrenciasBloqueio() == null ? 1 : usuario.getMfaOcorrenciasBloqueio() + 1;
+            long horasDeBloqueio = Math.min(ocorrencias, MFA_BLOQUEIO_MAXIMO_HORAS);
             usuario.setMfaOcorrenciasBloqueio(ocorrencias);
-            usuario.setMfaBloqueadoAte(agora.plusHours(ocorrencias));
+            usuario.setMfaBloqueadoAte(agora.plusHours(horasDeBloqueio));
             usuario.setMfaPedidos(0);
             usuario.setMfaJanelaInicio(null);
 
             throw new LimiteDeTentativasException(
-                    "Muitos pedidos de codigo. Tente novamente em " + ocorrencias + " hora(s).");
+                    "Muitos pedidos de codigo. Tente novamente em " + horasDeBloqueio + " hora(s).");
         }
 
         usuario.setMfaPedidos(usuario.getMfaPedidos() + 1);
@@ -185,6 +193,17 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
             usuario.setRedefinicaoBloqueadoAte(null);
         }
     }
+
+    private void caducarOcorrenciasDeBloqueio(UsuarioEntity usuario, LocalDateTime agora) {
+        if (usuario.getMfaBloqueadoAte() == null) {
+            return;
+        }
+        if (usuario.getMfaBloqueadoAte().plusDays(MFA_OCORRENCIAS_CADUCAM_DIAS).isBefore(agora)) {
+            usuario.setMfaOcorrenciasBloqueio(null);
+            usuario.setMfaBloqueadoAte(null);
+        }
+    }
+
 
 
 
