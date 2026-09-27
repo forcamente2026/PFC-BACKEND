@@ -24,13 +24,14 @@ class UsuarioRequestDTOTest {
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     @Test
-    @DisplayName("deve aceitar aluno valido e normalizar CPF, CEP e e-mail")
-    void deveAceitarAlunoValidoENormalizar() {
+    @DisplayName("aluno nao guarda CPF nem endereco, mesmo que sejam enviados")
+    void alunoNaoGuardaCpfNemEndereco() {
         var dto = umAluno("123.456.789-01", "  Joao@UMC.br ", "08780-000", "Senha@123");
 
-        assertThat(dto.cpf()).isEqualTo("12345678901");
         assertThat(dto.email()).isEqualTo("joao@umc.br");
-        assertThat(dto.cep()).isEqualTo("08780000");
+        assertThat(dto.cpf()).isNull();
+        assertThat(dto.cep()).isNull();
+        assertThat(dto.cidade()).isNull();
         assertThat(validar(dto)).isEmpty();
     }
 
@@ -116,6 +117,64 @@ class UsuarioRequestDTOTest {
 
         assertThat(campos(validar(dto))).contains("dadosProfissionaisCoerentes");
     }
+    @Test
+    @DisplayName("deve normalizar CPF e CEP do professor")
+    void deveNormalizarCpfECepDoProfessor() {
+        var dto = new UsuarioRequestDTO(
+                "Maria Souza", "987.654.321-00", LocalDate.of(1990, 5, 20), "maria@umc.br", "Senha@123",
+                PapelUsuarioEnum.PROFESSOR, "123456-G/SP", FormacaoEnum.BACHARELADO, "UMC",
+                "08780-000", "Rua B", "2", null, "Centro", "Mogi das Cruzes", "SP", true, true);
+
+        assertThat(dto.cpf()).isEqualTo("98765432100");
+        assertThat(dto.cep()).isEqualTo("08780000");
+        assertThat(validar(dto)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("deve rejeitar professor sem CPF")
+    void deveRejeitarProfessorSemCpf() {
+        var dto = new UsuarioRequestDTO(
+                "Maria Souza", null, LocalDate.of(1990, 5, 20), "maria@umc.br", "Senha@123",
+                PapelUsuarioEnum.PROFESSOR, "123456-G/SP", FormacaoEnum.BACHARELADO, "UMC",
+                "08780000", "Rua B", "2", null, "Centro", "Mogi das Cruzes", "SP", true, true);
+
+        assertThat(campos(validar(dto))).contains("cpfDoProfessorInformado");
+    }
+
+    @Test
+    @DisplayName("deve rejeitar professor com endereco incompleto")
+    void deveRejeitarProfessorSemEndereco() {
+        var dto = new UsuarioRequestDTO(
+                "Maria Souza", "98765432100", LocalDate.of(1990, 5, 20), "maria@umc.br", "Senha@123",
+                PapelUsuarioEnum.PROFESSOR, "123456-G/SP", FormacaoEnum.BACHARELADO, "UMC",
+                "08780000", null, "2", null, "Centro", "Mogi das Cruzes", "SP", true, true);
+
+        assertThat(campos(validar(dto))).contains("enderecoDoProfessorCompleto");
+    }
+
+    @Test
+    @DisplayName("deve rejeitar quem tem menos de 18 anos")
+    void deveRejeitarMenorDeIdade() {
+        var dto = umAlunoNascidoEm(LocalDate.now().minusYears(17));
+
+        assertThat(campos(validar(dto))).contains("maiorDeIdade");
+    }
+
+    @Test
+    @DisplayName("deve aceitar quem faz 18 anos exatamente hoje")
+    void deveAceitarQuemFezDezoitoHoje() {
+        var dto = umAlunoNascidoEm(LocalDate.now().minusYears(18));
+
+        assertThat(validar(dto)).isEmpty();
+    }
+
+    private UsuarioRequestDTO umAlunoNascidoEm(LocalDate nascimento) {
+        return new UsuarioRequestDTO(
+                "Joao da Silva", null, nascimento, "joao@umc.br", "Senha@123",
+                PapelUsuarioEnum.ALUNO, null, null, null,
+                null, null, null, null, null, null, null, true, true);
+    }
+
 
     private UsuarioRequestDTO umAlunoComAceite(Boolean termos, Boolean privacidade) {
         return new UsuarioRequestDTO(

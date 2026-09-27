@@ -37,7 +37,7 @@ public class UsuarioEntity {
     @Column(name = "nome_completo", nullable = false)
     private String nomeCompleto;
 
-    @Column(name = "cpf", nullable = false, unique = true, length = 11)
+    @Column(name = "cpf", unique = true, length = 11)
     private String cpf;
 
     @Column(name = "email", nullable = false, unique = true)

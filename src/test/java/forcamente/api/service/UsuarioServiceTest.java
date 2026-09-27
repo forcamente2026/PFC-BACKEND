@@ -64,7 +64,6 @@ class UsuarioServiceTest {
         var responseDTO = umaResposta(entity);
 
         when(usuarioRepository.existsByEmail("joao@umc.br")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678901")).thenReturn(false);
         when(usuarioMapper.toEntity(requestDTO)).thenReturn(entity);
         when(usuarioRepository.save(entity)).thenReturn(entity);
         when(usuarioMapper.toDTO(entity)).thenReturn(responseDTO);
@@ -86,7 +85,6 @@ class UsuarioServiceTest {
         var entity = umaEntidade();
 
         when(usuarioRepository.existsByEmail("joao@umc.br")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678901")).thenReturn(false);
         when(usuarioMapper.toEntity(requestDTO)).thenReturn(entity);
         when(usuarioRepository.save(any(UsuarioEntity.class))).thenReturn(entity);
         when(usuarioMapper.toDTO(entity)).thenReturn(umaResposta(entity));
@@ -120,12 +118,12 @@ class UsuarioServiceTest {
     }
 
     @Test
-    @DisplayName("nao deve cadastrar usuario com CPF ja existente")
+    @DisplayName("nao deve cadastrar professor com CPF ja existente")
     void naoDeveCadastrarUsuarioComCpfDuplicado() {
-        var requestDTO = umaRequisicaoValida();
+        var requestDTO = umProfessor("123456-G/SP");
 
-        when(usuarioRepository.existsByEmail("joao@umc.br")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678901")).thenReturn(true);
+        when(usuarioRepository.existsByEmail("maria@umc.br")).thenReturn(false);
+        when(usuarioRepository.existsByCpf("98765432100")).thenReturn(true);
 
         assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
                 .isInstanceOf(ConflitoException.class)
@@ -181,7 +179,6 @@ class UsuarioServiceTest {
         var entity = umaEntidade();
 
         when(usuarioRepository.existsByEmail("joao@umc.br")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678901")).thenReturn(false);
         when(usuarioMapper.toEntity(requestDTO)).thenReturn(entity);
         when(usuarioRepository.save(any(UsuarioEntity.class))).thenReturn(entity);
         when(usuarioMapper.toDTO(entity)).thenReturn(umaResposta(entity));
@@ -205,7 +202,7 @@ class UsuarioServiceTest {
     private UsuarioRequestDTO umaRequisicaoValida() {
         return new UsuarioRequestDTO(
                 "Joao da Silva",
-                "12345678901",
+                null,
                 LocalDate.of(2000,1,1),
                 "joao@umc.br",
                 "Senha@123",

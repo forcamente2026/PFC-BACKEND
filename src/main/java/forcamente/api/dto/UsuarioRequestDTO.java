@@ -12,7 +12,7 @@ public record UsuarioRequestDTO(
         @NotBlank(message = "O nome completo e obrigatorio")
         String nomeCompleto,
 
-        @NotBlank(message = "O CPF e obrigatorio")
+
         @Pattern(regexp = "\\d{11}", message = "O CPF deve conter 11 digitos, apenas numeros")
         String cpf,
 
@@ -65,6 +65,8 @@ public record UsuarioRequestDTO(
         Boolean aceitouPoliticaPrivacidade
 ){
 
+
+
         public UsuarioRequestDTO{
                 nomeCompleto = nomeCompleto == null ? null : nomeCompleto.trim();
                 cpf = somenteDigitos(cpf);
@@ -79,18 +81,48 @@ public record UsuarioRequestDTO(
                         cref = null;
                         formacao= null;
                         instituicao = null;
+                        cpf = null;
+                        cep = null;
+                        logradouro = null;
+                        numero = null;
+                        complemento = null;
+                        bairro = null;
+                        cidade = null;
+                        estado = null;
 
                 }
         }
 
         @AssertTrue(message = "CREF, formacao e instituicao sao obrigatorios para professor")
         public boolean isDadosProfissionaisCoerentes() {
-
                 if (papel != PapelUsuarioEnum.PROFESSOR) {
                         return true;
                 }
-                return cref != null && !cref.isBlank() && formacao != null && instituicao != null && !instituicao.isBlank();
+                return preenchido(cref) && formacao != null && preenchido(instituicao);
+        }
 
+        @AssertTrue(message = "O CPF e obrigatorio para professor")
+        public boolean isCpfDoProfessorInformado() {
+                return papel != PapelUsuarioEnum.PROFESSOR || preenchido(cpf);
+        }
+
+        @AssertTrue(message = "O endereco completo e obrigatorio para professor")
+        public boolean isEnderecoDoProfessorCompleto() {
+                if (papel != PapelUsuarioEnum.PROFESSOR) {
+                        return true;
+                }
+                return preenchido(cep) && preenchido(logradouro) && preenchido(numero) && preenchido(bairro) && preenchido(cidade) && preenchido(estado);
+        }
+
+        @AssertTrue(message = "E necessario ter 18 anos ou mais para se cadastrar")
+        public boolean isMaiorDeIdade() {
+                if (dataNascimento == null) {
+                        return true;
+                }
+                return !dataNascimento.isAfter(LocalDate.now().minusYears(18));
+        }
+        private static boolean preenchido(String valor) {
+                return valor != null && !valor.isBlank();
         }
 
         private static String somenteDigitos(String valor) {
