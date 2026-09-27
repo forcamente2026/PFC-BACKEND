@@ -1,6 +1,7 @@
 package forcamente.api.dto;
 
-import forcamente.api.entity.enums.CategoriaProfissionalEnum;
+
+import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import jakarta.validation.constraints.*;
 
@@ -33,7 +34,10 @@ public record UsuarioRequestDTO(
 
         @Pattern(regexp = "\\d{6}-[A-Z]/[A-Z]{2}", message = "O CREF deve estar no formato 123456-G/SP")
         String cref,
-        CategoriaProfissionalEnum categoriaProfissional,
+        FormacaoEnum formacao,
+
+        @Size(max = 120, message = "A instituicao deve ter no maximo 120 caracteres")
+        String instituicao,
 
         @Pattern(regexp = "\\d{8}", message = "O CEP deve conter 8 digitos, apenas numeros")
         String cep,
@@ -66,23 +70,26 @@ public record UsuarioRequestDTO(
                 cpf = somenteDigitos(cpf);
                 email = email == null ? null : email.trim().toLowerCase();
                 cep = somenteDigitos(cep);
+                instituicao = instituicao == null ? null : instituicao.trim();
 
                 if (papel == PapelUsuarioEnum.PROFESSOR){
                         cref = cref == null ? null :cref.trim().toUpperCase();
 
                 }else {
                         cref = null;
-                        categoriaProfissional= null;
+                        formacao= null;
+                        instituicao = null;
 
                 }
         }
 
-        @AssertTrue(message = "CREF e categoria profissional sao obrigatorios para professor")
+        @AssertTrue(message = "CREF, formacao e instituicao sao obrigatorios para professor")
         public boolean isDadosProfissionaisCoerentes() {
+
                 if (papel != PapelUsuarioEnum.PROFESSOR) {
                         return true;
                 }
-                return cref != null && !cref.isBlank() && categoriaProfissional() != null;
+                return cref != null && !cref.isBlank() && formacao != null && instituicao != null && !instituicao.isBlank();
 
         }
 

@@ -1,6 +1,7 @@
 package forcamente.api.entity;
 
-import forcamente.api.entity.enums.CategoriaProfissionalEnum;
+
+import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.TipoCodigoEnum;
 import jakarta.persistence.Column;
@@ -56,8 +57,11 @@ public class UsuarioEntity {
     private String cref;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "categoria_profissional", length = 40)
-    private CategoriaProfissionalEnum categoriaProfissional;
+    @Column(name = "Formacao", length = 20)
+    private FormacaoEnum formacao;
+
+    @Column(name = "instituicao", length = 120)
+    private String instituicao;
 
     @Column(name = "aceitou_termos_uso_em")
     private LocalDateTime aceitouTermosUsoEm;

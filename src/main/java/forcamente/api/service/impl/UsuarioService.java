@@ -4,7 +4,7 @@ import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.entity.UsuarioEntity;
-import forcamente.api.entity.enums.CategoriaProfissionalEnum;
+import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.TipoDocumentoLegalEnum;
 import forcamente.api.exception.ConflitoException;
@@ -87,9 +87,9 @@ public class UsuarioService implements IUsuarioService {
     }
 
     @Override
-    public List<OpcaoDTO> listarCategoriasProfissionais() {
-        log.info("listarCategoriasProfissionais");
-        return Arrays.stream(CategoriaProfissionalEnum.values()).map(categoria -> new OpcaoDTO(categoria.name(), categoria.getDescricao())).toList();
+    public List<OpcaoDTO> listarFormacoes() {
+        log.info("listarFormacoes");
+        return Arrays.stream(FormacaoEnum.values()).map(formacao -> new OpcaoDTO(formacao.name(), formacao.getDescricao() )).toList();
     }
 
     private void registrarAceites(UsuarioEntity usuarioEntity){

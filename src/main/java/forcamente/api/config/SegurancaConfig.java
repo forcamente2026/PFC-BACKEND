@@ -67,6 +67,7 @@ public class SegurancaConfig {
                         .requestMatchers(HttpMethod.POST, "/api/exercicios/**").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.PUT, "/api/exercicios/**").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.DELETE, "/api/exercicios/**").hasAnyRole(EDITORES)
+                        .requestMatchers(HttpMethod.GET,"/api/usuarios/formacoes").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(recurso -> recurso
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(conversor))

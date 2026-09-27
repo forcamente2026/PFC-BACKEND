@@ -64,10 +64,11 @@ class SegurancaRotasTest {
     }
 
     @Test
-    @DisplayName("categorias profissionais deixou de ser publica")
-    void categoriasProfissionaisExigeToken() throws Exception {
-        mockMvc.perform(get("/api/usuarios/categorias-profissionais"))
-                .andExpect(status().isUnauthorized());
+    @DisplayName("formacoes e publica: a tela de cadastro precisa dela antes do login")
+    void formacoesEhPublica() throws Exception {
+        mockMvc.perform(get("/api/usuarios/formacoes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
     }
 
     private String tokenDeTeste(String papel) {

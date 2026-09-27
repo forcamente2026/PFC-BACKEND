@@ -37,9 +37,9 @@ public class UsuarioController {
         return ResponseEntity.created(location).body(usuarioResponseDTO);
     }
 
-    @GetMapping("/categorias-profissionais")
-    public ResponseEntity<List<OpcaoDTO>> listarCategoriasProfissionais() {
-        return ResponseEntity.ok(usuarioService.listarCategoriasProfissionais());
+    @GetMapping("/formacoes")
+    public ResponseEntity<List<OpcaoDTO>> listarFormacoes() {
+        return ResponseEntity.ok(usuarioService.listarFormacoes());
     }
 
     @GetMapping("/{id}")

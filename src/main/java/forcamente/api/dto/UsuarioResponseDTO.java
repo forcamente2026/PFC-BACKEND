@@ -1,6 +1,7 @@
 package forcamente.api.dto;
 
-import forcamente.api.entity.enums.CategoriaProfissionalEnum;
+
+import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 
 import java.time.LocalDateTime;
@@ -12,7 +13,8 @@ public record UsuarioResponseDTO(
         String email,
         PapelUsuarioEnum papel,
         String cref,
-        CategoriaProfissionalEnum categoriaProfissional,
+        FormacaoEnum formacao,
+        String instituicao,
         String cidade,
         String estado,
         boolean ativo,

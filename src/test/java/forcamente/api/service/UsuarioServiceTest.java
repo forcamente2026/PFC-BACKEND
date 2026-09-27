@@ -2,7 +2,7 @@ package forcamente.api.service;
 
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
-import forcamente.api.entity.enums.CategoriaProfissionalEnum;
+import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.TipoDocumentoLegalEnum;
@@ -166,13 +166,13 @@ class UsuarioServiceTest {
     }
 
     @Test
-    @DisplayName("deve listar as cinco categorias profissionais como codigo e descricao")
-    void deveListarCategoriasProfissionais() {
-        var resultado = usuarioService.listarCategoriasProfissionais();
+    @DisplayName("deve listar as duas formacoes como codigo e descricao")
+    void deveListarFormacoes() {
+        var resultado = usuarioService.listarFormacoes();
 
-        assertThat(resultado).hasSize(5);
-        assertThat(resultado.getFirst().codigo()).isEqualTo("ACADEMIAS_E_CENTROS_DE_TREINAMENTO");
-        assertThat(resultado.getFirst().descricao()).isEqualTo("Academias e Centros de Treinamento");
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado.getFirst().codigo()).isEqualTo("BACHARELADO");
+        assertThat(resultado.getFirst().descricao()).isEqualTo("Bacharelado em Educação Física");
     }
     @Test
     @DisplayName("deve registrar data e versao do aceite dos dois documentos")
@@ -212,6 +212,7 @@ class UsuarioServiceTest {
                 PapelUsuarioEnum.ALUNO,
                 null,
                 null,
+                null,
                 "08780000",
                 "Rua das Palmeiras",
                 "100",
@@ -231,6 +232,7 @@ class UsuarioServiceTest {
                 "joao@umc.br",
                 "Senha@123",
                 papel,
+                null,
                 null,
                 null,
                 "08780000",
@@ -254,7 +256,8 @@ class UsuarioServiceTest {
                 "Senha@123",
                 PapelUsuarioEnum.PROFESSOR,
                 cref,
-                CategoriaProfissionalEnum.TREINAMENTO_ESPORTIVO,
+                FormacaoEnum.BACHARELADO,
+                "Universidade de Mogi das Cruzes",
                 "08780000",
                 "Rua B",
                 "2",
@@ -290,7 +293,8 @@ class UsuarioServiceTest {
                 entity.getEmail(),
                 entity.getPapel(),
                 entity.getCref(),
-                entity.getCategoriaProfissional(),
+                entity.getFormacao(),
+                entity.getInstituicao(),
                 entity.getCidade(),
                 entity.getEstado(),
                 entity.isAtivo(),

@@ -13,5 +13,5 @@ public interface IUsuarioService {
 
     UsuarioResponseDTO buscarPorId(UUID usuarioId);
 
-    List<OpcaoDTO> listarCategoriasProfissionais();
+    List<OpcaoDTO> listarFormacoes();
 }
