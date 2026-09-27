@@ -185,7 +185,7 @@ public class AuthService  implements IAuthService {
                 AcaoAuditoriaEnum.LOGIN_REALIZADO, RecursoAuditoriaEnum.USUARIO,
                 usuario.getId(), usuario.getId());
 
-        return new LoginResponseDTO(gerarToken(usuario), usuario.getNomeCompleto(),usuario.getPapel());
+        return new LoginResponseDTO(usuario.getId(), gerarToken(usuario), usuario.getNomeCompleto(), usuario.getPapel());
 
     }
 }

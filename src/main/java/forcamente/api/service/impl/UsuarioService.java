@@ -1,6 +1,9 @@
 package forcamente.api.service.impl;
 
 import forcamente.api.dto.OpcaoDTO;
+import forcamente.api.dto.PaginaDTO;
+import forcamente.api.dto.UsuarioAdminResponseDTO;
+import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.entity.UsuarioEntity;
@@ -19,6 +22,8 @@ import forcamente.api.service.IDocumentoLegalService;
 import forcamente.api.service.IUsuarioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,10 +65,6 @@ public class UsuarioService implements IUsuarioService {
             throw new ConflitoException(
                     "Ja existe um usuario cadastrado com o e-mail: " + usuarioRequestDTO.email());
         }
-        if (usuarioRequestDTO.cpf() != null && usuarioRepository.existsByCpf(usuarioRequestDTO.cpf())) {
-            throw new ConflitoException("Ja existe um usuario cadastrado com este CPF");
-        }
-
         if (usuarioRequestDTO.cref() != null && usuarioRepository.existsByCref(usuarioRequestDTO.cref())) {
             throw new ConflitoException("Ja existe um professor cadastrado com este CREF");
         }
@@ -102,6 +103,121 @@ public class UsuarioService implements IUsuarioService {
     public List<OpcaoDTO> listarFormacoes() {
         log.info("listarFormacoes");
         return Arrays.stream(FormacaoEnum.values()).map(formacao -> new OpcaoDTO(formacao.name(), formacao.getDescricao() )).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaDTO<UsuarioAdminResponseDTO> listar(
+            String busca, PapelUsuarioEnum papel, Boolean ativo, int pagina, int tamanho) {
+
+        log.info("listar usuarios: busca={} papel={} ativo={}", busca, papel, ativo);
+
+        String termo = (busca == null || busca.isBlank()) ? null : busca.trim();
+
+        Page<UsuarioEntity> resultado = usuarioRepository.buscarComFiltros(
+                papel, ativo, termo, PageRequest.of(pagina, tamanho));
+
+        auditoriaService.registrar(AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.USUARIO, null);
+
+        return new PaginaDTO<>(
+                resultado.getContent().stream().map(usuarioMapper::toAdminDTO).toList(),
+                resultado.getNumber(),
+                resultado.getSize(),
+                resultado.getTotalElements(),
+                resultado.getTotalPages());
+    }
+
+    @Override
+    @Transactional
+    public UsuarioAdminResponseDTO atualizar(UUID usuarioId, UsuarioAtualizacaoRequestDTO dados) {
+        log.info("atualizar usuario: {}", usuarioId);
+
+        UsuarioEntity usuario = buscarEntidade(usuarioId);
+
+        if (usuario.getAnonimizadoEm() != null) {
+            throw new RegraDeNegocioException(
+                    "Conta anonimizada nao pode ser editada: os dados pessoais foram apagados");
+        }
+
+        if (usuarioRepository.existsByEmailAndIdNot(dados.email(), usuarioId)) {
+            throw new ConflitoException("Ja existe um usuario cadastrado com o e-mail: " + dados.email());
+        }
+
+        usuario.setNomeCompleto(dados.nomeCompleto());
+        usuario.setEmail(dados.email());
+
+        if (usuario.getPapel() == PapelUsuarioEnum.PROFESSOR) {
+            exigirDadosDeProfessor(dados);
+
+            if (usuarioRepository.existsByCrefAndIdNot(dados.cref(), usuarioId)) {
+                throw new ConflitoException("Ja existe um professor cadastrado com este CREF");
+            }
+
+            usuario.setCref(dados.cref());
+            usuario.setFormacao(dados.formacao());
+            usuario.setCep(dados.cep());
+            usuario.setLogradouro(dados.logradouro());
+            usuario.setNumero(dados.numero());
+            usuario.setComplemento(dados.complemento());
+            usuario.setBairro(dados.bairro());
+            usuario.setCidade(dados.cidade());
+            usuario.setEstado(dados.estado());
+        }
+
+        UsuarioEntity salvo = usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
+
+        return usuarioMapper.toAdminDTO(salvo);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioAdminResponseDTO alterarAtivo(UUID usuarioId, boolean ativo, UUID solicitanteId) {
+        log.info("alterarAtivo: usuario={} ativo={}", usuarioId, ativo);
+
+        if (!ativo && usuarioId.equals(solicitanteId)) {
+            throw new RegraDeNegocioException("Voce nao pode inativar a propria conta");
+        }
+
+        UsuarioEntity usuario = buscarEntidade(usuarioId);
+
+        if (usuario.getAnonimizadoEm() != null) {
+            throw new RegraDeNegocioException(
+                    "Conta anonimizada nao volta a ficar ativa: a anonimizacao e irreversivel");
+        }
+
+        usuario.setAtivo(ativo);
+
+        UsuarioEntity salvo = usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
+
+        return usuarioMapper.toAdminDTO(salvo);
+    }
+
+    private UsuarioEntity buscarEntidade(UUID usuarioId) {
+        return usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                        "Usuario nao encontrado: " + usuarioId));
+    }
+
+    private void exigirDadosDeProfessor(UsuarioAtualizacaoRequestDTO dados) {
+        if (!preenchido(dados.cref()) || dados.formacao() == null) {
+            throw new RegraDeNegocioException("CREF e formacao sao obrigatorios para professor");
+        }
+
+        if (!preenchido(dados.cep()) || !preenchido(dados.logradouro())
+                || !preenchido(dados.numero()) || !preenchido(dados.bairro())
+                || !preenchido(dados.cidade()) || !preenchido(dados.estado())) {
+            throw new RegraDeNegocioException("O endereco completo e obrigatorio para professor");
+        }
+    }
+
+    private static boolean preenchido(String valor) {
+        return valor != null && !valor.isBlank();
     }
 
     private void registrarAceites(UsuarioEntity usuarioEntity){

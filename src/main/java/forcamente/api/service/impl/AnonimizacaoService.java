@@ -83,12 +83,10 @@ public class AnonimizacaoService implements IAnonimizacaoService {
         usuario.setNomeCompleto(NOME_ANONIMO);
         usuario.setEmail("anonimizado-" + usuario.getId() + "@forcamente.invalid");
         usuario.setSenhaHash(passwordEncoder.encode(UUID.randomUUID().toString()));
-        usuario.setCpf(null);
         usuario.setDataNascimento(null);
 
         usuario.setCref(null);
         usuario.setFormacao(null);
-        usuario.setInstituicao(null);
 
         usuario.setCep(null);
         usuario.setLogradouro(null);

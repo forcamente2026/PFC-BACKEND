@@ -267,7 +267,6 @@ class AuthServiceTest {
         var entity = new UsuarioEntity();
         entity.setId(UUID.randomUUID());
         entity.setNomeCompleto("Joao da Silva");
-        entity.setCpf("12345678901");
         entity.setDataNascimento(LocalDate.of(2000, 1, 1));
         entity.setEmail("joao@umc.br");
         entity.setSenhaHash("$2a$10$hash");

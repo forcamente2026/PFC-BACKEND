@@ -22,14 +22,14 @@ public class EnderecoService implements IEnderecoService {
         String apenasDigitos = cep == null ? "" : cep.replaceAll("\\D", "");
 
         if (apenasDigitos.length() != 8) {
-            throw new RegraDeNegocioException("O CEP deve conter 8 digitos");
+            throw new RegraDeNegocioException("O CEP deve conter 8 dígitos");
         }
         log.info("buscarPorCep: {}", apenasDigitos);
 
         ViaCepResponseDTO resposta = viaCepClient.buscar(apenasDigitos);
 
         if (resposta == null || Boolean.TRUE.equals(resposta.erro())) {
-            throw new RecursoNaoEncontradoException("Endereco nao encontrado para o CEP: " + cep);
+            throw new RecursoNaoEncontradoException("Endereço não encontrado para o CEP: " + cep);
         }
 
         return new EnderecoResponseDTO(

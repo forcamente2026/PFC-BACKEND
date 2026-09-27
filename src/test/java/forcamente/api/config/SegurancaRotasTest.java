@@ -21,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -103,9 +104,87 @@ class SegurancaRotasTest {
     }
 
     @Test
+    @DisplayName("o CSV comeca com a BOM do UTF-8, senao o Excel em portugues troca os acentos")
+    void csvComecaComBomDeUtf8() throws Exception {
+        byte[] corpo = mockMvc.perform(get("/api/auditoria/csv")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ADMINISTRADOR")))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+
+        assertThat(corpo).startsWith((byte) 0xEF, (byte) 0xBB, (byte) 0xBF);
+    }
+
+    @Test
     @DisplayName("aluno nao pode exportar a trilha")
     void alunoNaoPodeExportarCsv() throws Exception {
         mockMvc.perform(get("/api/auditoria/csv")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ALUNO")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("aluno nao pode listar os usuarios do sistema")
+    void alunoNaoPodeListarUsuarios() throws Exception {
+        mockMvc.perform(get("/api/usuarios")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ALUNO")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("professor tambem nao: gestao de usuarios e so do administrador")
+    void professorNaoPodeListarUsuarios() throws Exception {
+        mockMvc.perform(get("/api/usuarios")
+                        .header("Authorization", "Bearer " + tokenDeTeste("PROFESSOR")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("administrador lista usuarios com o envelope de pagina")
+    void administradorPodeListarUsuarios() throws Exception {
+        mockMvc.perform(get("/api/usuarios")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ADMINISTRADOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.conteudo").isArray())
+                .andExpect(jsonPath("$.pagina").value(0))
+                .andExpect(jsonPath("$.totalDePaginas").isNumber());
+    }
+
+    @Test
+    @DisplayName("a lista de usuarios nunca devolve hash de senha")
+    void listaDeUsuariosNaoDevolveSenha() throws Exception {
+        String corpo = mockMvc.perform(get("/api/usuarios")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ADMINISTRADOR")))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(corpo).doesNotContain("senha");
+        assertThat(corpo).doesNotContain("$2a$");
+    }
+
+    @Test
+    @DisplayName("aluno nao pode editar usuario")
+    void alunoNaoPodeEditarUsuario() throws Exception {
+        mockMvc.perform(put("/api/usuarios/" + UUID.randomUUID())
+                        .header("Authorization", "Bearer " + tokenDeTeste("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("aluno nao pode trancar nem destrancar conta de ninguem")
+    void alunoNaoPodeAlterarAtivo() throws Exception {
+        mockMvc.perform(patch("/api/usuarios/" + UUID.randomUUID() + "/ativo")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ativo\": false}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("aluno nao le os dados de outra conta: 403 antes de chegar ao banco")
+    void alunoNaoLeOutraConta() throws Exception {
+        mockMvc.perform(get("/api/usuarios/" + UUID.randomUUID())
                         .header("Authorization", "Bearer " + tokenDeTeste("ALUNO")))
                 .andExpect(status().isForbidden());
     }

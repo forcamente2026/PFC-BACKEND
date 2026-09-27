@@ -10,11 +10,13 @@ import forcamente.api.entity.enums.TipoDocumentoLegalEnum;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -106,6 +108,42 @@ class TratadorDeErrosTest {
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
         assertThat(resposta.getBody().message()).contains("indisponivel");
     }
+
+    @Test
+    @DisplayName("violacao de integridade vira 409 e nao leva o SQL nem o hash da senha para a resposta")
+    void deveResponder409SemVazarOSql() {
+        var excecao = new DataIntegrityViolationException(
+                "ERROR: null value in column \"cpf\" of relation \"usuarios\" violates not-null constraint; "
+                + "Detail: Failing row contains (a1b2, Joao da Silva, null, joao@umc.br, "
+                + "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy, ALUNO, ...)");
+
+        var resposta = tratador.tratarViolacaoDeIntegridade(excecao);
+
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(resposta.getBody().message())
+                .doesNotContain("usuarios")
+                .doesNotContain("not-null")
+                .doesNotContain("$2a$10$");
+        assertThat(resposta.getBody().campos()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("erro inesperado vira 500 com frase generica, sem a mensagem interna da excecao")
+    void deveResponder500SemVazarDetalheInterno() {
+        var resposta = tratador.tratarErroInesperado(
+                new IllegalStateException("conexao jdbc:postgresql://localhost:5432/forcamente recusada"));
+
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(resposta.getBody().message()).doesNotContain("jdbc:postgresql");
+        assertThat(resposta.getBody().message()).doesNotContain("localhost");
+    }
+
+    @Test
+    @DisplayName("o tratador generico nao rebaixa para 500 o que o Spring MVC ja classificou")
+    void deveManterOStatusDoSpringMvc() {
+        var resposta = tratador.tratarErroInesperado(
+                new HttpRequestMethodNotSupportedException("POST"));
+
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+    }
 }
-
-

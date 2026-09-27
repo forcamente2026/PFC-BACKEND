@@ -20,11 +20,11 @@ class UsuarioMapperTest {
     private final UsuarioMapper mapper = Mappers.getMapper(UsuarioMapper.class);
 
     @Test
-    @DisplayName("deve copiar nascimento, CREF, formacao e instituicao")
+    @DisplayName("deve copiar nascimento, CREF e formacao")
     void deveMapearRequestParaEntity() {
         var request = new UsuarioRequestDTO(
-                "Maria Souza", "98765432100", LocalDate.of(1990, 5, 20), "maria@umc.br", "Senha@123",
-                PapelUsuarioEnum.PROFESSOR, "123456-G/SP", FormacaoEnum.BACHARELADO, "Universidade de Mogi das Cruzes",
+                "Maria Souza", LocalDate.of(1990, 5, 20), "maria@umc.br", "Senha@123",
+                PapelUsuarioEnum.PROFESSOR, "123456-G/SP", FormacaoEnum.BACHARELADO,
                 "08780000", "Rua B", "2", null, "Centro", "Mogi das Cruzes", "SP", true, true);
 
         var entity = mapper.toEntity(request);
@@ -34,7 +34,6 @@ class UsuarioMapperTest {
         assertThat(entity.getDataNascimento()).isEqualTo(LocalDate.of(1990, 5, 20));
         assertThat(entity.getCref()).isEqualTo("123456-G/SP");
         assertThat(entity.getFormacao()).isEqualTo(FormacaoEnum.BACHARELADO);
-        assertThat(entity.getInstituicao()).isEqualTo("Universidade de Mogi das Cruzes");
         assertThat(entity.isAtivo()).isTrue();
         assertThat(entity.getCriadoEm()).isNotNull();
         assertThat(entity.getAceitouTermosUsoEm()).isNull();
@@ -42,19 +41,17 @@ class UsuarioMapperTest {
     }
 
     @Test
-    @DisplayName("deve devolver CREF e categoria na resposta e nunca CPF nem senha")
+    @DisplayName("deve devolver CREF e formacao na resposta e nunca a senha")
     void deveMapearEntityParaResponse() {
         var entity = new UsuarioEntity();
         entity.setId(UUID.randomUUID());
         entity.setNomeCompleto("Maria Souza");
-        entity.setCpf("98765432100");
         entity.setEmail("maria@umc.br");
         entity.setSenhaHash("$2a$10$hash");
         entity.setPapel(PapelUsuarioEnum.PROFESSOR);
         entity.setDataNascimento(LocalDate.of(1990, 5, 20));
         entity.setCref("123456-G/SP");
         entity.setFormacao(FormacaoEnum.LICENCIATURA);
-        entity.setInstituicao("Universidade de Mogi das Cruzes");
         entity.setAtivo(true);
         entity.setCriadoEm(LocalDateTime.now());
 
@@ -63,7 +60,6 @@ class UsuarioMapperTest {
         assertThat(response.id()).isEqualTo(entity.getId());
         assertThat(response.cref()).isEqualTo("123456-G/SP");
         assertThat(response.formacao()).isEqualTo(FormacaoEnum.LICENCIATURA);
-        assertThat(response.instituicao()).isEqualTo("Universidade de Mogi das Cruzes");
         assertThat(response).hasNoNullFieldsOrPropertiesExcept("cidade", "estado");
     }
 }

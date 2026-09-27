@@ -66,7 +66,7 @@ class EnderecoServiceTest {
 
         assertThatThrownBy(() -> enderecoService.buscarPorCep("99999999"))
                 .isInstanceOf(RecursoNaoEncontradoException.class)
-                .hasMessageContaining("nao encontrado");
+                .hasMessageContaining("não encontrado");
     }
 
     @Test
@@ -74,7 +74,7 @@ class EnderecoServiceTest {
     void deveRejeitarCepMalFormadoSemChamarOViaCep() {
         assertThatThrownBy(() -> enderecoService.buscarPorCep("123"))
                 .isInstanceOf(RegraDeNegocioException.class)
-                .hasMessageContaining("8 digitos");
+                .hasMessageContaining("8 dígitos");
 
         verify(viaCepClient, never()).buscar(any());
     }

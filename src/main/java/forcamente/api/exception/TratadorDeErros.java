@@ -6,12 +6,14 @@ import forcamente.api.dto.CampoErroDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mail.MailException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.ErrorResponse;
 
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -85,6 +87,26 @@ public class TratadorDeErros {
     @ExceptionHandler(ServicoIndisponivelException.class)
     public ResponseEntity<ApiErroDTO> tratarServicoIndisponivel(ServicoIndisponivelException ex) {
         return responder(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErroDTO> tratarViolacaoDeIntegridade(DataIntegrityViolationException ex) {
+        log.error("Violacao de integridade no banco", ex);
+        return responder(HttpStatus.CONFLICT,
+                "A operacao conflita com um dado ja existente ou com uma regra do banco", List.of());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErroDTO> tratarErroInesperado(Exception ex) {
+        if (ex instanceof ErrorResponse erroDoSpring) {
+            HttpStatus status = HttpStatus.valueOf(erroDoSpring.getStatusCode().value());
+            log.warn("Requisicao recusada pelo Spring MVC: {} - {}", status, ex.getClass().getSimpleName());
+            return responder(status, "Requisicao invalida para este recurso", List.of());
+        }
+
+        log.error("Erro inesperado nao tratado", ex);
+        return responder(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Erro interno no servidor. Tente novamente mais tarde", List.of());
     }
 
     private ResponseEntity<ApiErroDTO> responder(HttpStatus status, String message,

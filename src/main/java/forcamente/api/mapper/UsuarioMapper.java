@@ -1,5 +1,6 @@
 package forcamente.api.mapper;
 
+import forcamente.api.dto.UsuarioAdminResponseDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.entity.UsuarioEntity;
@@ -23,4 +24,6 @@ public interface UsuarioMapper {
 
 
     UsuarioResponseDTO toDTO(UsuarioEntity usuarioEntity);
+
+    UsuarioAdminResponseDTO toAdminDTO(UsuarioEntity usuarioEntity);
 }

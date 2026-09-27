@@ -120,37 +120,6 @@ class UsuarioServiceTest {
         verify(usuarioRepository, never()).save(any(UsuarioEntity.class));
     }
 
-    @Test
-    @DisplayName("aluno sem CPF nao dispara a consulta de CPF duplicado")
-    void naoDeveConsultarCpfQuandoAlunoNaoInforma() {
-        var requestDTO = umaRequisicaoValida();
-        var entity = umaEntidade();
-
-        when(usuarioRepository.existsByEmail("joao@umc.br")).thenReturn(false);
-        when(usuarioMapper.toEntity(requestDTO)).thenReturn(entity);
-        when(usuarioRepository.save(entity)).thenReturn(entity);
-        when(usuarioMapper.toDTO(entity)).thenReturn(umaResposta(entity));
-
-        usuarioService.criarUsuario(requestDTO);
-
-        verify(usuarioRepository, never()).existsByCpf(any());
-    }
-
-    @Test
-    @DisplayName("nao deve cadastrar professor com CPF ja existente")
-    void naoDeveCadastrarUsuarioComCpfDuplicado() {
-        var requestDTO = umProfessor("123456-G/SP");
-
-        when(usuarioRepository.existsByEmail("maria@umc.br")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("98765432100")).thenReturn(true);
-
-        assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
-                .isInstanceOf(ConflitoException.class)
-                .hasMessageContaining("CPF");
-
-        verify(usuarioRepository, never()).save(any(UsuarioEntity.class));
-    }
-
 
 
     @Test
@@ -172,7 +141,6 @@ class UsuarioServiceTest {
         var requestDTO = umProfessor("123456-G/SP");
 
         when(usuarioRepository.existsByEmail("maria@umc.br")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("98765432100")).thenReturn(false);
         when(usuarioRepository.existsByCref("123456-G/SP")).thenReturn(true);
 
         assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
@@ -221,12 +189,10 @@ class UsuarioServiceTest {
     private UsuarioRequestDTO umaRequisicaoValida() {
         return new UsuarioRequestDTO(
                 "Joao da Silva",
-                null,
                 LocalDate.of(2000,1,1),
                 "joao@umc.br",
                 "Senha@123",
                 PapelUsuarioEnum.ALUNO,
-                null,
                 null,
                 null,
                 "08780000",
@@ -243,12 +209,10 @@ class UsuarioServiceTest {
     private UsuarioRequestDTO umaRequisicaoComPapel(PapelUsuarioEnum papel) {
         return new UsuarioRequestDTO(
                 "Joao da Silva",
-                "12345678901",
                 LocalDate.of(2000, 1, 1),
                 "joao@umc.br",
                 "Senha@123",
                 papel,
-                null,
                 null,
                 null,
                 "08780000",
@@ -266,14 +230,12 @@ class UsuarioServiceTest {
     private UsuarioRequestDTO umProfessor(String cref) {
         return new UsuarioRequestDTO(
                 "Maria Souza",
-                "98765432100",
                 LocalDate.of(1990,5,20),
                 "maria@umc.br",
                 "Senha@123",
                 PapelUsuarioEnum.PROFESSOR,
                 cref,
                 FormacaoEnum.BACHARELADO,
-                "Universidade de Mogi das Cruzes",
                 "08780000",
                 "Rua B",
                 "2",
@@ -291,7 +253,6 @@ class UsuarioServiceTest {
         var entity = new UsuarioEntity();
         entity.setId(UUID.randomUUID());
         entity.setNomeCompleto("Joao da Silva");
-        entity.setCpf("12345678901");
         entity.setDataNascimento(LocalDate.of(2000, 1, 1));
         entity.setEmail("joao@umc.br");
         entity.setPapel(PapelUsuarioEnum.ALUNO);
@@ -310,7 +271,6 @@ class UsuarioServiceTest {
                 entity.getPapel(),
                 entity.getCref(),
                 entity.getFormacao(),
-                entity.getInstituicao(),
                 entity.getCidade(),
                 entity.getEstado(),
                 entity.isAtivo(),

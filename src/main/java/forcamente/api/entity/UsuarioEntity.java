@@ -37,9 +37,6 @@ public class UsuarioEntity {
     @Column(name = "nome_completo", nullable = false)
     private String nomeCompleto;
 
-    @Column(name = "cpf", unique = true, length = 11)
-    private String cpf;
-
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
@@ -50,18 +47,15 @@ public class UsuarioEntity {
     @Column(name = "papel", nullable = false, length = 20)
     private PapelUsuarioEnum papel;
 
-    @Column(name = "data_nascimento")
+    @Column(name = "data_nascimento", nullable = false)
     private LocalDate dataNascimento;
 
     @Column(name = "cref", length = 11, unique = true)
     private String cref;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Formacao", length = 20)
+    @Column(name = "formacao", length = 20)
     private FormacaoEnum formacao;
-
-    @Column(name = "instituicao", length = 120)
-    private String instituicao;
 
     @Column(name = "aceitou_termos_uso_em")
     private LocalDateTime aceitouTermosUsoEm;

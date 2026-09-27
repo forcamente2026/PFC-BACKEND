@@ -21,7 +21,7 @@ public class ViaCepClient {
                     .body(ViaCepResponseDTO.class);
         } catch (RestClientException excecao) {
             log.error("Falha ao consultar o ViaCEP para o CEP {}", cep, excecao);
-            throw new ServicoIndisponivelException("Servico de consulta de CEP indisponivel no momento, tente mais tarde");
+            throw new ServicoIndisponivelException("Serviço de consulta de CEP indisponível no momento, tente mais tarde");
         }
     }
 }

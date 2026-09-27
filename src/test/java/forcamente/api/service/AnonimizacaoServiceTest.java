@@ -90,11 +90,9 @@ class AnonimizacaoServiceTest {
 
         assertThat(usuario.getNomeCompleto()).isEqualTo("Usuario anonimizado");
         assertThat(usuario.getEmail()).isEqualTo("anonimizado-" + idOriginal + "@forcamente.invalid");
-        assertThat(usuario.getCpf()).isNull();
         assertThat(usuario.getDataNascimento()).isNull();
         assertThat(usuario.getCref()).isNull();
         assertThat(usuario.getFormacao()).isNull();
-        assertThat(usuario.getInstituicao()).isNull();
         assertThat(usuario.getCidade()).isNull();
         assertThat(usuario.isAtivo()).isFalse();
         assertThat(usuario.getAnonimizadoEm()).isEqualTo(LocalDateTime.now(RELOGIO));
@@ -148,14 +146,12 @@ class AnonimizacaoServiceTest {
         var entity = new UsuarioEntity();
         entity.setId(UUID.randomUUID());
         entity.setNomeCompleto("Maria Souza");
-        entity.setCpf("98765432100");
         entity.setDataNascimento(LocalDate.of(1990, 5, 20));
         entity.setEmail("maria@umc.br");
         entity.setSenhaHash("$2a$10$hashOriginal");
         entity.setPapel(PapelUsuarioEnum.PROFESSOR);
         entity.setCref("123456-G/SP");
         entity.setFormacao(FormacaoEnum.BACHARELADO);
-        entity.setInstituicao("Universidade de Mogi das Cruzes");
         entity.setCidade("Mogi das Cruzes");
         entity.setEstado("SP");
         entity.setAtivo(true);

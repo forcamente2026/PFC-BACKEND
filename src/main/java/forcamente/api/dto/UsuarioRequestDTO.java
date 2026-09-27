@@ -12,10 +12,6 @@ public record UsuarioRequestDTO(
         @NotBlank(message = "O nome completo e obrigatorio")
         String nomeCompleto,
 
-
-        @Pattern(regexp = "\\d{11}", message = "O CPF deve conter 11 digitos, apenas numeros")
-        String cpf,
-
         @NotNull(message ="A data de nascimento e obrigatoria")
         @Past(message = "A data de nascimento deve estar no passado")
         LocalDate dataNascimento,
@@ -36,10 +32,7 @@ public record UsuarioRequestDTO(
         String cref,
         FormacaoEnum formacao,
 
-        @Size(max = 120, message = "A instituicao deve ter no maximo 120 caracteres")
-        String instituicao,
-
-        @Pattern(regexp = "\\d{8}", message = "O CEP deve conter 8 digitos, apenas numeros")
+        @Pattern(regexp = "\\d{8}", message = "O CEP deve conter 8 dígitos, apenas números")
         String cep,
 
         String logradouro,
@@ -69,10 +62,8 @@ public record UsuarioRequestDTO(
 
         public UsuarioRequestDTO{
                 nomeCompleto = nomeCompleto == null ? null : nomeCompleto.trim();
-                cpf = somenteDigitos(cpf);
                 email = email == null ? null : email.trim().toLowerCase();
                 cep = somenteDigitos(cep);
-                instituicao = instituicao == null ? null : instituicao.trim();
 
                 if (papel == PapelUsuarioEnum.PROFESSOR){
                         cref = cref == null ? null :cref.trim().toUpperCase();
@@ -80,8 +71,6 @@ public record UsuarioRequestDTO(
                 }else {
                         cref = null;
                         formacao= null;
-                        instituicao = null;
-                        cpf = null;
                         cep = null;
                         logradouro = null;
                         numero = null;
@@ -93,17 +82,12 @@ public record UsuarioRequestDTO(
                 }
         }
 
-        @AssertTrue(message = "CREF, formacao e instituicao sao obrigatorios para professor")
+        @AssertTrue(message = "CREF e formacao sao obrigatorios para professor")
         public boolean isDadosProfissionaisCoerentes() {
                 if (papel != PapelUsuarioEnum.PROFESSOR) {
                         return true;
                 }
-                return preenchido(cref) && formacao != null && preenchido(instituicao);
-        }
-
-        @AssertTrue(message = "O CPF e obrigatorio para professor")
-        public boolean isCpfDoProfessorInformado() {
-                return papel != PapelUsuarioEnum.PROFESSOR || preenchido(cpf);
+                return preenchido(cref) && formacao != null;
         }
 
         @AssertTrue(message = "O endereco completo e obrigatorio para professor")

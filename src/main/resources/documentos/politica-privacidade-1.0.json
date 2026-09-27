@@ -19,27 +19,27 @@
         [
           "Nome completo",
           "Identificar você na plataforma e assinar o conteúdo que você publicar",
-          "Execução de contrato — art. 7º, V"
+          "Execução de contrato (art. 7º, V)"
         ],
         [
           "E-mail",
           "Login, comunicações sobre a conta e recuperação de acesso",
-          "Execução de contrato — art. 7º, V"
+          "Execução de contrato (art. 7º, V)"
         ],
         [
           "Senha",
           "Autenticação. Guardada apenas como hash (BCrypt); ninguém, nem nós, consegue lê-la",
-          "Execução de contrato — art. 7º, V"
+          "Execução de contrato (art. 7º, V)"
         ],
         [
           "Data de nascimento",
           "Verificar a idade mínima de 18 anos",
-          "Obrigação legal e execução de contrato — art. 7º, II e V"
+          "Obrigação legal e execução de contrato (art. 7º, II e V)"
         ],
         [
           "Aceite dos Termos e da Política (data, hora e versão)",
           "Comprovar qual versão você aceitou",
-          "Cumprimento de obrigação legal — art. 7º, II"
+          "Cumprimento de obrigação legal (art. 7º, II)"
         ]
       ]
     },
@@ -57,16 +57,16 @@
         [
           "CREF e formação acadêmica",
           "Comprovar a habilitação de quem assina conteúdo técnico",
-          "Execução de contrato — art. 7º, V"
+          "Execução de contrato (art. 7º, V)"
         ],
         [
-          "CPF e endereço completo",
+          "Endereço completo",
           "Qualificação civil para o termo de responsabilidade técnica sobre o conteúdo publicado",
-          "Execução de contrato e exercício regular de direito — art. 7º, V e VI"
+          "Execução de contrato e exercício regular de direito (art. 7º, V e VI)"
         ]
       ]
     },
-    "nota": "O aluno não informa CPF nem endereço. Coletamos apenas o que tem finalidade — é o princípio da necessidade (art. 6º, III). Como a plataforma é gratuita e o acesso é feito por e-mail, não existe motivo para pedir identificação civil de quem apenas estuda."
+    "nota": "O aluno não informa endereço, e ninguém informa CPF. Coletamos apenas o que tem finalidade: é o princípio da necessidade (art. 6º, III). O CREF já identifica o profissional de forma única e verificável junto ao conselho, então o CPF não acrescentava nada à responsabilidade técnica; e como a plataforma é gratuita e o acesso é feito por e-mail, não há motivo para pedir identificação civil de quem apenas estuda."
   },
   {
     "titulo": "2.3. Dados que você informa nas calculadoras",
@@ -77,14 +77,14 @@
       "São usados apenas para calcular o resultado que aparece na tela, naquele momento.",
       "Não são gravados no banco de dados nem associados à sua conta.",
       "O preenchimento é opcional: a calculadora é a única parte da plataforma que os utiliza.",
-      "Base legal: consentimento específico e destacado — art. 11, I."
+      "Base legal: consentimento específico e destacado (art. 11, I)."
     ]
   },
   {
     "titulo": "2.4. Dados coletados automaticamente",
     "lista": [
       "Token de sessão, guardado no armazenamento local do seu navegador para manter você conectado. Ele é apagado quando você sai da conta.",
-      "Registros técnicos de acesso ao servidor (data, hora e endereço IP), gerados automaticamente pela hospedagem, usados para segurança e diagnóstico de falhas — art. 7º, VI."
+      "Registros técnicos de acesso ao servidor (data, hora e endereço IP), gerados automaticamente pela hospedagem, usados para segurança e diagnóstico de falhas (art. 7º, VI)."
     ],
     "nota": "Não usamos cookies de publicidade, rastreamento ou análise de comportamento."
   },
@@ -94,10 +94,10 @@
       "Para conseguir demonstrar que cumprimos esta Política, a plataforma mantém um registro das ações que tocam dados pessoais ou conteúdo publicado.",
       "O que é registrado: a data e a hora, o tipo de ação (criação, alteração, exclusão, login realizado, falha de login, anonimização de conta, aprovação ou rejeição de artigo), o tipo de item afetado e o identificador interno da conta que realizou a ação.",
       "O que não é registrado: o conteúdo do que foi alterado, senhas, e nenhum dado de navegação ou comportamento.",
-      "Como o seu nome aparece: a trilha guarda apenas o identificador interno da conta. Nome e e-mail são obtidos no momento da consulta — por isso, se a sua conta for anonimizada, os registros antigos passam a exibir \"Usuário anonimizado\" automaticamente, sem que ninguém precise reescrever o histórico.",
-      "Quem pode consultar: somente administradores da plataforma, com registro da própria consulta — quem olha a trilha também fica registrado nela."
+      "Como o seu nome aparece: a trilha guarda apenas o identificador interno da conta. Nome e e-mail são obtidos no momento da consulta. Por isso, se a sua conta for anonimizada, os registros antigos passam a exibir \"Usuário anonimizado\" automaticamente, sem que ninguém precise reescrever o histórico.",
+      "Quem pode consultar: somente administradores da plataforma, com registro da própria consulta: quem olha a trilha também fica registrado nela."
     ],
-    "nota": "Base legal: cumprimento de obrigação legal e exercício regular de direito — art. 7º, II e VI. O prazo de guarda está na seção 4."
+    "nota": "Base legal: cumprimento de obrigação legal e exercício regular de direito (art. 7º, II e VI). O prazo de guarda está na seção 4."
   },
   {
     "titulo": "3. Com quem compartilhamos",
@@ -124,7 +124,7 @@
         [
           "Autoridades públicas",
           "O que for legalmente exigido",
-          "Cumprimento de ordem legal ou judicial — art. 7º, II"
+          "Cumprimento de ordem legal ou judicial (art. 7º, II)"
         ]
       ]
     }
@@ -135,7 +135,7 @@
       "Dados de cadastro: enquanto sua conta existir.",
       "Após o pedido de exclusão: os dados que identificam você são anonimizados de forma irreversível. Artigos publicados por profissionais permanecem na plataforma sem identificar o autor, preservando o acervo educativo; se você quiser a retirada do conteúdo, peça pelo canal da seção 7.",
       "Registro do aceite dos Termos e da Política: mantido mesmo após a anonimização, pelo prazo legal, como prova do consentimento (art. 16, I).",
-      "Trilha de auditoria: 6 meses, contados da data de cada registro; depois disso, os registros são eliminados. A LGPD não fixa prazo para trilhas de auditoria — ela exige que o prazo seja definido e justificado (arts. 15 e 16). Adotamos 6 meses por analogia ao art. 15 do Marco Civil da Internet, que obriga provedores de aplicação a guardar registros de acesso por esse período. Aquela obrigação alcança quem atua com fins econômicos, o que não é o caso desta plataforma — por isso é uma referência adotada por prudência, e não uma exigência que recaia sobre nós. Os registros de anonimização de conta são mantidos além desse prazo, sem qualquer dado que identifique a pessoa, porque são a prova de que o pedido de exclusão foi cumprido.",
+      "Trilha de auditoria: 6 meses, contados da data de cada registro; depois disso, os registros são eliminados. A LGPD não fixa prazo para trilhas de auditoria; ela exige que o prazo seja definido e justificado (arts. 15 e 16). Adotamos 6 meses por analogia ao art. 15 do Marco Civil da Internet, que obriga provedores de aplicação a guardar registros de acesso por esse período. Aquela obrigação alcança quem atua com fins econômicos, o que não é o caso desta plataforma. Por isso é uma referência adotada por prudência, e não uma exigência que recaia sobre nós. Os registros de anonimização de conta são mantidos além desse prazo, sem qualquer dado que identifique a pessoa, porque são a prova de que o pedido de exclusão foi cumprido.",
       "Encerramento do projeto acadêmico: por ser um trabalho de conclusão de curso, a plataforma pode ser desativada ao fim do período acadêmico. Nesse caso, a base de dados será eliminada, e avisaremos com antecedência pelo e-mail cadastrado."
     ]
   },
@@ -159,7 +159,7 @@
       "corrigir dados incompletos, inexatos ou desatualizados;",
       "pedir anonimização, bloqueio ou eliminação de dados desnecessários ou tratados em desconformidade com a lei;",
       "pedir a portabilidade dos seus dados a outro fornecedor;",
-      "revogar o consentimento — por exemplo, deixar de usar as calculadoras;",
+      "revogar o consentimento, por exemplo deixando de usar as calculadoras;",
       "saber com quem compartilhamos seus dados;",
       "opor-se a um tratamento feito com base que não seja o consentimento."
     ]

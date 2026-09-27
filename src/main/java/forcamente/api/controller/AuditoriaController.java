@@ -28,7 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuditoriaController {
 
-    private static final String MARCA_UTF8 = "﻿";
+    private static final String MARCA_UTF8 = "\uFEFF";
 
     private final IAuditoriaService auditoriaService;
 

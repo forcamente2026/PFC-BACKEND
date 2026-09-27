@@ -14,7 +14,7 @@
     ]
   },
   {
-    "titulo": "3. Quem pode usar — idade mínima de 18 anos",
+    "titulo": "3. Quem pode usar: idade mínima de 18 anos",
     "paragrafos": [
       "A plataforma é destinada exclusivamente a maiores de 18 anos.",
       "Este limite existe por dois motivos: aceitar estes Termos é celebrar um contrato, e menores de 18 anos não possuem capacidade civil plena (Código Civil, art. 3º e 4º); e o conteúdo trata de treinamento de força, cuja prática por menores exige acompanhamento profissional presencial.",
@@ -36,16 +36,16 @@
       "A plataforma tem três perfis, com permissões distintas:"
     ],
     "lista": [
-      "Aluno — consulta a biblioteca de exercícios, lê artigos aprovados e usa as calculadoras de métricas.",
-      "Professor — profissional de Educação Física registrado no CREF. Além do que o aluno faz, cria e publica artigos, que passam por validação antes de ficarem visíveis.",
-      "Administrador — valida o conteúdo enviado pelos professores, modera a plataforma e administra contas."
+      "Aluno: consulta a biblioteca de exercícios, lê artigos aprovados e usa as calculadoras de métricas.",
+      "Professor: profissional de Educação Física registrado no CREF. Além do que o aluno faz, cria e publica artigos, que passam por validação antes de ficarem visíveis.",
+      "Administrador: valida o conteúdo enviado pelos professores, modera a plataforma e administra contas."
     ]
   },
   {
     "titulo": "6. Conteúdo publicado por profissionais e responsabilidade técnica",
     "paragrafos": [
-      "Ao se cadastrar como Professor, você declara ser profissional de Educação Física regularmente registrado no CREF e informa seu número de registro, formação, instituição de ensino, CPF e endereço.",
-      "O CPF e o endereço são solicitados exclusivamente como qualificação civil para fins de responsabilidade técnica: o conteúdo publicado é assinado pelo seu nome e pelo seu registro profissional, e você responde tecnicamente por ele, nos termos da regulamentação do Conselho Federal de Educação Física. Esses dados não são pedidos a quem se cadastra apenas como Aluno.",
+      "Ao se cadastrar como Professor, você declara ser profissional de Educação Física regularmente registrado no CREF e informa seu número de registro, sua formação e seu endereço.",
+      "O endereço é solicitado exclusivamente como qualificação civil para fins de responsabilidade técnica: o conteúdo publicado é assinado pelo seu nome e pelo seu registro profissional, e você responde tecnicamente por ele, nos termos da regulamentação do Conselho Federal de Educação Física. Não pedimos CPF: o registro no CREF já identifica você de forma única e verificável junto ao conselho. O endereço não é pedido a quem se cadastra apenas como Aluno.",
       "Você declara ainda que:"
     ],
     "lista": [

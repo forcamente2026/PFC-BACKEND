@@ -2,5 +2,7 @@ package forcamente.api.dto;
 
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 
-public record LoginResponseDTO(String token, String nomeCompleto, PapelUsuarioEnum papel) {
+import java.util.UUID;
+
+public record LoginResponseDTO(UUID id, String token, String nomeCompleto, PapelUsuarioEnum papel) {
 }
