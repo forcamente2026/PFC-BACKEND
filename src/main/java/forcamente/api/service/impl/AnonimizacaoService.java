@@ -2,11 +2,14 @@ package forcamente.api.service.impl;
 
 import forcamente.api.dto.AnonimizadorPendenteDTO;
 import forcamente.api.entity.UsuarioEntity;
+import forcamente.api.entity.enums.AcaoAuditoriaEnum;
+import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.exception.ConflitoException;
 import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.repository.IUsuarioRepository;
 import forcamente.api.service.IAnonimizacaoService;
+import forcamente.api.service.IAuditoriaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +33,8 @@ public class AnonimizacaoService implements IAnonimizacaoService {
     private final PasswordEncoder passwordEncoder;
 
     private final Clock clock;
+
+    private final IAuditoriaService auditoriaService;
 
     @Override
     @Transactional
@@ -99,6 +104,9 @@ public class AnonimizacaoService implements IAnonimizacaoService {
         usuario.setAnonimizadoEm(LocalDateTime.now(clock));
 
         usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.ANONIMIZADO, RecursoAuditoriaEnum.USUARIO, usuarioId);
 
         log.info("Usuario anonimizado: {}", usuarioId);
     }

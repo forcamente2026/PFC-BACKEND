@@ -4,7 +4,9 @@ import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.entity.UsuarioEntity;
+import forcamente.api.entity.enums.AcaoAuditoriaEnum;
 import forcamente.api.entity.enums.FormacaoEnum;
+import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.TipoDocumentoLegalEnum;
 import forcamente.api.exception.ConflitoException;
@@ -12,6 +14,7 @@ import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.mapper.UsuarioMapper;
 import forcamente.api.repository.IUsuarioRepository;
+import forcamente.api.service.IAuditoriaService;
 import forcamente.api.service.IDocumentoLegalService;
 import forcamente.api.service.IUsuarioService;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +43,8 @@ public class UsuarioService implements IUsuarioService {
     private final Clock clock;
 
     private final IDocumentoLegalService documentoLegalService;
+
+    private final IAuditoriaService auditoriaService;
 
 
     @Override
@@ -75,6 +80,10 @@ public class UsuarioService implements IUsuarioService {
 
         UsuarioEntity usuarioSalvo = usuarioRepository.save(usuarioEntity);
 
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.CRIADO, RecursoAuditoriaEnum.USUARIO,
+                usuarioSalvo.getId(), usuarioSalvo.getId());
+
         return usuarioMapper.toDTO(usuarioSalvo);
     }
 
@@ -86,6 +95,8 @@ public class UsuarioService implements IUsuarioService {
         UsuarioEntity usuarioEntity = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException(
                         "Usuario nao encontrado: " + usuarioId));
+
+        auditoriaService.registrar(AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.USUARIO, usuarioId);
 
         return usuarioMapper.toDTO(usuarioEntity);
     }

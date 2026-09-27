@@ -67,7 +67,8 @@ public class TratadorDeErros {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiErroDTO> tratarTipoInvalido(MethodArgumentTypeMismatchException ex){
-        return responder(HttpStatus.BAD_REQUEST,"Valor invalido para o paramentro" + ex.getName(), List.of());
+        return responder(HttpStatus.BAD_REQUEST,
+                "Valor invalido para o parametro: " + ex.getName(), List.of());
     }
 
     @ExceptionHandler(MailException.class)

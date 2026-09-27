@@ -3,10 +3,13 @@ package forcamente.api.service.impl;
 
 import forcamente.api.dto.*;
 import forcamente.api.entity.UsuarioEntity;
+import forcamente.api.entity.enums.AcaoAuditoriaEnum;
+import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.entity.enums.TipoCodigoEnum;
 import forcamente.api.exception.CredenciaisInvalidasException;
 import forcamente.api.exception.LimiteDeTentativasException;
 import forcamente.api.repository.IUsuarioRepository;
+import forcamente.api.service.IAuditoriaService;
 import forcamente.api.service.IAuthService;
 import forcamente.api.service.ICodigoVerificacaoService;
 import forcamente.api.service.IEmailService;
@@ -23,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -33,6 +37,7 @@ public class AuthService  implements IAuthService {
     private final long expiracaoMinutos;
     private final ICodigoVerificacaoService codigoVerificacaoService;
     private final IEmailService emailService;
+    private final IAuditoriaService auditoriaService;
     private static final String MENSAGEM_CODIGO_INVALIDO = "Codigo invalido ou expirado";
     private static final String ASSUNTO_MFA = "ForcaMente - seu codigo de acesso";
     private String textoMfa(String codigo) {
@@ -52,12 +57,14 @@ public class AuthService  implements IAuthService {
                        JwtEncoder jwtEncoder,
                        ICodigoVerificacaoService codigoVerificacaoService,
                        IEmailService emailService,
+                       IAuditoriaService auditoriaService,
                        @Value("${jwt.expiracao-minutos}") long expiracaoMinutos) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
         this.codigoVerificacaoService = codigoVerificacaoService;
         this.emailService = emailService;
+        this.auditoriaService = auditoriaService;
         this.expiracaoMinutos = expiracaoMinutos;
     }
 
@@ -71,8 +78,12 @@ public class AuthService  implements IAuthService {
         if (usuario == null
                 || !usuario.isAtivo()
                 || !passwordEncoder.matches(loginRequestDTO.senha(), usuario.getSenhaHash())) {
-                    throw new CredenciaisInvalidasException("E-mail ou senha invalidos");
 
+            UUID idTentado = usuario == null ? null : usuario.getId();
+            auditoriaService.registrar(
+                    AcaoAuditoriaEnum.LOGIN_FALHOU, RecursoAuditoriaEnum.USUARIO, idTentado, idTentado);
+
+            throw new CredenciaisInvalidasException("E-mail ou senha invalidos");
         }
         String codigo = codigoVerificacaoService.gerarCodigo(usuario, TipoCodigoEnum.MFA);
                 usuarioRepository.save(usuario);
@@ -157,11 +168,22 @@ public class AuthService  implements IAuthService {
         if (!usuario.isAtivo()) {
             throw new CredenciaisInvalidasException(MENSAGEM_CODIGO_INVALIDO);
         }
-        codigoVerificacaoService.validarCodigo(
-                usuario, TipoCodigoEnum.MFA, verificarCodigoRequestDTO.codigo()
-        );
+        try {
+            codigoVerificacaoService.validarCodigo(
+                    usuario, TipoCodigoEnum.MFA, verificarCodigoRequestDTO.codigo()
+            );
+        } catch (CredenciaisInvalidasException excecao) {
+            auditoriaService.registrar(
+                    AcaoAuditoriaEnum.MFA_FALHOU, RecursoAuditoriaEnum.USUARIO,
+                    usuario.getId(), usuario.getId());
+            throw excecao;
+        }
 
         usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.LOGIN_REALIZADO, RecursoAuditoriaEnum.USUARIO,
+                usuario.getId(), usuario.getId());
 
         return new LoginResponseDTO(gerarToken(usuario), usuario.getNomeCompleto(),usuario.getPapel());
 

@@ -51,6 +51,9 @@ class UsuarioServiceTest {
     @Mock
     private IDocumentoLegalService documentoLegalService;
 
+    @Mock
+    private IAuditoriaService auditoriaService;
+
     @Spy
     private Clock clock = Clock.fixed(Instant.parse("2026-09-22T13:00:00Z"), ZoneOffset.UTC);
 

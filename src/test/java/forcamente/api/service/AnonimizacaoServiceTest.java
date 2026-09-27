@@ -38,6 +38,9 @@ class AnonimizacaoServiceTest {
     @Mock
     private IUsuarioRepository usuarioRepository;
 
+    @Mock
+    private IAuditoriaService auditoriaService;
+
     private AnonimizacaoService anonimizacaoService;
 
     private UsuarioEntity usuario;
@@ -45,7 +48,7 @@ class AnonimizacaoServiceTest {
     @BeforeEach
     void configurar() {
         anonimizacaoService = new AnonimizacaoService(
-                usuarioRepository, new BCryptPasswordEncoder(), RELOGIO);
+                usuarioRepository, new BCryptPasswordEncoder(), RELOGIO, auditoriaService);
         usuario = umProfessor();
     }
 

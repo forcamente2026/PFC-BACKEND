@@ -71,6 +71,24 @@ class SegurancaRotasTest {
                 .andExpect(jsonPath("$.length()").value(2));
     }
 
+    @Test
+    @DisplayName("aluno nao pode consultar a trilha de auditoria")
+    void alunoNaoPodeConsultarAuditoria() throws Exception {
+        mockMvc.perform(get("/api/auditoria")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ALUNO")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("administrador pode consultar a trilha de auditoria")
+    void administradorPodeConsultarAuditoria() throws Exception {
+        mockMvc.perform(get("/api/auditoria")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ADMINISTRADOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.conteudo").isArray())
+                .andExpect(jsonPath("$.pagina").value(0));
+    }
+
     private String tokenDeTeste(String papel) {
         var agora = Instant.now();
         var claims = JwtClaimsSet.builder()

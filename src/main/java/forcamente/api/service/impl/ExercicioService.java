@@ -4,12 +4,15 @@ import forcamente.api.dto.ExercicioRequestDTO;
 import forcamente.api.dto.ExercicioResponseDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.entity.ExercicioEntity;
+import forcamente.api.entity.enums.AcaoAuditoriaEnum;
 import forcamente.api.entity.enums.GrupoMuscularEnum;
 import forcamente.api.entity.enums.NivelDificuldadeEnum;
+import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.exception.ConflitoException;
 import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.mapper.ExercicioMapper;
 import forcamente.api.repository.IExercicioRepository;
+import forcamente.api.service.IAuditoriaService;
 import forcamente.api.service.IExercicioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +32,8 @@ public class ExercicioService implements IExercicioService {
 
     private final ExercicioMapper exercicioMapper;
 
+    private final IAuditoriaService auditoriaService;
+
     @Override
     @Transactional
     public ExercicioResponseDTO criarExercicio(ExercicioRequestDTO exercicioRequestDTO) {
@@ -41,6 +46,9 @@ public class ExercicioService implements IExercicioService {
 
         var exercicioEntity = exercicioMapper.toEntity(exercicioRequestDTO);
         var exercicioSalvo = exercicioRepository.save(exercicioEntity);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.CRIADO, RecursoAuditoriaEnum.EXERCICIO, exercicioSalvo.getId());
 
         return exercicioMapper.toDTO(exercicioSalvo);
     }
@@ -93,6 +101,9 @@ public class ExercicioService implements IExercicioService {
         exercicioMapper.atualizarEntity(exercicioRequestDTO, exercicioEntity);
         ExercicioEntity exercicioSalvo = exercicioRepository.save(exercicioEntity);
 
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.EXERCICIO, exercicioSalvo.getId());
+
         return exercicioMapper.toDTO(exercicioSalvo);
     }
 
@@ -101,6 +112,9 @@ public class ExercicioService implements IExercicioService {
     public void excluirExercicio(UUID exercicioId) {
         log.info("excluirExercicio: {}", exercicioId);
         exercicioRepository.delete(findById(exercicioId));
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.EXCLUIDO, RecursoAuditoriaEnum.EXERCICIO, exercicioId);
     }
 
     private ExercicioEntity findById(UUID exercicioId) {

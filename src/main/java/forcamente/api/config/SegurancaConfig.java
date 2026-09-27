@@ -72,6 +72,8 @@ public class SegurancaConfig {
                         .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.POST, "/api/usuarios/*/anonimizar")
                         .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/auditoria/**")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.GET,"/api/usuarios/formacoes").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(recurso -> recurso

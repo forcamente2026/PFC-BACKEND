@@ -42,6 +42,9 @@ class ExercicioServiceTest {
     @Mock
     private ExercicioMapper exercicioMapper;
 
+    @Mock
+    private IAuditoriaService auditoriaService;
+
     @InjectMocks
     private ExercicioService exercicioService;
 

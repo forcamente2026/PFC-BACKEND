@@ -56,6 +56,9 @@ class AuthServiceTest {
     @Mock
     private IEmailService emailService;
 
+    @Mock
+    private IAuditoriaService auditoriaService;
+
     private final SegurancaConfig segurancaConfig = new SegurancaConfig();
 
     private AuthService authService;
@@ -63,7 +66,8 @@ class AuthServiceTest {
     @BeforeEach
     void configurar() {
         authService = new AuthService(
-                usuarioRepository, passwordEncoder, segurancaConfig.jwtEncoder(SEGREDO),codigoVerificacaoService, emailService, EXPIRACAO_MINUTOS);
+                usuarioRepository, passwordEncoder, segurancaConfig.jwtEncoder(SEGREDO),
+                codigoVerificacaoService, emailService, auditoriaService, EXPIRACAO_MINUTOS);
     }
 
     @Test
