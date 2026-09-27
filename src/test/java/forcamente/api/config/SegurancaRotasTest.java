@@ -154,4 +154,27 @@ class SegurancaRotasTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @DisplayName("aluno nao pode listar anonimizacoes pendentes")
+    void alunoNaoPodeListarAnonimizacoes() throws Exception {
+        mockMvc.perform(get("/api/usuarios/anonimizacoes-pendentes")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ALUNO")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("aluno nao pode anonimizar outra conta")
+    void alunoNaoPodeAnonimizarOutraConta() throws Exception {
+        mockMvc.perform(post("/api/usuarios/" + UUID.randomUUID() + "/anonimizar")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ALUNO")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("solicitar a propria anonimizacao exige apenas estar logado")
+    void solicitarAnonimizacaoExigeLogin() throws Exception {
+        mockMvc.perform(post("/api/usuarios/me/anonimizacao"))
+                .andExpect(status().isUnauthorized());
+    }
+
 }

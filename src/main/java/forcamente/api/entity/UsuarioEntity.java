@@ -50,7 +50,7 @@ public class UsuarioEntity {
     @Column(name = "papel", nullable = false, length = 20)
     private PapelUsuarioEnum papel;
 
-    @Column(name = "data_nascimento", nullable = false)
+    @Column(name = "data_nascimento")
     private LocalDate dataNascimento;
 
     @Column(name = "cref", length = 11, unique = true)
@@ -74,6 +74,12 @@ public class UsuarioEntity {
 
     @Column(name = "versao_politica_privacidade", length = 10)
     private String versaoPoliticaPrivacidade;
+
+    @Column(name = "anonimizacao_solicitada_em")
+    private LocalDateTime anonimizacaoSolicitadaEm;
+
+    @Column(name = "anonimizado_em")
+    private LocalDateTime anonimizadoEm;
 
     @Column(name = "codigo_hash", length = 60)
     private String codigoHash;
