@@ -97,6 +97,15 @@ class TratadorDeErrosTest {
         assertThat(resposta.getBody().message()).contains("tipo");
         assertThat(resposta.getBody().message()).doesNotContain("VALOR_INEXISTENTE");
     }
+    @Test
+    @DisplayName("servico indisponivel vira 503 com a mensagem para o usuario")
+    void deveResponder503() {
+        var resposta = tratador.tratarServicoIndisponivel(
+                new ServicoIndisponivelException("Servico de consulta de CEP indisponivel"));
+
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(resposta.getBody().message()).contains("indisponivel");
+    }
 }
 
 

@@ -36,6 +36,7 @@ spring:
           timeout: 5000
           writetimeout: 5000
 
+
 server:
   port: 8080
 
@@ -46,3 +47,6 @@ logging:
 jwt:
   segredo: ${JWT_SECRET:forcamente-segredo-de-desenvolvimento-troque-em-producao}
   expiracao-minutos: ${JWT_EXPIRACAO_MINUTOS:120}
+
+viacep:
+  url: ${VIACEP_URL:https://viacep.com.br/ws}

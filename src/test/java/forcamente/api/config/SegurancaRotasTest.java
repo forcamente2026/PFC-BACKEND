@@ -147,5 +147,11 @@ class SegurancaRotasTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Codigo invalido ou expirado"));
     }
+    @Test
+    @DisplayName("enderecos e publica: CEP mal formado da 400, nao 401")
+    void enderecosEhPublica() throws Exception {
+        mockMvc.perform(get("/api/enderecos/123"))
+                .andExpect(status().isBadRequest());
+    }
 
 }

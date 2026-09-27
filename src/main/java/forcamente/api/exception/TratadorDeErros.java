@@ -81,6 +81,11 @@ public class TratadorDeErros {
         return responder(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), List.of());
     }
 
+    @ExceptionHandler(ServicoIndisponivelException.class)
+    public ResponseEntity<ApiErroDTO> tratarServicoIndisponivel(ServicoIndisponivelException ex) {
+        return responder(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), List.of());
+    }
+
     private ResponseEntity<ApiErroDTO> responder(HttpStatus status, String message,
                                                  List<CampoErroDTO> campos) {
         return ResponseEntity.status(status).body(new ApiErroDTO(status.value(), message, campos));

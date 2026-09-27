@@ -63,6 +63,7 @@ public class SegurancaConfig {
                 .authorizeHttpRequests(rotas -> rotas
                         .requestMatchers(HttpMethod.POST, "/api/auth/login","/api/auth/login/verificar","/api/auth/esqueci-senha","/api/auth/redefinir-senha", "/api/usuarios" ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/documentos-legais/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/enderecos/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/exercicios/**").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.PUT, "/api/exercicios/**").hasAnyRole(EDITORES)
