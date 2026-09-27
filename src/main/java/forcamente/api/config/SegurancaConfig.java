@@ -65,6 +65,7 @@ public class SegurancaConfig {
                         .requestMatchers(HttpMethod.GET, "/api/documentos-legais/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/enderecos/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/viacep", "/viacep/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/exercicios/**").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.PUT, "/api/exercicios/**").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.DELETE, "/api/exercicios/**").hasAnyRole(EDITORES)

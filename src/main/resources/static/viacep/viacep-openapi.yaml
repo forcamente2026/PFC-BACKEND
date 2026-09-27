@@ -1,0 +1,403 @@
+openapi: 3.1.0
+
+info:
+  title: ViaCEP - Consulta de Códigos de Endereçamento Postal
+  version: "1.0"
+  summary: Serviço web público e gratuito que converte um CEP brasileiro em endereço.
+  description: |
+    ## Finalidade
+
+    A ViaCEP é um serviço web gratuito e de uso público que expõe a base de
+    Códigos de Endereçamento Postal do Brasil. Ela resolve um problema único:
+    dado um CEP, devolver o endereço correspondente (logradouro, bairro,
+    município e unidade federativa), evitando que cada aplicação mantenha e
+    atualize sua própria cópia da base dos Correios.
+
+    ## O que ela faz
+
+    Oferece duas operações, ambas somente de leitura:
+
+    1. **Consulta por CEP** - recebe um CEP de 8 dígitos e devolve um endereço.
+    2. **Busca de CEP por endereço** - recebe UF, município e um trecho do nome
+       do logradouro, e devolve a lista de CEPs que correspondem.
+
+    ## Características
+
+    - **Não exige autenticação**: não há chave de API, token ou cadastro.
+    - **Somente leitura**: não existe operação de escrita; a base não é
+      alterável por quem consome.
+    - **Três formatos de saída** para a mesma informação: JSON, XML e *piped*
+      (texto com pares `campo:valor` separados por `|`).
+    - **Suporta JSONP** através do parâmetro de consulta `callback`, para uso
+      direto no navegador contornando restrições de origem cruzada.
+
+    ## Dois comportamentos que surpreendem
+
+    Estes dois pontos são a causa mais comum de erro em quem integra com a
+    ViaCEP, porque contrariam o que se espera de uma API REST:
+
+    - **CEP inexistente não devolve 404.** Devolve **HTTP 200** com o corpo
+      `{"erro": "true"}`. Repare que o valor é a *string* `"true"`, não o
+      booleano `true`. Quem trata apenas o código de status conclui,
+      erradamente, que encontrou um endereço.
+    - **CEP malformado não devolve JSON.** Devolve **HTTP 400** com uma página
+      **HTML**, mesmo que a URL peça `/json/`. Um cliente que tente
+      desserializar a resposta como JSON quebra com erro de formato, não com
+      erro de negócio.
+
+    Existe ainda um terceiro caso que não é erro, mas exige tratamento: os
+    chamados **CEPs gerais**, atribuídos a um município inteiro em vez de a um
+    logradouro específico. Eles respondem 200 normalmente, porém com
+    `logradouro` e `bairro` como *strings vazias* - nunca nulas. A aplicação
+    precisa completar esses campos por outro meio, tipicamente pedindo ao
+    usuário.
+
+    ## Procedência deste documento
+
+    A ViaCEP **não publica** uma especificação OpenAPI oficial. Este documento
+    foi escrito a partir do comportamento observado do serviço, verificado por
+    requisições reais em **27/09/2026**. Os limites de uso (quantidade de
+    requisições por período) **não foram medidos** e não são declarados aqui.
+
+    Dois formatos citados em tutoriais antigos, `/querty/` e `/json/unicode/`,
+    foram testados nessa mesma data e devolveram **400**. Não são válidos.
+  contact:
+    name: ViaCEP
+    url: https://viacep.com.br/
+
+servers:
+  - url: https://viacep.com.br/ws
+    description: Único servidor do serviço.
+
+tags:
+  - name: Consulta por CEP
+    description: Dado um CEP, devolve o endereço.
+  - name: Busca por endereço
+    description: Dado um endereço parcial, devolve os CEPs correspondentes.
+
+paths:
+
+  /{cep}/json/:
+    get:
+      tags: [Consulta por CEP]
+      operationId: consultarCepJson
+      summary: Consulta um CEP e devolve o endereço em JSON.
+      description: |
+        Operação principal do serviço.
+
+        Atenção ao código de status: um CEP que não existe na base devolve
+        **200**, não 404, com o corpo `{"erro": "true"}`. Só um CEP com formato
+        inválido devolve 400 - e devolve HTML, não JSON.
+      parameters:
+        - $ref: '#/components/parameters/Cep'
+        - $ref: '#/components/parameters/Callback'
+      responses:
+        '200':
+          description: |
+            Requisição bem formada. O corpo é **ou** um endereço **ou** o objeto
+            de erro - é obrigatório distinguir os dois pelo conteúdo, não pelo
+            código de status.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Endereco'
+                  - $ref: '#/components/schemas/CepNaoEncontrado'
+              examples:
+                encontrado:
+                  summary: CEP de logradouro específico
+                  value:
+                    cep: "08780-000"
+                    logradouro: "Avenida Vereador Narciso Yague Guimarães"
+                    complemento: ""
+                    unidade: ""
+                    bairro: "Centro Cívico"
+                    localidade: "Mogi das Cruzes"
+                    uf: "SP"
+                    estado: "São Paulo"
+                    regiao: "Sudeste"
+                    ibge: "3530607"
+                    gia: "4546"
+                    ddd: "11"
+                    siafi: "6713"
+                cepGeral:
+                  summary: CEP geral de município - logradouro e bairro vazios
+                  value:
+                    cep: "28300-000"
+                    logradouro: ""
+                    complemento: ""
+                    unidade: ""
+                    bairro: ""
+                    localidade: "Itaperuna"
+                    uf: "RJ"
+                    estado: "Rio de Janeiro"
+                    regiao: "Sudeste"
+                    ibge: "3302205"
+                    gia: ""
+                    ddd: "22"
+                    siafi: "5843"
+                naoEncontrado:
+                  summary: CEP bem formado, mas ausente da base
+                  value:
+                    erro: "true"
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+
+  /{cep}/xml/:
+    get:
+      tags: [Consulta por CEP]
+      operationId: consultarCepXml
+      summary: Mesma consulta, resposta em XML.
+      description: Mesmo conteúdo da consulta em JSON, dentro do elemento `xmlcep`.
+      parameters:
+        - $ref: '#/components/parameters/Cep'
+      responses:
+        '200':
+          description: Endereço em XML.
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/Endereco'
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+
+  /{cep}/piped/:
+    get:
+      tags: [Consulta por CEP]
+      operationId: consultarCepPiped
+      summary: Mesma consulta, resposta em texto delimitado por barra vertical.
+      description: |
+        Formato compacto, em linha única, com pares `campo:valor` separados
+        por `|`. Não é JSON nem XML: precisa ser fatiado manualmente.
+      parameters:
+        - $ref: '#/components/parameters/Cep'
+      responses:
+        '200':
+          description: Endereço em texto delimitado.
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "cep:08780-000|logradouro:Avenida Vereador Narciso Yague Guimarães|complemento:|unidade:|bairro:Centro Cívico|localidade:Mogi das Cruzes|uf:SP|estado:São Paulo|regiao:Sudeste|ibge:3530607|gia:4546|ddd:11|siafi:6713"
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+
+  /{uf}/{localidade}/{logradouro}/json/:
+    get:
+      tags: [Busca por endereço]
+      operationId: buscarCepPorEndereco
+      summary: Busca os CEPs que correspondem a um endereço parcial.
+      description: |
+        Operação inversa: em vez de CEP para endereço, vai de endereço para CEP.
+        O trecho do logradouro é comparado por correspondência parcial, então
+        `Narciso` encontra tanto `Rua Narciso Lucarini` quanto
+        `Rua Narciso Nunes Cabral`.
+
+        Uma busca sem nenhuma correspondência devolve **200** com um array
+        **vazio** (`[]`), e não um erro.
+      parameters:
+        - name: uf
+          in: path
+          required: true
+          description: Sigla de duas letras da unidade federativa.
+          schema:
+            type: string
+            pattern: '^[A-Za-z]{2}$'
+          example: SP
+        - name: localidade
+          in: path
+          required: true
+          description: |
+            Nome do município, com no mínimo 3 caracteres. Espaços precisam ser
+            codificados na URL (`Mogi%20das%20Cruzes`).
+          schema:
+            type: string
+            minLength: 3
+          example: Mogi das Cruzes
+        - name: logradouro
+          in: path
+          required: true
+          description: |
+            Trecho do nome do logradouro, com no mínimo 3 caracteres. Menos que
+            isso devolve 400.
+          schema:
+            type: string
+            minLength: 3
+          example: Narciso
+      responses:
+        '200':
+          description: |
+            Lista dos endereços correspondentes. Vem vazia quando nada
+            corresponde - isso não é erro.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Endereco'
+              examples:
+                comResultados:
+                  summary: Dois logradouros correspondem ao trecho buscado
+                  value:
+                    - cep: "08780-380"
+                      logradouro: "Rua Narciso Lucarini"
+                      complemento: ""
+                      unidade: ""
+                      bairro: "Vila Oliveira"
+                      localidade: "Mogi das Cruzes"
+                      uf: "SP"
+                      estado: "São Paulo"
+                      regiao: "Sudeste"
+                      ibge: "3530607"
+                      gia: "4546"
+                      ddd: "11"
+                      siafi: "6713"
+                    - cep: "08725-580"
+                      logradouro: "Rua Narciso Nunes Cabral"
+                      complemento: ""
+                      unidade: ""
+                      bairro: "Conjunto Habitacional São Sebastião"
+                      localidade: "Mogi das Cruzes"
+                      uf: "SP"
+                      estado: "São Paulo"
+                      regiao: "Sudeste"
+                      ibge: "3530607"
+                      gia: "4546"
+                      ddd: "11"
+                      siafi: "6713"
+                semResultados:
+                  summary: Nenhuma correspondência
+                  value: []
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+
+components:
+
+  parameters:
+
+    Cep:
+      name: cep
+      in: path
+      required: true
+      description: |
+        CEP com exatamente 8 dígitos, **sem** hífen, ponto ou espaço. Qualquer
+        outro formato - inclusive com letras ou com menos dígitos - devolve 400.
+        Repare que o CEP **devolvido** na resposta vem formatado com hífen
+        (`08780-000`), diferente do que se envia (`08780000`).
+      schema:
+        type: string
+        pattern: '^\d{8}$'
+      example: "08780000"
+
+    Callback:
+      name: callback
+      in: query
+      required: false
+      description: |
+        Quando informado, a resposta é devolvida como JSONP: o JSON vem
+        embrulhado numa chamada à função de nome indicado. Serve para consumo
+        direto pelo navegador sem passar por CORS.
+      schema:
+        type: string
+      example: meuCallback
+
+  responses:
+
+    RequisicaoInvalida:
+      description: |
+        Requisição malformada: CEP fora do formato de 8 dígitos, ou termo de
+        busca com menos de 3 caracteres.
+
+        **O corpo é HTML**, não JSON - mesmo quando a URL pede `/json/`. Um
+        cliente que desserialize a resposta sem checar o código de status ou o
+        `Content-Type` quebra com erro de formato.
+      content:
+        text/html:
+          schema:
+            type: string
+          example: "<!DOCTYPE HTML><html lang=\"pt-br\"><head><title>ViaCEP 400</title></head><body><h1>Http 400</h1><h3>Verifique a URL</h3><h3>{Bad Request}</h3></body></html>"
+
+  schemas:
+
+    Endereco:
+      type: object
+      description: |
+        Endereço correspondente a um CEP. Campos sem informação vêm como
+        **string vazia**, nunca como `null` e nunca ausentes.
+      properties:
+        cep:
+          type: string
+          description: O CEP, formatado com hífen na resposta.
+          pattern: '^\d{5}-\d{3}$'
+          example: "08780-000"
+        logradouro:
+          type: string
+          description: |
+            Nome da rua, avenida ou praça. **Vazio** em CEPs gerais de
+            município.
+          example: Avenida Vereador Narciso Yague Guimarães
+        complemento:
+          type: string
+          description: |
+            Complemento do logradouro, como faixa de numeração. Frequentemente
+            vazio.
+          example: ""
+        unidade:
+          type: string
+          description: Unidade dos Correios associada ao CEP. Frequentemente vazio.
+          example: ""
+        bairro:
+          type: string
+          description: Nome do bairro. **Vazio** em CEPs gerais de município.
+          example: Centro Cívico
+        localidade:
+          type: string
+          description: Nome do município. Sempre preenchido.
+          example: Mogi das Cruzes
+        uf:
+          type: string
+          description: Sigla de duas letras da unidade federativa.
+          pattern: '^[A-Z]{2}$'
+          example: SP
+        estado:
+          type: string
+          description: Nome da unidade federativa por extenso.
+          example: São Paulo
+        regiao:
+          type: string
+          description: Macrorregião brasileira do município.
+          example: Sudeste
+        ibge:
+          type: string
+          description: |
+            Código do município no IBGE. Chave para cruzar com bases oficiais.
+          example: "3530607"
+        gia:
+          type: string
+          description: |
+            Código GIA, de uso fiscal do estado de São Paulo. Vazio fora de SP.
+          example: "4546"
+        ddd:
+          type: string
+          description: Código de discagem direta a distância da localidade.
+          example: "11"
+        siafi:
+          type: string
+          description: |
+            Código do município no SIAFI, sistema financeiro do governo federal.
+          example: "6713"
+
+    CepNaoEncontrado:
+      type: object
+      description: |
+        Devolvido quando o CEP tem formato válido mas não existe na base.
+        Acompanha **HTTP 200**, não 404.
+      properties:
+        erro:
+          type: string
+          description: |
+            Sempre a *string* `"true"`. Não é booleano - linguagens de tipagem
+            estática precisam converter, ou declarar o campo como texto.
+          enum: ["true"]
+          example: "true"
+      required: [erro]
