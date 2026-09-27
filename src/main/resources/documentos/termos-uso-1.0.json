@@ -1,0 +1,118 @@
+[
+  {
+    "titulo": "1. Objeto e natureza do serviço",
+    "paragrafos": [
+      "A ForçaMente é uma plataforma web educativa sobre treinamento de força, que reúne conteúdo sobre execução de exercícios, artigos revisados por profissionais de Educação Física e calculadoras de métricas de treino.",
+      "A ForçaMente é um projeto acadêmico, desenvolvido como Projeto Final de Curso do Bacharelado em Sistemas de Informação da Universidade de Mogi das Cruzes. Não é um produto comercial, não possui fins lucrativos e pode ser descontinuado a qualquer momento, sem aviso prévio, ao fim do período acadêmico.",
+      "O uso da plataforma é inteiramente gratuito. Não há cobrança, assinatura ou conteúdo pago."
+    ]
+  },
+  {
+    "titulo": "2. Aceitação",
+    "paragrafos": [
+      "Ao criar uma conta, você declara que leu, entendeu e concorda com estes Termos de Uso e com a Política de Privacidade. Se não concordar com qualquer ponto, não crie conta e não utilize a plataforma."
+    ]
+  },
+  {
+    "titulo": "3. Quem pode usar — idade mínima de 18 anos",
+    "paragrafos": [
+      "A plataforma é destinada exclusivamente a maiores de 18 anos.",
+      "Este limite existe por dois motivos: aceitar estes Termos é celebrar um contrato, e menores de 18 anos não possuem capacidade civil plena (Código Civil, art. 3º e 4º); e o conteúdo trata de treinamento de força, cuja prática por menores exige acompanhamento profissional presencial.",
+      "Ao se cadastrar, você declara ter 18 anos completos ou mais. Contas identificadas como de menores de idade serão encerradas e os dados, excluídos."
+    ]
+  },
+  {
+    "titulo": "4. Cadastro e conta",
+    "lista": [
+      "Os dados informados no cadastro devem ser verdadeiros, completos e atualizados. Informar dado falso é motivo de encerramento da conta.",
+      "A conta é pessoal e intransferível. Você é responsável por tudo que for feito com suas credenciais.",
+      "A senha é de sua exclusiva responsabilidade. A ForçaMente nunca pede sua senha por e-mail, telefone ou mensagem.",
+      "Se suspeitar de uso indevido da sua conta, comunique imediatamente pelo canal da seção 12."
+    ]
+  },
+  {
+    "titulo": "5. Perfis de usuário",
+    "paragrafos": [
+      "A plataforma tem três perfis, com permissões distintas:"
+    ],
+    "lista": [
+      "Aluno — consulta a biblioteca de exercícios, lê artigos aprovados e usa as calculadoras de métricas.",
+      "Professor — profissional de Educação Física registrado no CREF. Além do que o aluno faz, cria e publica artigos, que passam por validação antes de ficarem visíveis.",
+      "Administrador — valida o conteúdo enviado pelos professores, modera a plataforma e administra contas."
+    ]
+  },
+  {
+    "titulo": "6. Conteúdo publicado por profissionais e responsabilidade técnica",
+    "paragrafos": [
+      "Ao se cadastrar como Professor, você declara ser profissional de Educação Física regularmente registrado no CREF e informa seu número de registro, formação, instituição de ensino, CPF e endereço.",
+      "O CPF e o endereço são solicitados exclusivamente como qualificação civil para fins de responsabilidade técnica: o conteúdo publicado é assinado pelo seu nome e pelo seu registro profissional, e você responde tecnicamente por ele, nos termos da regulamentação do Conselho Federal de Educação Física. Esses dados não são pedidos a quem se cadastra apenas como Aluno.",
+      "Você declara ainda que:"
+    ],
+    "lista": [
+      "o conteúdo enviado é de sua autoria ou que você possui autorização para publicá-lo;",
+      "o conteúdo não viola direitos autorais, marcas ou direitos de terceiros;",
+      "as informações técnicas apresentadas têm fundamento e, quando citam estudos, indicam a fonte."
+    ]
+  },
+  {
+    "titulo": "6.1. Licença e validação do conteúdo",
+    "paragrafos": [
+      "Ao enviar conteúdo, você concede à ForçaMente licença não exclusiva e gratuita para exibi-lo na plataforma, mantendo a sua autoria sempre visível. Você pode solicitar a retirada do seu conteúdo a qualquer momento.",
+      "O conteúdo enviado por professores é submetido à validação de um administrador antes de ficar visível. A validação é uma conferência editorial: não transfere a responsabilidade técnica do autor para a ForçaMente."
+    ]
+  },
+  {
+    "titulo": "7. Aviso importante sobre saúde",
+    "destaque": true,
+    "paragrafos": [
+      "O conteúdo da ForçaMente tem finalidade exclusivamente educativa e informativa.",
+      "Ele não substitui avaliação, prescrição ou acompanhamento de profissional de Educação Física, médico ou nutricionista. As calculadoras de métricas (volume de treino, taxa metabólica basal, hidratação) usam fórmulas de referência e produzem estimativas, não recomendações individualizadas.",
+      "Antes de iniciar ou alterar um programa de exercícios, procure orientação profissional, especialmente se você tiver qualquer condição de saúde, estiver gestante, em recuperação de lesão ou sob tratamento médico.",
+      "Você é o único responsável pelas decisões que tomar com base no conteúdo da plataforma."
+    ]
+  },
+  {
+    "titulo": "8. Uso permitido e condutas proibidas",
+    "paragrafos": [
+      "É proibido:"
+    ],
+    "lista": [
+      "publicar conteúdo falso, enganoso, ofensivo, discriminatório ou ilegal;",
+      "declarar registro profissional que não possui;",
+      "tentar acessar contas, dados ou áreas restritas de terceiros;",
+      "automatizar coleta de dados (raspagem), sobrecarregar ou tentar comprometer a plataforma;",
+      "reproduzir o conteúdo da plataforma fora dela sem autorização e sem citar a autoria."
+    ]
+  },
+  {
+    "titulo": "9. Disponibilidade",
+    "paragrafos": [
+      "Por ser um projeto acadêmico, a plataforma pode ficar indisponível para manutenção, correção ou avaliação, sem aviso prévio. Não há garantia de disponibilidade contínua nem de preservação permanente do conteúdo."
+    ]
+  },
+  {
+    "titulo": "10. Suspensão e encerramento",
+    "paragrafos": [
+      "A ForçaMente pode suspender ou encerrar contas que violem estes Termos, com aviso sempre que possível.",
+      "Você pode encerrar sua conta a qualquer momento pelo canal da seção 12. O tratamento dos seus dados após o encerramento está descrito na Política de Privacidade."
+    ]
+  },
+  {
+    "titulo": "11. Alterações destes Termos",
+    "paragrafos": [
+      "Estes Termos podem ser alterados. Quando isso acontecer, a versão será atualizada e os usuários serão avisados na plataforma, com novo aceite quando a mudança for relevante. A data e a versão aceitas por você ficam registradas."
+    ]
+  },
+  {
+    "titulo": "12. Contato",
+    "paragrafos": [
+      "Dúvidas, pedidos e comunicações: forcamente2026@gmail.com"
+    ]
+  },
+  {
+    "titulo": "13. Legislação e foro",
+    "paragrafos": [
+      "Estes Termos são regidos pela legislação brasileira. Fica eleito o foro da comarca de Mogi das Cruzes, São Paulo, para dirimir controvérsias, com renúncia a qualquer outro."
+    ]
+  }
+]

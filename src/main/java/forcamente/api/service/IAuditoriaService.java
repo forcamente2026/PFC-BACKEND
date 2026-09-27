@@ -19,6 +19,10 @@ public interface IAuditoriaService {
     PaginaDTO<RegistroAuditoriaResponseDTO> consultar(
             LocalDate de, LocalDate ate, AcaoAuditoriaEnum acao, int pagina, int tamanho);
 
+    String exportarCsv(LocalDate de, LocalDate ate, AcaoAuditoriaEnum acao);
+
+    long descartarAntigos();
+
     List<OpcaoDTO> listarAcoes();
 
     List<OpcaoDTO> listarRecursos();

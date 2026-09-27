@@ -50,3 +50,6 @@ jwt:
 
 viacep:
   url: ${VIACEP_URL:https://viacep.com.br/ws}
+
+auditoria:
+  retencao-meses: ${AUDITORIA_RETENCAO_MESES:6}

@@ -10,8 +10,8 @@ import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.repository.IRegistroAuditoriaRepository;
 import forcamente.api.repository.IUsuarioRepository;
 import forcamente.api.service.IAuditoriaService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +26,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -35,17 +36,36 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AuditoriaService implements IAuditoriaService {
 
     private static final LocalDateTime INICIO_PADRAO = LocalDateTime.of(2000, 1, 1, 0, 0);
+
+    private static final String SEPARADOR_CSV = ";";
+
+    private static final String CABECALHO_CSV =
+            "Quando;Acao;Usuario;E-mail;Recurso;Identificador do recurso";
+
+    private static final DateTimeFormatter FORMATO_DATA_CSV =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
     private final IRegistroAuditoriaRepository registroAuditoriaRepository;
 
     private final IUsuarioRepository usuarioRepository;
 
     private final Clock clock;
+
+    private final int retencaoMeses;
+
+    public AuditoriaService(IRegistroAuditoriaRepository registroAuditoriaRepository,
+                            IUsuarioRepository usuarioRepository,
+                            Clock clock,
+                            @Value("${auditoria.retencao-meses}") int retencaoMeses) {
+        this.registroAuditoriaRepository = registroAuditoriaRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.clock = clock;
+        this.retencaoMeses = retencaoMeses;
+    }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -66,8 +86,8 @@ public class AuditoriaService implements IAuditoriaService {
 
         log.info("consultar auditoria: de={} ate={} acao={}", de, ate, acao);
 
-        LocalDateTime inicio = de == null ? INICIO_PADRAO : de.atStartOfDay();
-        LocalDateTime fim = ate == null ? LocalDateTime.now(clock) : ate.atTime(LocalTime.MAX);
+        LocalDateTime inicio = inicioDe(de);
+        LocalDateTime fim = fimDe(ate);
         Pageable paginacao = PageRequest.of(pagina, tamanho);
 
         Page<RegistroAuditoriaEntity> resultado = acao == null
@@ -87,6 +107,49 @@ public class AuditoriaService implements IAuditoriaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public String exportarCsv(LocalDate de, LocalDate ate, AcaoAuditoriaEnum acao) {
+        log.info("exportarCsv: de={} ate={} acao={}", de, ate, acao);
+
+        LocalDateTime inicio = inicioDe(de);
+        LocalDateTime fim = fimDe(ate);
+
+        List<RegistroAuditoriaEntity> registros = acao == null
+                ? registroAuditoriaRepository
+                        .findByOcorridoEmBetweenOrderByOcorridoEmDesc(inicio, fim)
+                : registroAuditoriaRepository
+                        .findByOcorridoEmBetweenAndAcaoOrderByOcorridoEmDesc(inicio, fim, acao);
+
+        var csv = new StringBuilder(CABECALHO_CSV).append("\n");
+
+        for (RegistroAuditoriaResponseDTO linha : paraDTO(registros)) {
+            csv.append(escapar(FORMATO_DATA_CSV.format(linha.ocorridoEm()))).append(SEPARADOR_CSV)
+                    .append(escapar(linha.descricaoAcao())).append(SEPARADOR_CSV)
+                    .append(escapar(linha.usuarioNome())).append(SEPARADOR_CSV)
+                    .append(escapar(linha.usuarioEmail())).append(SEPARADOR_CSV)
+                    .append(escapar(linha.descricaoRecursoTipo())).append(SEPARADOR_CSV)
+                    .append(escapar(linha.recursoId() == null ? null : linha.recursoId().toString()))
+                    .append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    @Override
+    @Transactional
+    public long descartarAntigos() {
+        LocalDateTime limite = LocalDateTime.now(clock).minusMonths(retencaoMeses);
+
+        long descartados = registroAuditoriaRepository
+                .deleteByOcorridoEmBeforeAndAcaoNot(limite, AcaoAuditoriaEnum.ANONIMIZADO);
+
+        log.info("Descarte da trilha: {} registro(s) anteriores a {}, preservados os de anonimizacao",
+                descartados, limite);
+
+        return descartados;
+    }
+
+    @Override
     public List<OpcaoDTO> listarAcoes() {
         log.info("listarAcoes");
         return Arrays.stream(AcaoAuditoriaEnum.values())
@@ -100,6 +163,21 @@ public class AuditoriaService implements IAuditoriaService {
         return Arrays.stream(RecursoAuditoriaEnum.values())
                 .map(recurso -> new OpcaoDTO(recurso.name(), recurso.getDescricao()))
                 .toList();
+    }
+
+    private LocalDateTime inicioDe(LocalDate de) {
+        return de == null ? INICIO_PADRAO : de.atStartOfDay();
+    }
+
+    private LocalDateTime fimDe(LocalDate ate) {
+        return ate == null ? LocalDateTime.now(clock) : ate.atTime(LocalTime.MAX);
+    }
+
+    private String escapar(String valor) {
+        if (valor == null) {
+            return "";
+        }
+        return "\"" + valor.replace("\"", "\"\"") + "\"";
     }
 
     private List<RegistroAuditoriaResponseDTO> paraDTO(List<RegistroAuditoriaEntity> registros) {

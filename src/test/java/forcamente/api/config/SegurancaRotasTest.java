@@ -17,6 +17,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -87,6 +89,25 @@ class SegurancaRotasTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.conteudo").isArray())
                 .andExpect(jsonPath("$.pagina").value(0));
+    }
+
+    @Test
+    @DisplayName("administrador exporta a trilha em CSV, como anexo")
+    void administradorExportaCsv() throws Exception {
+        mockMvc.perform(get("/api/auditoria/csv")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ADMINISTRADOR")))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition",
+                        org.hamcrest.Matchers.containsString("attachment")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Quando;Acao;Usuario")));
+    }
+
+    @Test
+    @DisplayName("aluno nao pode exportar a trilha")
+    void alunoNaoPodeExportarCsv() throws Exception {
+        mockMvc.perform(get("/api/auditoria/csv")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ALUNO")))
+                .andExpect(status().isForbidden());
     }
 
     private String tokenDeTeste(String papel) {

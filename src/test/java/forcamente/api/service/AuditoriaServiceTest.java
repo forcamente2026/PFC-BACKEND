@@ -43,6 +43,8 @@ class AuditoriaServiceTest {
     private static final Clock RELOGIO =
             Clock.fixed(Instant.parse("2026-09-27T12:00:00Z"), ZoneOffset.UTC);
 
+    private static final int RETENCAO_MESES = 6;
+
     @Mock
     private IRegistroAuditoriaRepository registroAuditoriaRepository;
 
@@ -54,7 +56,7 @@ class AuditoriaServiceTest {
     @BeforeEach
     void configurar() {
         auditoriaService = new AuditoriaService(
-                registroAuditoriaRepository, usuarioRepository, RELOGIO);
+                registroAuditoriaRepository, usuarioRepository, RELOGIO, RETENCAO_MESES);
     }
 
     @AfterEach
@@ -188,6 +190,80 @@ class AuditoriaServiceTest {
         verify(registroAuditoriaRepository, never())
                 .findByOcorridoEmBetweenOrderByOcorridoEmDesc(
                         any(LocalDateTime.class), any(LocalDateTime.class), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("CSV deve ter cabecalho e uma linha por registro, com data em formato brasileiro")
+    void deveExportarCsv() {
+        var usuarioId = UUID.randomUUID();
+        when(registroAuditoriaRepository.findByOcorridoEmBetweenOrderByOcorridoEmDesc(
+                any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of(umRegistro(AcaoAuditoriaEnum.CRIADO, usuarioId)));
+        when(usuarioRepository.findAllById(List.of(usuarioId)))
+                .thenReturn(List.of(umUsuario(usuarioId, "Maria Souza", "maria@umc.br")));
+
+        String csv = auditoriaService.exportarCsv(null, null, null);
+        String[] linhas = csv.split("\n");
+
+        assertThat(linhas).hasSize(2);
+        assertThat(linhas[0]).isEqualTo("Quando;Acao;Usuario;E-mail;Recurso;Identificador do recurso");
+        assertThat(linhas[1]).startsWith("\"27/09/2026 12:00:00\";\"Criado\";\"Maria Souza\";\"maria@umc.br\"");
+    }
+
+    @Test
+    @DisplayName("CSV deve escapar aspas e conviver com o separador dentro do dado")
+    void deveEscaparOConteudoDoCsv() {
+        var usuarioId = UUID.randomUUID();
+        when(registroAuditoriaRepository.findByOcorridoEmBetweenOrderByOcorridoEmDesc(
+                any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of(umRegistro(AcaoAuditoriaEnum.LIDO, usuarioId)));
+        when(usuarioRepository.findAllById(List.of(usuarioId)))
+                .thenReturn(List.of(umUsuario(usuarioId, "Souza; \"Maria\"", "maria@umc.br")));
+
+        String csv = auditoriaService.exportarCsv(null, null, null);
+
+        assertThat(csv).contains("\"Souza; \"\"Maria\"\"\"");
+        assertThat(csv.split("\n")).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("CSV sem registros traz apenas o cabecalho")
+    void deveExportarCsvVazio() {
+        when(registroAuditoriaRepository.findByOcorridoEmBetweenAndAcaoOrderByOcorridoEmDesc(
+                any(LocalDateTime.class), any(LocalDateTime.class), eq(AcaoAuditoriaEnum.EXCLUIDO)))
+                .thenReturn(List.of());
+
+        String csv = auditoriaService.exportarCsv(null, null, AcaoAuditoriaEnum.EXCLUIDO);
+
+        assertThat(csv.strip()).isEqualTo("Quando;Acao;Usuario;E-mail;Recurso;Identificador do recurso");
+    }
+
+    @Test
+    @DisplayName("descarte apaga pelo prazo de retencao e preserva os registros de anonimizacao")
+    void deveDescartarPeloPrazoPreservandoAnonimizacao() {
+        when(registroAuditoriaRepository.deleteByOcorridoEmBeforeAndAcaoNot(
+                any(LocalDateTime.class), eq(AcaoAuditoriaEnum.ANONIMIZADO)))
+                .thenReturn(7L);
+
+        long descartados = auditoriaService.descartarAntigos();
+
+        ArgumentCaptor<LocalDateTime> limite = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(registroAuditoriaRepository).deleteByOcorridoEmBeforeAndAcaoNot(
+                limite.capture(), eq(AcaoAuditoriaEnum.ANONIMIZADO));
+
+        assertThat(descartados).isEqualTo(7L);
+        assertThat(limite.getValue())
+                .isEqualTo(LocalDateTime.now(RELOGIO).minusMonths(RETENCAO_MESES));
+    }
+
+    @Test
+    @DisplayName("descarte sem nada a apagar devolve zero")
+    void deveDescartarNadaQuandoTudoEstaNoPrazo() {
+        when(registroAuditoriaRepository.deleteByOcorridoEmBeforeAndAcaoNot(
+                any(LocalDateTime.class), eq(AcaoAuditoriaEnum.ANONIMIZADO)))
+                .thenReturn(0L);
+
+        assertThat(auditoriaService.descartarAntigos()).isZero();
     }
 
     @Test

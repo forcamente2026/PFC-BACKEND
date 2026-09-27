@@ -1,0 +1,179 @@
+[
+  {
+    "titulo": "1. Quem trata seus dados",
+    "paragrafos": [
+      "A ForçaMente é um projeto acadêmico desenvolvido por estudantes do Bacharelado em Sistemas de Informação da Universidade de Mogi das Cruzes, como Projeto Final de Curso.",
+      "Controladores dos dados: Felipe Costa Monteiro e Jonathan Augusto Rodrigues Barbosa.",
+      "Encarregado pelo tratamento de dados (DPO), art. 41 da LGPD: Jonathan Augusto Rodrigues Barbosa, pelo e-mail forcamente2026@gmail.com."
+    ]
+  },
+  {
+    "titulo": "2.1. Dados de todos os usuários, no cadastro",
+    "tabela": {
+      "cabecalho": [
+        "Dado",
+        "Para quê",
+        "Base legal (LGPD)"
+      ],
+      "linhas": [
+        [
+          "Nome completo",
+          "Identificar você na plataforma e assinar o conteúdo que você publicar",
+          "Execução de contrato — art. 7º, V"
+        ],
+        [
+          "E-mail",
+          "Login, comunicações sobre a conta e recuperação de acesso",
+          "Execução de contrato — art. 7º, V"
+        ],
+        [
+          "Senha",
+          "Autenticação. Guardada apenas como hash (BCrypt); ninguém, nem nós, consegue lê-la",
+          "Execução de contrato — art. 7º, V"
+        ],
+        [
+          "Data de nascimento",
+          "Verificar a idade mínima de 18 anos",
+          "Obrigação legal e execução de contrato — art. 7º, II e V"
+        ],
+        [
+          "Aceite dos Termos e da Política (data, hora e versão)",
+          "Comprovar qual versão você aceitou",
+          "Cumprimento de obrigação legal — art. 7º, II"
+        ]
+      ]
+    },
+    "nota": "A ForçaMente é gratuita. Não cobramos, não processamos pagamentos e não coletamos dados bancários ou de cartão em nenhuma hipótese."
+  },
+  {
+    "titulo": "2.2. Dados apenas de profissionais de Educação Física",
+    "tabela": {
+      "cabecalho": [
+        "Dado",
+        "Para quê",
+        "Base legal (LGPD)"
+      ],
+      "linhas": [
+        [
+          "CREF e formação acadêmica",
+          "Comprovar a habilitação de quem assina conteúdo técnico",
+          "Execução de contrato — art. 7º, V"
+        ],
+        [
+          "CPF e endereço completo",
+          "Qualificação civil para o termo de responsabilidade técnica sobre o conteúdo publicado",
+          "Execução de contrato e exercício regular de direito — art. 7º, V e VI"
+        ]
+      ]
+    },
+    "nota": "O aluno não informa CPF nem endereço. Coletamos apenas o que tem finalidade — é o princípio da necessidade (art. 6º, III). Como a plataforma é gratuita e o acesso é feito por e-mail, não existe motivo para pedir identificação civil de quem apenas estuda."
+  },
+  {
+    "titulo": "2.3. Dados que você informa nas calculadoras",
+    "paragrafos": [
+      "As calculadoras de métricas podem pedir peso, altura, sexo e nível de atividade física. Esses são dados pessoais sensíveis (dados referentes à saúde, art. 5º, II)."
+    ],
+    "lista": [
+      "São usados apenas para calcular o resultado que aparece na tela, naquele momento.",
+      "Não são gravados no banco de dados nem associados à sua conta.",
+      "O preenchimento é opcional: a calculadora é a única parte da plataforma que os utiliza.",
+      "Base legal: consentimento específico e destacado — art. 11, I."
+    ]
+  },
+  {
+    "titulo": "2.4. Dados coletados automaticamente",
+    "lista": [
+      "Token de sessão, guardado no armazenamento local do seu navegador para manter você conectado. Ele é apagado quando você sai da conta.",
+      "Registros técnicos de acesso ao servidor (data, hora e endereço IP), gerados automaticamente pela hospedagem, usados para segurança e diagnóstico de falhas — art. 7º, VI."
+    ],
+    "nota": "Não usamos cookies de publicidade, rastreamento ou análise de comportamento."
+  },
+  {
+    "titulo": "2.5. Trilha de auditoria",
+    "paragrafos": [
+      "Para conseguir demonstrar que cumprimos esta Política, a plataforma mantém um registro das ações que tocam dados pessoais ou conteúdo publicado.",
+      "O que é registrado: a data e a hora, o tipo de ação (criação, alteração, exclusão, login realizado, falha de login, anonimização de conta, aprovação ou rejeição de artigo), o tipo de item afetado e o identificador interno da conta que realizou a ação.",
+      "O que não é registrado: o conteúdo do que foi alterado, senhas, e nenhum dado de navegação ou comportamento.",
+      "Como o seu nome aparece: a trilha guarda apenas o identificador interno da conta. Nome e e-mail são obtidos no momento da consulta — por isso, se a sua conta for anonimizada, os registros antigos passam a exibir \"Usuário anonimizado\" automaticamente, sem que ninguém precise reescrever o histórico.",
+      "Quem pode consultar: somente administradores da plataforma, com registro da própria consulta — quem olha a trilha também fica registrado nela."
+    ],
+    "nota": "Base legal: cumprimento de obrigação legal e exercício regular de direito — art. 7º, II e VI. O prazo de guarda está na seção 4."
+  },
+  {
+    "titulo": "3. Com quem compartilhamos",
+    "paragrafos": [
+      "Não vendemos, alugamos nem cedemos seus dados. O compartilhamento se limita ao necessário para o serviço funcionar:"
+    ],
+    "tabela": {
+      "cabecalho": [
+        "Com quem",
+        "O que recebe",
+        "Por quê"
+      ],
+      "linhas": [
+        [
+          "ViaCEP (serviço público de consulta de CEP)",
+          "Apenas o CEP digitado, sem qualquer outro dado",
+          "Preencher o endereço automaticamente no cadastro do profissional"
+        ],
+        [
+          "Provedor de hospedagem",
+          "Os dados armazenados na aplicação",
+          "Manter a plataforma no ar"
+        ],
+        [
+          "Autoridades públicas",
+          "O que for legalmente exigido",
+          "Cumprimento de ordem legal ou judicial — art. 7º, II"
+        ]
+      ]
+    }
+  },
+  {
+    "titulo": "4. Por quanto tempo guardamos",
+    "lista": [
+      "Dados de cadastro: enquanto sua conta existir.",
+      "Após o pedido de exclusão: os dados que identificam você são anonimizados de forma irreversível. Artigos publicados por profissionais permanecem na plataforma sem identificar o autor, preservando o acervo educativo; se você quiser a retirada do conteúdo, peça pelo canal da seção 7.",
+      "Registro do aceite dos Termos e da Política: mantido mesmo após a anonimização, pelo prazo legal, como prova do consentimento (art. 16, I).",
+      "Trilha de auditoria: 6 meses, contados da data de cada registro; depois disso, os registros são eliminados. A LGPD não fixa prazo para trilhas de auditoria — ela exige que o prazo seja definido e justificado (arts. 15 e 16). Adotamos 6 meses por analogia ao art. 15 do Marco Civil da Internet, que obriga provedores de aplicação a guardar registros de acesso por esse período. Aquela obrigação alcança quem atua com fins econômicos, o que não é o caso desta plataforma — por isso é uma referência adotada por prudência, e não uma exigência que recaia sobre nós. Os registros de anonimização de conta são mantidos além desse prazo, sem qualquer dado que identifique a pessoa, porque são a prova de que o pedido de exclusão foi cumprido.",
+      "Encerramento do projeto acadêmico: por ser um trabalho de conclusão de curso, a plataforma pode ser desativada ao fim do período acadêmico. Nesse caso, a base de dados será eliminada, e avisaremos com antecedência pelo e-mail cadastrado."
+    ]
+  },
+  {
+    "titulo": "5. Como protegemos",
+    "lista": [
+      "Senhas armazenadas apenas como hash BCrypt, nunca em texto legível, e nunca devolvidas pela API.",
+      "Comunicação entre seu navegador e o servidor por HTTPS.",
+      "Acesso às áreas internas por autenticação com token, com permissões distintas por perfil.",
+      "Acesso ao banco de dados restrito aos desenvolvedores responsáveis."
+    ],
+    "nota": "Nenhum sistema é totalmente imune. Em caso de incidente de segurança relevante, comunicaremos você e a Autoridade Nacional de Proteção de Dados (ANPD), como exige o art. 48."
+  },
+  {
+    "titulo": "6. Seus direitos (art. 18 da LGPD)",
+    "paragrafos": [
+      "Você pode, a qualquer momento:"
+    ],
+    "lista": [
+      "confirmar se tratamos dados seus e acessar esses dados;",
+      "corrigir dados incompletos, inexatos ou desatualizados;",
+      "pedir anonimização, bloqueio ou eliminação de dados desnecessários ou tratados em desconformidade com a lei;",
+      "pedir a portabilidade dos seus dados a outro fornecedor;",
+      "revogar o consentimento — por exemplo, deixar de usar as calculadoras;",
+      "saber com quem compartilhamos seus dados;",
+      "opor-se a um tratamento feito com base que não seja o consentimento."
+    ]
+  },
+  {
+    "titulo": "7. Contato",
+    "paragrafos": [
+      "Para exercer qualquer um dos direitos acima, escreva para forcamente2026@gmail.com. Responderemos em até 15 dias."
+    ]
+  },
+  {
+    "titulo": "8. Alterações desta Política",
+    "paragrafos": [
+      "Podemos alterar esta Política. A versão e a data ficam sempre no topo do documento, e mudanças relevantes são avisadas na plataforma."
+    ]
+  }
+]
