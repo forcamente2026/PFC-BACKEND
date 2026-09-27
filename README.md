@@ -6,6 +6,15 @@ Projeto Final de Curso (PFC) — Bacharelado em Sistemas de Informação, Univer
 
 Repositório do front-end: [PFC-FRONTEND](https://github.com/ofelpys/PFC-FRONTEND)
 
+> ### Entrega — consumo de API externa
+>
+> A documentação técnica da integração está em **[docs/integracao-viacep.md](docs/integracao-viacep.md)**.
+>
+> O documento cobre a API consumida ([ViaCEP](https://viacep.com.br/)), a justificativa da escolha, o desenho
+> da integração, o contrato exposto ao front-end, o tratamento de falhas e os testes que o sustentam.
+> A especificação OpenAPI da API externa acompanha a entrega e pode ser consultada, com o back-end
+> no ar, em `http://localhost:8080/viacep/index.html`.
+
 ## Arquitetura
 
 Modelo **cliente-servidor**: o front-end (React, publicado na Vercel) envia requisições HTTPS para o back-end via **API REST** protegida por autenticação **JWT**, com troca de dados em **JSON**. O back-end é estruturado como um **monólito modular**, organizado em cinco módulos principais para facilitar manutenção e evolução independente de cada domínio. A persistência dos dados é feita em um banco **PostgreSQL** hospedado no serviço **Neon**, via conexão **TLS/JDBC**.
