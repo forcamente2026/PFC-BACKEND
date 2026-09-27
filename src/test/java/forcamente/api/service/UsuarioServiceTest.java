@@ -121,6 +121,22 @@ class UsuarioServiceTest {
     }
 
     @Test
+    @DisplayName("aluno sem CPF nao dispara a consulta de CPF duplicado")
+    void naoDeveConsultarCpfQuandoAlunoNaoInforma() {
+        var requestDTO = umaRequisicaoValida();
+        var entity = umaEntidade();
+
+        when(usuarioRepository.existsByEmail("joao@umc.br")).thenReturn(false);
+        when(usuarioMapper.toEntity(requestDTO)).thenReturn(entity);
+        when(usuarioRepository.save(entity)).thenReturn(entity);
+        when(usuarioMapper.toDTO(entity)).thenReturn(umaResposta(entity));
+
+        usuarioService.criarUsuario(requestDTO);
+
+        verify(usuarioRepository, never()).existsByCpf(any());
+    }
+
+    @Test
     @DisplayName("nao deve cadastrar professor com CPF ja existente")
     void naoDeveCadastrarUsuarioComCpfDuplicado() {
         var requestDTO = umProfessor("123456-G/SP");

@@ -60,15 +60,12 @@ public class UsuarioService implements IUsuarioService {
             throw new ConflitoException(
                     "Ja existe um usuario cadastrado com o e-mail: " + usuarioRequestDTO.email());
         }
-        if (usuarioRepository.existsByCpf(usuarioRequestDTO.cpf())) {
+        if (usuarioRequestDTO.cpf() != null && usuarioRepository.existsByCpf(usuarioRequestDTO.cpf())) {
             throw new ConflitoException("Ja existe um usuario cadastrado com este CPF");
         }
+
         if (usuarioRequestDTO.cref() != null && usuarioRepository.existsByCref(usuarioRequestDTO.cref())) {
             throw new ConflitoException("Ja existe um professor cadastrado com este CREF");
-        }
-        if (usuarioRequestDTO.cpf() != null &&
-        usuarioRepository.existsByCpf(usuarioRequestDTO.cpf())){
-            throw new ConflitoException("Ja existe um usuario cadastrado com este CPF");
         }
 
         UsuarioEntity usuarioEntity = usuarioMapper.toEntity(usuarioRequestDTO);
