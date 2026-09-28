@@ -47,7 +47,7 @@ public class UsuarioEntity {
     @Column(name = "papel", nullable = false, length = 20)
     private PapelUsuarioEnum papel;
 
-    @Column(name = "data_nascimento", nullable = false)
+    @Column(name = "data_nascimento", nullable = true)
     private LocalDate dataNascimento;
 
     @Column(name = "cref", length = 11, unique = true)
