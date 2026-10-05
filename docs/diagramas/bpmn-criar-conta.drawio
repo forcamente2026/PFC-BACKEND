@@ -1,0 +1,172 @@
+﻿<mxfile host="app.diagrams.net" agent="ForcaMente PFC" version="24.7.17">
+  <diagram name="BPMN 1 - Criar conta" id="bpmn-criar-conta">
+    <mxGraphModel dx="1422" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4650" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="titulo" value="ForçaMente — Diagrama BPMN&lt;br&gt;&lt;font style=&quot;font-size: 17px;&quot;&gt;Processo 1: Criar conta na plataforma — requisitos RF01, RF02 e RF03&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;fontSize=26;fontStyle=1;fontColor=#1F2D3D;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1200" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pool" value="ForçaMente" style="swimlane;horizontal=0;html=1;startSize=44;fillColor=none;strokeColor=#333333;fontSize=18;fontStyle=1;verticalAlign=middle;align=center;swimlaneFillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="110" width="4500" height="680" as="geometry" />
+        </mxCell>
+
+        <mxCell id="raia-visitante" value="Visitante" style="swimlane;horizontal=0;html=1;startSize=40;fillColor=none;strokeColor=#333333;fontSize=15;fontStyle=1;verticalAlign=middle;align=center;swimlaneFillColor=#FBFBFB;" vertex="1" parent="pool">
+          <mxGeometry x="44" y="0" width="4456" height="330" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ini" value="Deseja criar&lt;br&gt;uma conta" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;fontSize=12;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="70" y="140" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="A1" value="Acessar a página&lt;br&gt;de cadastro" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="170" y="125" width="170" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="A2" value="Informar nome, e-mail,&lt;br&gt;data de nascimento&lt;br&gt;e senha" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="380" y="120" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="G1" value="É profissional de&lt;br&gt;Educação Física?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;labelPosition=right;align=left;verticalLabelPosition=bottom;verticalAlign=top;fontSize=12;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="700" y="140" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="A3" value="Informar CREF&lt;br&gt;e formação" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="800" y="25" width="170" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="A4" value="Informar o CEP" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="1010" y="25" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="A5" value="Informar número&lt;br&gt;e complemento" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="2250" y="25" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="G5" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=12;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="2600" y="140" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="A6" value="Marcar o aceite dos&lt;br&gt;Termos de Uso e da&lt;br&gt;Política de Privacidade" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="2700" y="120" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="A7" value="Confirmar&lt;br&gt;o cadastro" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="3020" y="125" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="A8" value="Corrigir os dados&lt;br&gt;apontados" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;" vertex="1" parent="raia-visitante">
+          <mxGeometry x="3020" y="240" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="raia-sistema" value="Sistema" style="swimlane;horizontal=0;html=1;startSize=40;fillColor=none;strokeColor=#333333;fontSize=15;fontStyle=1;verticalAlign=middle;align=center;swimlaneFillColor=#F4F7FB;" vertex="1" parent="pool">
+          <mxGeometry x="44" y="330" width="4456" height="350" as="geometry" />
+        </mxCell>
+
+        <mxCell id="B0" value="Indicar quais regras&lt;br&gt;de senha estão&lt;br&gt;atendidas" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="380" y="25" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="G2" value="CEP com&lt;br&gt;8 dígitos?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;labelPosition=left;align=right;verticalLabelPosition=bottom;verticalAlign=top;fontSize=12;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="1300" y="40" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="B1" value="Consultar o serviço&lt;br&gt;externo de CEP" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="1410" y="25" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="G3" value="Respondeu em&lt;br&gt;até 3 segundos?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;labelPosition=right;align=left;verticalLabelPosition=bottom;verticalAlign=top;fontSize=12;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="1660" y="40" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="G4" value="CEP&lt;br&gt;encontrado?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;labelPosition=left;align=right;verticalLabelPosition=bottom;verticalAlign=top;fontSize=12;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="1770" y="40" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="B2" value="Preencher logradouro,&lt;br&gt;bairro, cidade e estado" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="1880" y="20" width="200" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="B3" value="Informar a indisponibilidade&lt;br&gt;e liberar o preenchimento&lt;br&gt;manual do endereço" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="1880" y="135" width="230" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="B4" value="Informar que o endereço&lt;br&gt;não foi encontrado e liberar&lt;br&gt;o preenchimento manual" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="1880" y="250" width="230" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="B5" value="Validar os dados&lt;br&gt;e as regras de negócio" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="3200" y="25" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="G6" value="Dados&lt;br&gt;válidos?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;labelPosition=right;align=left;verticalLabelPosition=bottom;verticalAlign=top;fontSize=12;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="3540" y="40" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="B6" value="Informar o motivo&lt;br&gt;da recusa" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="3200" y="150" width="200" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="B7" value="Criar a conta ativa&lt;br&gt;e registrar o aceite&lt;br&gt;com data e versão" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="3740" y="20" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="B8" value="Registrar a criação na&lt;br&gt;trilha de auditoria (RF20)" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="4000" y="25" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="fim" value="Conta criada" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=5;verticalLabelPosition=bottom;verticalAlign=top;fontSize=12;" vertex="1" parent="raia-sistema">
+          <mxGeometry x="4260" y="40" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pool-viacep" value="ViaCEP — serviço externo" style="swimlane;horizontal=0;html=1;startSize=44;fillColor=#F5F5F5;strokeColor=#666666;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;swimlaneFillColor=#FAFAFA;" vertex="1" parent="1">
+          <mxGeometry x="40" y="830" width="4500" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="viacep-txt" value="Participante externo representado como caixa-preta: o processo interno do ViaCEP não é conhecido nem modelado.&lt;br&gt;A troca acontece por fluxo de mensagem — a linha tracejada — e não por fluxo de sequência." style="text;html=1;align=left;verticalAlign=middle;fontSize=13;fontColor=#555555;" vertex="1" parent="pool-viacep">
+          <mxGeometry x="1750" y="25" width="700" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s01" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="ini" target="A1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s02" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="A1" target="A2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s02b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="A2" target="B0"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s03" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="B0" target="G1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s04" value="Sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontSize=12;fontStyle=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="G1" target="A3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s05" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="A3" target="A4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s06" value="Não" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontSize=12;fontStyle=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="G1" target="G5"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="s07" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="A4" target="G2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s08" value="Não — aguarda&lt;br&gt;os 8 dígitos" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontSize=11;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="G2" target="A4"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1409" y="580" /><mxPoint x="1169" y="580" /></Array></mxGeometry></mxCell>
+        <mxCell id="s09" value="Sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontSize=12;fontStyle=1;" edge="1" parent="1" source="G2" target="B1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="B1" target="G3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s11" value="Sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontSize=12;fontStyle=1;" edge="1" parent="1" source="G3" target="G4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s12" value="Não" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;fontSize=12;fontStyle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="G3" target="B3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s13" value="Sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontSize=12;fontStyle=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="G4" target="B2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s14" value="Não" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;fontSize=12;fontStyle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="G4" target="B4"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="s15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="B2" target="A5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.55;entryDx=0;entryDy=0;" edge="1" parent="1" source="B3" target="A5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.8;entryDx=0;entryDy=0;" edge="1" parent="1" source="B4" target="A5"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="s18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="A5" target="G5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="G5" target="A6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="A6" target="A7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="A7" target="B5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="B5" target="G6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s23" value="Não" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#b85450;fontSize=12;fontStyle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="G6" target="B6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s24" value="Corrigir e&lt;br&gt;confirmar de novo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#b85450;fontSize=11;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="B6" target="A8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="A8" target="A7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s26" value="Sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontSize=12;fontStyle=1;" edge="1" parent="1" source="G6" target="B7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="B7" target="B8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="s28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="B8" target="fim"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="m01" value="CEP (8 dígitos)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;endSize=10;strokeWidth=2;strokeColor=#666666;fontSize=12;fontColor=#444444;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.33;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="B1" target="pool-viacep"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="m02" value="endereço ou indicação de erro" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 8;endArrow=open;endFill=0;endSize=10;strokeWidth=2;strokeColor=#666666;fontSize=12;fontColor=#444444;exitX=0.355;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="pool-viacep" target="B1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="n1" value="&lt;b&gt;RN10&lt;/b&gt; — o sistema só consulta o serviço externo com CEP de 8 dígitos, e envia apenas o CEP. Tempo limite de 3 segundos." style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#FFF9E6;strokeColor=#d6b656;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="1000" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n1e" style="html=1;dashed=1;endArrow=none;strokeColor=#d6b656;strokeWidth=2;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="n1" target="G2"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="n2" value="&lt;b&gt;Motivos de recusa&lt;/b&gt;&lt;br&gt;RN01 — menos de 18 anos&lt;br&gt;RN02 — e-mail já cadastrado&lt;br&gt;RN03 — senha fora das regras&lt;br&gt;RN08 — CREF inválido ou já usado&lt;br&gt;RN09 — endereço profissional incompleto" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#FBE9E7;strokeColor=#b85450;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="3420" y="1000" width="290" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="n2e" style="html=1;dashed=1;endArrow=none;strokeColor=#b85450;strokeWidth=2;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="n2" target="G6"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="n3" value="&lt;b&gt;RN05&lt;/b&gt; — a data do aceite e a versão vigente de cada documento são carimbadas pelo servidor, nunca enviadas pelo navegador: é o que dá valor de prova ao consentimento.&lt;br&gt;&lt;b&gt;RN04&lt;/b&gt; — a senha é gravada apenas como hash.&lt;br&gt;&lt;b&gt;RN07&lt;/b&gt; — conta de aluno não guarda CREF, formação nem endereço, mesmo que sejam enviados." style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#E8F5E9;strokeColor=#82b366;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="3760" y="1000" width="340" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="n3e" style="html=1;dashed=1;endArrow=none;strokeColor=#82b366;strokeWidth=2;exitX=0.2;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="n3" target="B7"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="legenda" value="Legenda BPMN" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#FAFAFA;strokeColor=#999999;fontSize=14;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1000" width="1060" height="186" as="geometry" />
+        </mxCell>
+        <mxCell id="lb1" value="&lt;b&gt;Círculo fino verde&lt;/b&gt; — evento de início   |   &lt;b&gt;Círculo grosso vermelho&lt;/b&gt; — evento de fim" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=12;fontSize=12;" vertex="1" parent="legenda"><mxGeometry y="30" width="1060" height="24" as="geometry" /></mxCell>
+        <mxCell id="lb2" value="&lt;b&gt;Retângulo arredondado&lt;/b&gt; — atividade   |   &lt;b&gt;Losango&lt;/b&gt; — decisão exclusiva: segue por um caminho só" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=12;fontSize=12;" vertex="1" parent="legenda"><mxGeometry y="54" width="1060" height="24" as="geometry" /></mxCell>
+        <mxCell id="lb3" value="&lt;b&gt;Linha cheia com ponta preenchida&lt;/b&gt; — fluxo de sequência, dentro do mesmo participante" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=12;fontSize=12;" vertex="1" parent="legenda"><mxGeometry y="78" width="1060" height="24" as="geometry" /></mxCell>
+        <mxCell id="lb4" value="&lt;b&gt;Linha tracejada com ponta vazada&lt;/b&gt; — fluxo de mensagem, entre participantes diferentes (ForçaMente e ViaCEP)" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=12;fontSize=12;" vertex="1" parent="legenda"><mxGeometry y="102" width="1060" height="24" as="geometry" /></mxCell>
+        <mxCell id="lb5" value="&lt;b&gt;Laranja&lt;/b&gt; — caminho alternativo que não impede o cadastro   |   &lt;b&gt;Vermelho&lt;/b&gt; — recusa   |   &lt;b&gt;Verde&lt;/b&gt; — conclusão com sucesso" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=12;fontSize=12;" vertex="1" parent="legenda"><mxGeometry y="126" width="1060" height="24" as="geometry" /></mxCell>
+        <mxCell id="lb6" value="As notas citam as regras de negócio (RN) do documento de requisitos, versão 2.0 de 02/10/2026." style="text;html=1;align=left;verticalAlign=middle;spacingLeft=12;fontSize=12;fontColor=#666666;" vertex="1" parent="legenda"><mxGeometry y="150" width="1060" height="24" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
