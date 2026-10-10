@@ -142,6 +142,47 @@ class AnonimizacaoServiceTest {
         assertThat(resultado.getFirst().solicitadaEm()).isEqualTo(LocalDateTime.of(2026, 9, 1, 8, 0));
     }
 
+    @Test
+    @DisplayName("administrador nao pode pedir a propria exclusao: a plataforma ficaria sem quem cumpre os pedidos")
+    void naoDeveSolicitarExclusaoDeAdministrador() {
+        var admin = umAdministrador();
+        when(usuarioRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
+
+        assertThatThrownBy(() -> anonimizacaoService.solicitar(admin.getId()))
+                .isInstanceOf(RegraDeNegocioException.class)
+                .hasMessageContaining("administrador");
+
+        assertThat(admin.getAnonimizacaoSolicitadaEm()).isNull();
+    }
+
+    @Test
+    @DisplayName("conta de administrador nao e anonimizada nem se ja houver pedido gravado no banco")
+    void naoDeveAnonimizarAdministrador() {
+        var admin = umAdministrador();
+        admin.setAnonimizacaoSolicitadaEm(LocalDateTime.now(RELOGIO));
+        when(usuarioRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
+
+        assertThatThrownBy(() -> anonimizacaoService.anonimizar(admin.getId()))
+                .isInstanceOf(RegraDeNegocioException.class)
+                .hasMessageContaining("administrador");
+
+        assertThat(admin.getAnonimizadoEm()).isNull();
+        assertThat(admin.getNomeCompleto()).isEqualTo("Administrador ForcaMente");
+    }
+
+    private UsuarioEntity umAdministrador() {
+        var entity = new UsuarioEntity();
+        entity.setId(UUID.randomUUID());
+        entity.setNomeCompleto("Administrador ForcaMente");
+        entity.setEmail("admin@forcamente.com");
+        entity.setSenhaHash("$2a$10$hash");
+        entity.setPapel(PapelUsuarioEnum.ADMINISTRADOR);
+        entity.setDataNascimento(LocalDate.of(1988, 3, 15));
+        entity.setAtivo(true);
+        entity.setCriadoEm(LocalDateTime.now(RELOGIO));
+        return entity;
+    }
+
     private UsuarioEntity umProfessor() {
         var entity = new UsuarioEntity();
         entity.setId(UUID.randomUUID());

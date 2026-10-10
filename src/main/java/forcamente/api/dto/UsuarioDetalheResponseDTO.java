@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record UsuarioAdminResponseDTO(
+public record UsuarioDetalheResponseDTO(
         UUID id,
         String nomeCompleto,
         String email,
