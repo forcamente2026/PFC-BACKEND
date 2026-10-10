@@ -4,7 +4,7 @@ import forcamente.api.dto.AlterarAtivoRequestDTO;
 import forcamente.api.dto.AnonimizadorPendenteDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
-import forcamente.api.dto.UsuarioAdminResponseDTO;
+import forcamente.api.dto.UsuarioDetalheResponseDTO;
 import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
@@ -18,6 +18,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -73,7 +74,7 @@ public class UsuarioController {
     }
 
     @GetMapping
-    public ResponseEntity<PaginaDTO<UsuarioAdminResponseDTO>> listar(
+    public ResponseEntity<PaginaDTO<UsuarioDetalheResponseDTO>> listar(
             @RequestParam(name = "busca", required = false) String busca,
 
             @RequestParam(name = "papel", required = false) PapelUsuarioEnum papel,
@@ -88,7 +89,7 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UsuarioAdminResponseDTO> atualizar(
+    public ResponseEntity<UsuarioDetalheResponseDTO> atualizar(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UsuarioAtualizacaoRequestDTO dados) {
 
@@ -96,7 +97,7 @@ public class UsuarioController {
     }
 
     @PatchMapping("/{id}/ativo")
-    public ResponseEntity<UsuarioAdminResponseDTO> alterarAtivo(
+    public ResponseEntity<UsuarioDetalheResponseDTO> alterarAtivo(
             @PathVariable("id") UUID id,
             @Valid @RequestBody AlterarAtivoRequestDTO corpo,
             @AuthenticationPrincipal Jwt jwt) {
@@ -104,6 +105,18 @@ public class UsuarioController {
         UUID solicitanteId = UUID.fromString(jwt.getSubject());
 
         return ResponseEntity.ok(usuarioService.alterarAtivo(id, corpo.ativo(), solicitanteId));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioDetalheResponseDTO> minhaConta(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(
+                usuarioService.buscarDetalhePorId(UUID.fromString(jwt.getSubject())));
+    }
+
+    @DeleteMapping("/me/anonimizacao")
+    public ResponseEntity<Void> cancelarAnonimizacao(@AuthenticationPrincipal Jwt jwt) {
+        anonimizacaoService.cancelarSolicitacao(UUID.fromString(jwt.getSubject()));
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/me/anonimizacao")

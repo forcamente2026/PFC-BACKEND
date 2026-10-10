@@ -3,6 +3,7 @@ package forcamente.api.service.impl;
 import forcamente.api.dto.AnonimizadorPendenteDTO;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.AcaoAuditoriaEnum;
+import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.exception.ConflitoException;
 import forcamente.api.exception.RecursoNaoEncontradoException;
@@ -45,6 +46,13 @@ public class AnonimizacaoService implements IAnonimizacaoService {
             throw new ConflitoException("Esta conta ja foi anonimizada");
         }
 
+        if (usuario.getPapel() == PapelUsuarioEnum.ADMINISTRADOR) {
+            throw new RegraDeNegocioException(
+                    "Conta de administrador nao pode ser excluida: a plataforma ficaria sem quem "
+                            + "cumpre os pedidos de exclusao das outras pessoas");
+        }
+
+
         if (usuario.getAnonimizacaoSolicitadaEm() != null) {
             log.info("Anonimizacao ja solicitada para: usuario={}", usuarioId);
             return;
@@ -53,7 +61,32 @@ public class AnonimizacaoService implements IAnonimizacaoService {
         usuario.setAnonimizacaoSolicitadaEm(LocalDateTime.now(clock));
         usuarioRepository.save(usuario);
 
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, usuarioId);
+
         log.info("Anonimizacao solicitada: usuario={}", usuarioId);
+    }
+
+    @Override
+    @Transactional
+    public void cancelarSolicitacao(UUID usuarioId) {
+        UsuarioEntity usuario = buscar(usuarioId);
+
+        if (usuario.getAnonimizadoEm() != null) {
+            throw new ConflitoException("Esta conta ja foi anonimizada");
+        }
+
+        if (usuario.getAnonimizacaoSolicitadaEm() == null) {
+            throw new RegraDeNegocioException("Nao existe pedido de exclusao para cancelar");
+        }
+
+        usuario.setAnonimizacaoSolicitadaEm(null);
+        usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, usuarioId);
+
+        log.info("Pedido de anonimizacao cancelado: usuario={}", usuarioId);
     }
 
     @Override
@@ -75,6 +108,13 @@ public class AnonimizacaoService implements IAnonimizacaoService {
         if (usuario.getAnonimizadoEm() != null) {
             throw new ConflitoException("Esta conta ja foi anonimizada");
         }
+
+        if (usuario.getPapel() == PapelUsuarioEnum.ADMINISTRADOR) {
+            throw new RegraDeNegocioException(
+                    "Conta de administrador nao pode ser excluida: a plataforma ficaria sem quem "
+                            + "cumpre os pedidos de exclusao das outras pessoas");
+        }
+
 
         if (usuario.getAnonimizacaoSolicitadaEm() == null) {
             throw new RegraDeNegocioException("Este usuario nao solicitou anonimizacao");

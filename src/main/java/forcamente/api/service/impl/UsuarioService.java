@@ -2,7 +2,7 @@ package forcamente.api.service.impl;
 
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
-import forcamente.api.dto.UsuarioAdminResponseDTO;
+import forcamente.api.dto.UsuarioDetalheResponseDTO;
 import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
@@ -100,6 +100,20 @@ public class UsuarioService implements IUsuarioService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public UsuarioDetalheResponseDTO buscarDetalhePorId(UUID usuarioId) {
+        log.info("buscarDetalhePorId: {}", usuarioId);
+
+        UsuarioEntity usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                        "Usuario nao encontrado: " + usuarioId));
+
+        auditoriaService.registrar(AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.USUARIO, usuarioId);
+
+        return usuarioMapper.toDetalheDTO(usuario);
+    }
+
+    @Override
     public List<OpcaoDTO> listarFormacoes() {
         log.info("listarFormacoes");
         return Arrays.stream(FormacaoEnum.values()).map(formacao -> new OpcaoDTO(formacao.name(), formacao.getDescricao() )).toList();
@@ -107,7 +121,7 @@ public class UsuarioService implements IUsuarioService {
 
     @Override
     @Transactional(readOnly = true)
-    public PaginaDTO<UsuarioAdminResponseDTO> listar(
+    public PaginaDTO<UsuarioDetalheResponseDTO> listar(
             String busca, PapelUsuarioEnum papel, Boolean ativo, int pagina, int tamanho) {
 
         log.info("listar usuarios: busca={} papel={} ativo={}", busca, papel, ativo);
@@ -120,7 +134,7 @@ public class UsuarioService implements IUsuarioService {
         auditoriaService.registrar(AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.USUARIO, null);
 
         return new PaginaDTO<>(
-                resultado.getContent().stream().map(usuarioMapper::toAdminDTO).toList(),
+                resultado.getContent().stream().map(usuarioMapper::toDetalheDTO).toList(),
                 resultado.getNumber(),
                 resultado.getSize(),
                 resultado.getTotalElements(),
@@ -129,7 +143,7 @@ public class UsuarioService implements IUsuarioService {
 
     @Override
     @Transactional
-    public UsuarioAdminResponseDTO atualizar(UUID usuarioId, UsuarioAtualizacaoRequestDTO dados) {
+    public UsuarioDetalheResponseDTO atualizar(UUID usuarioId, UsuarioAtualizacaoRequestDTO dados) {
         log.info("atualizar usuario: {}", usuarioId);
 
         UsuarioEntity usuario = buscarEntidade(usuarioId);
@@ -169,12 +183,12 @@ public class UsuarioService implements IUsuarioService {
         auditoriaService.registrar(
                 AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
 
-        return usuarioMapper.toAdminDTO(salvo);
+        return usuarioMapper.toDetalheDTO(salvo);
     }
 
     @Override
     @Transactional
-    public UsuarioAdminResponseDTO alterarAtivo(UUID usuarioId, boolean ativo, UUID solicitanteId) {
+    public UsuarioDetalheResponseDTO alterarAtivo(UUID usuarioId, boolean ativo, UUID solicitanteId) {
         log.info("alterarAtivo: usuario={} ativo={}", usuarioId, ativo);
 
         if (!ativo && usuarioId.equals(solicitanteId)) {
@@ -195,7 +209,7 @@ public class UsuarioService implements IUsuarioService {
         auditoriaService.registrar(
                 AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
 
-        return usuarioMapper.toAdminDTO(salvo);
+        return usuarioMapper.toDetalheDTO(salvo);
     }
 
     private UsuarioEntity buscarEntidade(UUID usuarioId) {

@@ -10,6 +10,8 @@ public interface IAnonimizacaoService {
 
     void solicitar(UUID usuarioId);
 
+    void cancelarSolicitacao(UUID usuarioId);
+
     List<AnonimizadorPendenteDTO> listarPendentes();
 
     void anonimizar(UUID usuarioId);

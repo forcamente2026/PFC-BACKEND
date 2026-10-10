@@ -2,7 +2,7 @@ package forcamente.api.service;
 
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
-import forcamente.api.dto.UsuarioAdminResponseDTO;
+import forcamente.api.dto.UsuarioDetalheResponseDTO;
 import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
@@ -17,12 +17,14 @@ public interface IUsuarioService {
 
     UsuarioResponseDTO buscarPorId(UUID usuarioId);
 
+    UsuarioDetalheResponseDTO buscarDetalhePorId(UUID usuarioId);
+
     List<OpcaoDTO> listarFormacoes();
 
-    PaginaDTO<UsuarioAdminResponseDTO> listar(
+    PaginaDTO<UsuarioDetalheResponseDTO> listar(
             String busca, PapelUsuarioEnum papel, Boolean ativo, int pagina, int tamanho);
 
-    UsuarioAdminResponseDTO atualizar(UUID usuarioId, UsuarioAtualizacaoRequestDTO dados);
+    UsuarioDetalheResponseDTO atualizar(UUID usuarioId, UsuarioAtualizacaoRequestDTO dados);
 
-    UsuarioAdminResponseDTO alterarAtivo(UUID usuarioId, boolean ativo, UUID solicitanteId);
+    UsuarioDetalheResponseDTO alterarAtivo(UUID usuarioId, boolean ativo, UUID solicitanteId);
 }
