@@ -23,10 +23,11 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.Clock;
+import java.time.LocalDateTime;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -40,6 +41,16 @@ public class AuthService  implements IAuthService {
     private final IAuditoriaService auditoriaService;
     private static final String MENSAGEM_CODIGO_INVALIDO = "Codigo invalido ou expirado";
     private static final String ASSUNTO_MFA = "ForcaMente - seu codigo de acesso";
+    private static final int SENHA_ERROS_PARA_PAUSA = 4;
+    private static final int SENHA_PAUSA_MAXIMA_MINUTOS = 5;
+    private static final int SENHA_FALHAS_POR_HORA = 45;
+    private static final int SENHA_BLOQUEIO_HORAS = 1;
+    private static final int SENHA_OCORRENCIAS_CADUCAM_HORAS = 24;
+    private final Clock clock;
+    private static final String MENSAGEM_LOGIN_INVALIDO = "E-mail ou senha inválidos. Se não lembra a senha, use \"esqueci minha senha\".";
+
+
+
     private String textoMfa(String codigo) {
         return """
                 Alguem esta entrando na sua conta do ForcaMente.
@@ -58,6 +69,7 @@ public class AuthService  implements IAuthService {
                        ICodigoVerificacaoService codigoVerificacaoService,
                        IEmailService emailService,
                        IAuditoriaService auditoriaService,
+                       Clock clock,
                        @Value("${jwt.expiracao-minutos}") long expiracaoMinutos) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
@@ -66,25 +78,31 @@ public class AuthService  implements IAuthService {
         this.emailService = emailService;
         this.auditoriaService = auditoriaService;
         this.expiracaoMinutos = expiracaoMinutos;
+        this.clock = clock;
     }
 
     @Override
-    @Transactional(noRollbackFor = LimiteDeTentativasException.class)
+    @Transactional(noRollbackFor = {CredenciaisInvalidasException.class, LimiteDeTentativasException.class})
     public LoginPendenteResponseDTO login(LoginRequestDTO loginRequestDTO) {
         log.info("login");
 
+        LocalDateTime agora = LocalDateTime.now(clock);
+
         UsuarioEntity usuario = usuarioRepository.findByEmail(loginRequestDTO.email()).orElse(null);
 
-        if (usuario == null
-                || !usuario.isAtivo()
-                || !passwordEncoder.matches(loginRequestDTO.senha(), usuario.getSenhaHash())) {
-
-            UUID idTentado = usuario == null ? null : usuario.getId();
-            auditoriaService.registrar(
-                    AcaoAuditoriaEnum.LOGIN_FALHOU, RecursoAuditoriaEnum.USUARIO, idTentado, idTentado);
-
-            throw new CredenciaisInvalidasException("E-mail ou senha invalidos");
+        if (usuario == null){
+                auditoriaService.registrar(AcaoAuditoriaEnum.LOGIN_FALHOU, RecursoAuditoriaEnum.USUARIO, null, null);
+                throw new CredenciaisInvalidasException(MENSAGEM_LOGIN_INVALIDO);
         }
+        verificarBloqueioDeSenha(usuario, agora);
+
+        if (!usuario.isAtivo()
+            || !passwordEncoder.matches(loginRequestDTO.senha(), usuario.getSenhaHash())) {
+            registrarFalhaDeSenha(usuario, agora);
+            throw new CredenciaisInvalidasException(MENSAGEM_LOGIN_INVALIDO);
+        }
+        zerarContadorDeSenha(usuario);
+
         String codigo = codigoVerificacaoService.gerarCodigo(usuario, TipoCodigoEnum.MFA);
                 usuarioRepository.save(usuario);
                 emailService.enviar(usuario.getEmail(), ASSUNTO_MFA, textoMfa(codigo));
@@ -116,6 +134,75 @@ public class AuthService  implements IAuthService {
                 Se voce nao solicitou esta troca, ignore esta mensagem: sua senha continua a mesma.
                 """.formatted(codigo);
 
+    }
+
+    private void verificarBloqueioDeSenha(UsuarioEntity usuario, LocalDateTime agora) {
+        caducarOcorrenciasDeSenha(usuario,agora);
+        if (usuario.getSenhaBloqueadoAte() != null && usuario.getSenhaBloqueadoAte().isAfter(agora)) {
+            throw new LimiteDeTentativasException(MENSAGEM_LOGIN_INVALIDO);
+        }
+    }
+
+    private void registrarFalhaDeSenha(UsuarioEntity usuario, LocalDateTime agora) {
+        auditoriaService.registrar(AcaoAuditoriaEnum.LOGIN_FALHOU, RecursoAuditoriaEnum.USUARIO, usuario.getId(), usuario.getId());
+
+        contarFalhaNaJanela(usuario, agora);
+
+        int erros = usuario.getSenhaErrosConsecutivos() == null ? 1 : usuario.getSenhaErrosConsecutivos() + 1;
+        usuario.setSenhaErrosConsecutivos(erros);
+
+        if (erros >= SENHA_ERROS_PARA_PAUSA) {
+            int ocorrencias = usuario.getSenhaPausaOcorrencias() == null ? 1 : usuario.getSenhaPausaOcorrencias() + 1;
+            long pausa = Math.min(ocorrencias, SENHA_PAUSA_MAXIMA_MINUTOS);
+
+            usuario.setSenhaPausaOcorrencias(ocorrencias);
+            usuario.setSenhaBloqueadoAte(agora.plusMinutes(pausa));
+            usuario.setSenhaErrosConsecutivos(0);
+        }
+    }
+
+    private void contarFalhaNaJanela(UsuarioEntity usuario, LocalDateTime agora) {
+        if (usuario.getSenhaJanelaInicio() == null || usuario.getSenhaJanelaInicio().plusHours(1).isBefore(agora)) {
+            usuario.setSenhaJanelaInicio(agora);
+            usuario.setSenhaFalhasJanela(0);
+        }
+
+        int falhas = usuario.getSenhaFalhasJanela() == null ? 1 : usuario.getSenhaFalhasJanela() + 1;
+        usuario.setSenhaFalhasJanela(falhas);
+
+        if (falhas >= SENHA_FALHAS_POR_HORA) {
+
+            usuario.setSenhaBloqueadoAte(agora.plusHours(SENHA_BLOQUEIO_HORAS));
+            usuario.setSenhaFalhasJanela(0);
+            usuario.setSenhaJanelaInicio(null);
+            usuario.setSenhaErrosConsecutivos(0);
+
+            auditoriaService.registrar(AcaoAuditoriaEnum.LOGIN_BLOQUEADO, RecursoAuditoriaEnum.USUARIO, usuario.getId(), usuario.getId());
+
+            throw new LimiteDeTentativasException(MENSAGEM_LOGIN_INVALIDO);
+
+        }
+    }
+
+    private void zerarContadorDeSenha(UsuarioEntity usuario) {
+        usuario.setSenhaFalhasJanela(0);
+        usuario.setSenhaJanelaInicio(null);
+        usuario.setSenhaErrosConsecutivos(0);
+        usuario.setSenhaPausaOcorrencias(null);
+        usuario.setSenhaBloqueadoAte(null);
+
+    }
+
+    private void caducarOcorrenciasDeSenha(UsuarioEntity usuario, LocalDateTime agora) {
+
+        if (usuario.getSenhaBloqueadoAte() == null) {
+            return;
+        }
+        if (usuario.getSenhaBloqueadoAte().plusHours(SENHA_OCORRENCIAS_CADUCAM_HORAS).isBefore(agora)) {
+            usuario.setSenhaPausaOcorrencias(null);
+            usuario.setSenhaBloqueadoAte(null);
+            usuario.setSenhaErrosConsecutivos(0);
+        }
     }
 
     @Override

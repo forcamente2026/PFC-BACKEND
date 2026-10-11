@@ -11,10 +11,12 @@ public enum AcaoAuditoriaEnum {
     EXCLUIDO("Excluído"),
     LOGIN_REALIZADO("Login realizado"),
     LOGIN_FALHOU("Falha no login"),
+    LOGIN_BLOQUEADO("Login bloqueado por tentativas"),
     MFA_FALHOU("Falha na verificação do código"),
     ANONIMIZADO("Conta anonimizada"),
     APROVADO("Aprovado"),
     REJEITADO("Rejeitado");
+
 
     private final String descricao;
 
