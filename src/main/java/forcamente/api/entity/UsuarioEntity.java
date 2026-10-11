@@ -112,6 +112,21 @@ public class UsuarioEntity {
     @Column(name = "redefinicao_erros_consecutivos")
     private Integer redefinicaoErrosConsecutivos;
 
+    @Column(name="senha_falhas_janela")
+    private Integer senhaFalhasJanela;
+
+    @Column(name="senha_janela_inicio")
+    private LocalDateTime senhaJanelaInicio;
+
+    @Column(name = "senha_erros_consecutivos")
+    private Integer senhaErrosConsecutivos;
+
+    @Column(name = "senha_pausa_ocorrencias")
+    private Integer senhaPausaOcorrencias;
+
+    @Column(name = "senha_bloqueado_ate")
+    private LocalDateTime senhaBloqueadoAte;
+
     @Column(name = "cep", length = 8)
     private String cep;
 

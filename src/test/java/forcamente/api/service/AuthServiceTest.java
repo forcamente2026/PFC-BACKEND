@@ -21,12 +21,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Duration;
+import java.time.ZoneId;
+import forcamente.api.entity.enums.AcaoAuditoriaEnum;
+import forcamente.api.entity.enums.RecursoAuditoriaEnum;
+import static org.mockito.Mockito.times;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -63,11 +69,19 @@ class AuthServiceTest {
 
     private AuthService authService;
 
+    private static final LocalDateTime INICIO = LocalDateTime.of(2026, 10, 10, 12, 0);
+
+    private RelogioAjustavel relogio;
+
+    private static final String MENSAGEM_LOGIN_INVALIDO =
+            "E-mail ou senha inválidos. Se não lembra a senha, use \"esqueci minha senha\".";
+
     @BeforeEach
     void configurar() {
+        relogio = new RelogioAjustavel(INICIO);
         authService = new AuthService(
                 usuarioRepository, passwordEncoder, segurancaConfig.jwtEncoder(SEGREDO),
-                codigoVerificacaoService, emailService, auditoriaService, EXPIRACAO_MINUTOS);
+                codigoVerificacaoService, emailService, auditoriaService, relogio, EXPIRACAO_MINUTOS);
     }
 
     @Test
@@ -96,6 +110,7 @@ class AuthServiceTest {
     @DisplayName("codigo correto devolve token com id e papel, e o nome do usuario")
     void verificarCodigoDevolveToken() {
         var usuario = umUsuarioAtivo();
+
         when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
 
         var resposta = authService.verificarCodigo(
@@ -112,6 +127,8 @@ class AuthServiceTest {
                 Instant.now().plus(EXPIRACAO_MINUTOS - 1, ChronoUnit.MINUTES),
                 Instant.now().plus(EXPIRACAO_MINUTOS + 1, ChronoUnit.MINUTES));
 
+
+
     }
 
 
@@ -122,7 +139,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(new LoginRequestDTO("ninguem@umc.br", "Senha@123")))
                 .isInstanceOf(CredenciaisInvalidasException.class)
-                .hasMessage("E-mail ou senha invalidos");
+                .hasMessage(MENSAGEM_LOGIN_INVALIDO);
 
         verify(passwordEncoder, never()).matches(any(), any());
         verify(codigoVerificacaoService, never()).gerarCodigo(any(), any());
@@ -136,7 +153,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(new LoginRequestDTO("joao@umc.br", "errada")))
                 .isInstanceOf(CredenciaisInvalidasException.class)
-                .hasMessage("E-mail ou senha invalidos");
+                .hasMessage(MENSAGEM_LOGIN_INVALIDO);
         verify(codigoVerificacaoService, never()).gerarCodigo(any(), any());
     }
 
@@ -149,10 +166,143 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(new LoginRequestDTO("joao@umc.br", "Senha@123")))
                 .isInstanceOf(CredenciaisInvalidasException.class)
-                .hasMessage("E-mail ou senha invalidos");
+                .hasMessage(MENSAGEM_LOGIN_INVALIDO);
 
         verify(passwordEncoder, never()).matches(any(), any());
         verify(codigoVerificacaoService, never()).gerarCodigo(any(), any());
+    }
+    @Test
+    @DisplayName("tres falhas de senha nao suspendem a conta")
+    void tresFalhasNaoSuspendem() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("errada", "$2a$10$hash")).thenReturn(false);
+
+        falharSenha(3);
+
+        assertThat(usuario.getSenhaErrosConsecutivos()).isEqualTo(3);
+        assertThat(usuario.getSenhaBloqueadoAte()).isNull();
+        assertThat(usuario.getSenhaPausaOcorrencias()).isNull();
+    }
+
+    @Test
+    @DisplayName("a quarta falha suspende a conta por um minuto")
+    void quartaFalhaSuspendePorUmMinuto() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("errada", "$2a$10$hash")).thenReturn(false);
+
+        falharSenha(4);
+
+        assertThat(usuario.getSenhaBloqueadoAte()).isEqualTo(INICIO.plusMinutes(1));
+        assertThat(usuario.getSenhaPausaOcorrencias()).isEqualTo(1);
+        assertThat(usuario.getSenhaErrosConsecutivos()).isZero();
+    }
+
+    @Test
+    @DisplayName("tentativa durante a suspensao e recusada sem conferir a senha")
+    void tentativaDuranteSuspensaoNaoConfereSenha() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("errada", "$2a$10$hash")).thenReturn(false);
+
+        falharSenha(4);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequestDTO("joao@umc.br", "Senha@123")))
+                .isInstanceOf(LimiteDeTentativasException.class)
+                .hasMessage(MENSAGEM_LOGIN_INVALIDO);
+
+        verify(passwordEncoder, times(4)).matches(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("quatro falhas depois da pausa suspendem por dois minutos")
+    void segundaPausaDuraDoisMinutos() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("errada", "$2a$10$hash")).thenReturn(false);
+
+        falharSenha(4);
+        relogio.avancar(Duration.ofMinutes(2));
+        falharSenha(4);
+
+        assertThat(usuario.getSenhaPausaOcorrencias()).isEqualTo(2);
+        assertThat(usuario.getSenhaBloqueadoAte()).isEqualTo(INICIO.plusMinutes(4));
+    }
+
+    @Test
+    @DisplayName("login correto zera os cinco contadores de senha")
+    void loginCorretoZeraContadores() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("errada", "$2a$10$hash")).thenReturn(false);
+        when(passwordEncoder.matches("Senha@123", "$2a$10$hash")).thenReturn(true);
+        when(codigoVerificacaoService.gerarCodigo(usuario, TipoCodigoEnum.MFA)).thenReturn("1234");
+
+        falharSenha(3);
+        authService.login(new LoginRequestDTO("joao@umc.br", "Senha@123"));
+
+        assertThat(usuario.getSenhaErrosConsecutivos()).isZero();
+        assertThat(usuario.getSenhaFalhasJanela()).isZero();
+        assertThat(usuario.getSenhaJanelaInicio()).isNull();
+        assertThat(usuario.getSenhaPausaOcorrencias()).isNull();
+        assertThat(usuario.getSenhaBloqueadoAte()).isNull();
+    }
+
+    @Test
+    @DisplayName("as ocorrencias caducam em 24 horas e a pausa volta a um minuto")
+    void ocorrenciasCaducamEmVinteQuatroHoras() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("errada", "$2a$10$hash")).thenReturn(false);
+
+        falharSenha(4);
+        assertThat(usuario.getSenhaPausaOcorrencias()).isEqualTo(1);
+
+        relogio.avancar(Duration.ofHours(24).plusMinutes(2));
+        falharSenha(4);
+
+        assertThat(usuario.getSenhaPausaOcorrencias()).isEqualTo(1);
+        assertThat(usuario.getSenhaBloqueadoAte())
+                .isEqualTo(INICIO.plusHours(24).plusMinutes(3));
+    }
+
+    @Test
+    @DisplayName("o orcamento de 45 falhas por hora dispara o bloqueio de uma hora")
+    void orcamentoDeQuarentaECincoPorHora() {
+        var usuario = umUsuarioAtivo();
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("errada", "$2a$10$hash")).thenReturn(false);
+
+        boolean bloqueioDeUmaHora = false;
+        int rodadas = 0;
+
+        while (!bloqueioDeUmaHora && rodadas < 200) {
+            rodadas++;
+            LocalDateTime antes = LocalDateTime.now(relogio);
+            try {
+                authService.login(new LoginRequestDTO("joao@umc.br", "errada"));
+            } catch (CredenciaisInvalidasException falhaComum) {
+                // falha contada no orcamento
+            } catch (LimiteDeTentativasException bloqueado) {
+                Duration espera = Duration.between(antes, usuario.getSenhaBloqueadoAte());
+                if (espera.toMinutes() >= 60) {
+                    bloqueioDeUmaHora = true;
+                } else {
+                    relogio.avancar(espera.plusSeconds(1));
+                }
+            }
+        }
+
+        assertThat(bloqueioDeUmaHora).isTrue();
+        assertThat(LocalDateTime.now(relogio))
+                .isAfter(INICIO.plusMinutes(44))
+                .isBefore(INICIO.plusHours(1));
+
+        verify(auditoriaService, times(45)).registrar(
+                eq(AcaoAuditoriaEnum.LOGIN_FALHOU), eq(RecursoAuditoriaEnum.USUARIO), any(), any());
+        verify(auditoriaService).registrar(
+                eq(AcaoAuditoriaEnum.LOGIN_BLOQUEADO), eq(RecursoAuditoriaEnum.USUARIO), any(), any());
     }
 
     @Test
@@ -250,6 +400,7 @@ class AuthServiceTest {
         verify(emailService, never()).enviar(any(), any(), any());
     }
 
+
     @Test
     @DisplayName("verificar codigo com e-mail inexistente devolve a mesma mensagem de codigo invalido")
     void verificarCodigoComEmailInexistente() {
@@ -263,6 +414,22 @@ class AuthServiceTest {
         verify(codigoVerificacaoService, never()).validarCodigo(any(), any(), any());
     }
 
+    private static final class RelogioAjustavel extends Clock {
+        private Instant instante;
+
+        RelogioAjustavel(LocalDateTime inicio) {
+            this.instante = inicio.atZone(ZoneId.systemDefault()).toInstant();
+        }
+
+        void avancar(Duration duracao) {
+            this.instante = this.instante.plus(duracao);
+        }
+
+        @Override public ZoneId getZone() { return ZoneId.systemDefault(); }
+        @Override public Clock withZone(ZoneId zona) { return this; }
+        @Override public Instant instant() { return instante; }
+    }
+
     private UsuarioEntity umUsuarioAtivo() {
         var entity = new UsuarioEntity();
         entity.setId(UUID.randomUUID());
@@ -274,5 +441,12 @@ class AuthServiceTest {
         entity.setAtivo(true);
         entity.setCriadoEm(LocalDateTime.now());
         return entity;
+    }
+
+    private void falharSenha(int vezes) {
+        for (int i = 0; i < vezes; i++) {
+            assertThatThrownBy(() -> authService.login(new LoginRequestDTO("joao@umc.br", "errada")))
+                    .isInstanceOf(CredenciaisInvalidasException.class);
+        }
     }
 }
