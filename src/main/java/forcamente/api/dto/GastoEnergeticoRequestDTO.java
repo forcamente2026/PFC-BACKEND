@@ -8,7 +8,7 @@ public record GastoEnergeticoRequestDTO(
         @NotNull(message = "Informe o peso")
         @DecimalMin(value = "20", message = "O peso deve ser no mínimo 20kg")
         @DecimalMax(value = "300", message = "O peso deve ser de no máximo 300kg")
-        double pesokg,
+        Double pesoKg,
 
         @NotNull(message = "Informe a altura")
         @Min(value = 100, message = "A altura deve ser de no mínimo 100 cm")
