@@ -28,7 +28,7 @@ class AuthControllerTest {
                         .content("{\"email\":\"ninguem@umc.br\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
-                .andExpect(jsonPath("$.message").value("E-mail ou senha invalidos"))
+                .andExpect(jsonPath("$.message").value("E-mail ou senha inválidos. Se não lembra a senha, use \"esqueci minha senha\"."))
                 .andExpect(jsonPath("$.campos").isEmpty());
     }
 }
