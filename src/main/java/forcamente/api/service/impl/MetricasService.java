@@ -103,7 +103,7 @@ public class MetricasService implements IMetricasService {
     public GastoEnergeticoResponseDTO calcularGastoEnergetico(GastoEnergeticoRequestDTO gastoEnergeticoRequestDTO) {
         log.info("calcularGastoEnergetico");
 
-        double base = 10 * gastoEnergeticoRequestDTO.pesokg()
+        double base = 10 * gastoEnergeticoRequestDTO.pesoKg()
                 + 6.25 * gastoEnergeticoRequestDTO.alturaCm()
                 - 5 * gastoEnergeticoRequestDTO.idade();
 
@@ -123,8 +123,8 @@ public class MetricasService implements IMetricasService {
     public HidratacaoResponseDTO calcularHidratacao(HidratacaoRequestDTO hidratacaoRequestDTO) {
         log.info("Calcular Hidratacao");
 
-        int baseCorporalMl = (int) Math.round(35 * hidratacaoRequestDTO.pesokg());
-        int adicionalTreinoMl = (int) Math.round((hidratacaoRequestDTO.minutosPorDia() / 60.0) * 500);
+        int baseCorporalMl = (int) Math.round(35 * hidratacaoRequestDTO.pesoKg());
+        int adicionalTreinoMl = (int) Math.round((hidratacaoRequestDTO.minutosTreinoPorDia() / 60.0) * 500);
         int mlPorDia = baseCorporalMl + adicionalTreinoMl;
 
         return new HidratacaoResponseDTO(mlPorDia, arredondar(mlPorDia / 1000.0), baseCorporalMl, adicionalTreinoMl);

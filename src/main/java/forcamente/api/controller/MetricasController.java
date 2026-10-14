@@ -5,7 +5,6 @@ import forcamente.api.dto.VolumeTreinoResponseDTO;
 import forcamente.api.service.IMetricasService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import forcamente.api.dto.GastoEnergeticoRequestDTO;
@@ -36,7 +35,7 @@ public class MetricasController {
         return ResponseEntity.ok(metricasService.listarNiveisAtividade());
     }
 
-    @GetMapping("sexos")
+    @GetMapping("/sexos")
     public ResponseEntity<List<OpcaoDTO>> listarSexosBiologicos() {
         return ResponseEntity.ok(metricasService.listarSexosBiologicos());
     }
