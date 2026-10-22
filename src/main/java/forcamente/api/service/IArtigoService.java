@@ -1,6 +1,6 @@
 package forcamente.api.service;
 
-import forcamente.api.dto.AlterarStatusArtigoRequestDTO;
+import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.ArtigoRequestDTO;
 import forcamente.api.dto.ArtigoResponseDTO;
 import forcamente.api.dto.OpcaoDTO;
@@ -17,7 +17,7 @@ public interface IArtigoService {
 
     List<ArtigoResponseDTO> listarPendentes();
 
-    ArtigoResponseDTO decidirSituacao(UUID artigoId, AlterarStatusArtigoRequestDTO alterarStatusArtigoRequestDTO);
+    ArtigoResponseDTO decidirSituacao(UUID artigoId, AlterarStatusRequestDTO alterarStatusArtigoRequestDTO);
 
     List<ArtigoResponseDTO> listarArtigos(StatusAprovacaoEnum status);
 

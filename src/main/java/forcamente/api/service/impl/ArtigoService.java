@@ -24,7 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import forcamente.api.dto.AlterarStatusArtigoRequestDTO;
+import forcamente.api.dto.AlterarStatusRequestDTO;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -232,7 +232,7 @@ public class ArtigoService implements IArtigoService {
 
     @Override
     @Transactional
-    public ArtigoResponseDTO decidirSituacao(UUID artigoId, AlterarStatusArtigoRequestDTO alterarStatusArtigoRequestDTO) {
+    public ArtigoResponseDTO decidirSituacao(UUID artigoId, AlterarStatusRequestDTO alterarStatusArtigoRequestDTO) {
         log.info("decidirSituacao: {} para {}", artigoId, alterarStatusArtigoRequestDTO.status());
 
         var papel = papelAutenticado();
@@ -312,10 +312,11 @@ public class ArtigoService implements IArtigoService {
                 artigo.getAutoria(),
                 artigo.getTipoEstudo(),
                 artigo.getAno(),
-                artigo.getMinutosLeitura(),
                 nomes.get(artigo.getAutorId()),
                 artigo.getStatus(),
-                (autor || administrador) ? artigo.getMotivoRejeicao() : null, doArtigo.size(),
+                (autor || administrador) ? artigo.getMotivoRejeicao() : null,
+                doArtigo.size(),
+                APROVACOES_DE_PROFESSORES_PARA_PUBLICAR,
                 autor || administrador, podeAprovar(artigo, doArtigo, papel, usuarioId),
                 administrador ? doArtigo.stream().map(a -> nomes.get(a.getProfessorId())).toList() : List.of(),
                 artigo.getCriadoEm()
@@ -398,7 +399,6 @@ public class ArtigoService implements IArtigoService {
         artigo.setAutoria(artigoRequestDTO.autoria());
         artigo.setTipoEstudo(artigoRequestDTO.tipoEstudo());
         artigo.setAno(artigoRequestDTO.ano());
-        artigo.setMinutosLeitura(artigoRequestDTO.minutosLeitura());
     }
 
     private void exigirAnoNaoFuturo(Integer ano) {

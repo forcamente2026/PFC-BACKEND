@@ -53,9 +53,6 @@ public class ArtigoEntity {
     @Column(name = "ano")
     private Integer ano;
 
-    @Column(name = "minutos_leitura")
-    private Integer minutosLeitura;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private StatusAprovacaoEnum status;

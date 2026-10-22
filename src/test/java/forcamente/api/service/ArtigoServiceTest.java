@@ -1,6 +1,6 @@
 package forcamente.api.service;
 
-import forcamente.api.dto.AlterarStatusArtigoRequestDTO;
+import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.ArtigoRequestDTO;
 import forcamente.api.entity.ArtigoAprovacaoEntity;
 import forcamente.api.entity.ArtigoEntity;
@@ -195,6 +195,7 @@ class ArtigoServiceTest {
         assertThat(resposta.podeAprovar()).isTrue();
         assertThat(resposta.podeEditar()).isFalse();
         assertThat(resposta.aprovacoesDeProfessores()).isZero();
+        assertThat(resposta.aprovacoesNecessarias()).isEqualTo(3);
     }
 
     @Test
@@ -541,7 +542,7 @@ class ArtigoServiceTest {
         prepararDecisao(pendente);
 
         artigoService.decidirSituacao(ARTIGO,
-                new AlterarStatusArtigoRequestDTO(StatusAprovacaoEnum.APROVADO, null));
+                new AlterarStatusRequestDTO(StatusAprovacaoEnum.APROVADO, null));
 
         var salvo = capturarSalvo();
         assertThat(salvo.getStatus()).isEqualTo(StatusAprovacaoEnum.APROVADO);
@@ -557,7 +558,7 @@ class ArtigoServiceTest {
 
         prepararDecisao(artigo(StatusAprovacaoEnum.PENDENTE, AUTOR));
 
-        artigoService.decidirSituacao(ARTIGO, new AlterarStatusArtigoRequestDTO(
+        artigoService.decidirSituacao(ARTIGO, new AlterarStatusRequestDTO(
                 StatusAprovacaoEnum.REJEITADO, "  A fonte nao e revisada por pares.  "));
 
         var salvo = capturarSalvo();
@@ -574,7 +575,7 @@ class ArtigoServiceTest {
 
         prepararDecisao(artigo(StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES, AUTOR));
 
-        artigoService.decidirSituacao(ARTIGO, new AlterarStatusArtigoRequestDTO(
+        artigoService.decidirSituacao(ARTIGO, new AlterarStatusRequestDTO(
                 StatusAprovacaoEnum.REJEITADO, "Retratado pela revista."));
 
         assertThat(capturarSalvo().getStatus()).isEqualTo(StatusAprovacaoEnum.REJEITADO);
@@ -589,7 +590,7 @@ class ArtigoServiceTest {
                 .thenReturn(Optional.of(artigo(StatusAprovacaoEnum.REJEITADO, AUTOR)));
 
         assertThatThrownBy(() -> artigoService.decidirSituacao(ARTIGO,
-                new AlterarStatusArtigoRequestDTO(StatusAprovacaoEnum.APROVADO, null)))
+                new AlterarStatusRequestDTO(StatusAprovacaoEnum.APROVADO, null)))
                 .isInstanceOf(ConflitoException.class);
 
         verify(artigoRepository, never()).save(any());
@@ -603,7 +604,7 @@ class ArtigoServiceTest {
         when(artigoRepository.findById(ARTIGO)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> artigoService.decidirSituacao(ARTIGO,
-                new AlterarStatusArtigoRequestDTO(StatusAprovacaoEnum.APROVADO, null)))
+                new AlterarStatusRequestDTO(StatusAprovacaoEnum.APROVADO, null)))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
@@ -662,8 +663,7 @@ class ArtigoServiceTest {
                 fonte,
                 "Schoenfeld BJ",
                 "Rev. sistematica",
-                ano,
-                12);
+                ano);
     }
 
     private void prepararBuscaPorId(ArtigoEntity artigo,

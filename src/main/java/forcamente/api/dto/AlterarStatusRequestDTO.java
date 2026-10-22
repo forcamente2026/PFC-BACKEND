@@ -5,7 +5,7 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record AlterarStatusArtigoRequestDTO(
+public record AlterarStatusRequestDTO(
         @NotNull(message = "Informe a situação")
         StatusAprovacaoEnum status,
 

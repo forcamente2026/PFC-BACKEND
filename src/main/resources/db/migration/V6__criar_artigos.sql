@@ -7,7 +7,6 @@ CREATE TABLE artigos (
                          autoria         varchar(255),
                          tipo_estudo     varchar(255),
                          ano             integer,
-                         minutos_leitura integer,
                          status          varchar(30)  NOT NULL,
                          motivo_rejeicao text,
                          autor_id        uuid         NOT NULL,

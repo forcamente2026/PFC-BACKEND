@@ -1,6 +1,6 @@
 package forcamente.api.controller;
 
-import forcamente.api.dto.AlterarStatusArtigoRequestDTO;
+import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.ArtigoRequestDTO;
 import forcamente.api.dto.ArtigoResponseDTO;
 import forcamente.api.dto.OpcaoDTO;
@@ -75,7 +75,7 @@ public class ArtigoController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<ArtigoResponseDTO> decidirSituacao(@PathVariable("id") UUID id, @Valid @RequestBody AlterarStatusArtigoRequestDTO alterarStatusArtigoRequestDTO) {
+    public ResponseEntity<ArtigoResponseDTO> decidirSituacao(@PathVariable("id") UUID id, @Valid @RequestBody AlterarStatusRequestDTO alterarStatusArtigoRequestDTO) {
         return ResponseEntity.ok(artigoService.decidirSituacao(id, alterarStatusArtigoRequestDTO));
     }
 

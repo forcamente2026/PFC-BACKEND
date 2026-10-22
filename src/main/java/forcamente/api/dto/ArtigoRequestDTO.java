@@ -12,7 +12,8 @@ public record ArtigoRequestDTO(
         CategoriaArtigoEnum categoria,
 
         @NotBlank(message = "Informe o resumo")
-        @Size(max = 2000, message = "O resumo deve ter no máximo 2000 caracteres")
+        @Size(min = 250, max = 1000,
+                message = "O resumo deve ter de 250 a 1000 caracteres")
         String resumo,
 
         @NotBlank(message = "Informe a fonte")
@@ -29,10 +30,6 @@ public record ArtigoRequestDTO(
         String tipoEstudo,
 
         @Min(value = 1900, message = "O ano deve ser a partir de 1900")
-        Integer ano,
-
-        @Min(value = 1, message = "Os minutos de leitura devem ser pelo menos 1")
-        @Max(value = 600, message = "Os minutos de leitura devem ser no máximo 600")
-        Integer minutosLeitura
+        Integer ano
 ) {
 }
