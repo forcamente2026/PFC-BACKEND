@@ -1,10 +1,13 @@
 package forcamente.api.controller;
 
 import forcamente.api.dto.AlterarAtivoRequestDTO;
+import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.AnonimizadorPendenteDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
+import forcamente.api.dto.RenovarCrefRequestDTO;
 import forcamente.api.dto.UsuarioDetalheResponseDTO;
+import forcamente.api.dto.VerificacaoPendenteDTO;
 import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
@@ -55,6 +58,11 @@ public class UsuarioController {
     @GetMapping("/formacoes")
     public ResponseEntity<List<OpcaoDTO>> listarFormacoes() {
         return ResponseEntity.ok(usuarioService.listarFormacoes());
+    }
+
+    @GetMapping("/pendentes-verificacao")
+    public ResponseEntity<List<VerificacaoPendenteDTO>> listarPendentesDeVerificacao() {
+        return ResponseEntity.ok(usuarioService.listarPendentesDeVerificacao());
     }
 
     @GetMapping("/{id}")
@@ -113,6 +121,15 @@ public class UsuarioController {
                 usuarioService.buscarDetalhePorId(UUID.fromString(jwt.getSubject())));
     }
 
+    @PatchMapping("/me/cref")
+    public ResponseEntity<UsuarioDetalheResponseDTO> renovarCref(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody RenovarCrefRequestDTO renovarCrefRequestDTO) {
+
+        return ResponseEntity.ok(usuarioService.renovarCref(
+                UUID.fromString(jwt.getSubject()), renovarCrefRequestDTO));
+    }
+
     @DeleteMapping("/me/anonimizacao")
     public ResponseEntity<Void> cancelarAnonimizacao(@AuthenticationPrincipal Jwt jwt) {
         anonimizacaoService.cancelarSolicitacao(UUID.fromString(jwt.getSubject()));
@@ -134,5 +151,14 @@ public class UsuarioController {
     public ResponseEntity<Void> anonimizar(@PathVariable("id") UUID id) {
         anonimizacaoService.anonimizar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/verificacao")
+    public ResponseEntity<UsuarioDetalheResponseDTO> decidirVerificacaoDoCref(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody AlterarStatusRequestDTO alterarStatusRequestDTO) {
+
+        return ResponseEntity.ok(
+                usuarioService.decidirVerificacaoDoCref(id, alterarStatusRequestDTO));
     }
 }

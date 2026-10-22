@@ -4,7 +4,9 @@ package forcamente.api.service.impl;
 import forcamente.api.dto.*;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.AcaoAuditoriaEnum;
+import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.RecursoAuditoriaEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.entity.enums.TipoCodigoEnum;
 import forcamente.api.exception.CredenciaisInvalidasException;
 import forcamente.api.exception.LimiteDeTentativasException;
@@ -116,9 +118,19 @@ public class AuthService  implements IAuthService {
     private String gerarToken(UsuarioEntity usuario) {
         Instant agora = Instant.now();
 
-        JwtClaimsSet claims = JwtClaimsSet.builder().issuer("forcamente-api").subject(usuario.getId().toString()).claim("papel",usuario.getPapel().name()).issuedAt(agora).expiresAt(agora.plus(expiracaoMinutos, ChronoUnit.MINUTES)).build();
+        JwtClaimsSet claims = JwtClaimsSet.builder().issuer("forcamente-api").subject(usuario.getId().toString()).claim("papel",papelEfetivo(usuario).name()).issuedAt(agora).expiresAt(agora.plus(expiracaoMinutos, ChronoUnit.MINUTES)).build();
         JwsHeader cabecalho = JwsHeader.with(MacAlgorithm.HS256).build();
         return jwtEncoder.encode(JwtEncoderParameters.from(cabecalho, claims)).getTokenValue();
+    }
+
+    private PapelUsuarioEnum papelEfetivo(UsuarioEntity usuario) {
+        if (usuario.getPapel() == PapelUsuarioEnum.PROFESSOR
+                && usuario.getSituacaoCref() != StatusAprovacaoEnum.APROVADO) {
+
+            return PapelUsuarioEnum.ALUNO;
+        }
+
+        return usuario.getPapel();
     }
 
     private static final String ASSUNTO_REDEFINICAO = "ForcaMente - codigo para redefinir sua senha";
@@ -272,7 +284,9 @@ public class AuthService  implements IAuthService {
                 AcaoAuditoriaEnum.LOGIN_REALIZADO, RecursoAuditoriaEnum.USUARIO,
                 usuario.getId(), usuario.getId());
 
-        return new LoginResponseDTO(usuario.getId(), gerarToken(usuario), usuario.getNomeCompleto(), usuario.getPapel());
+        return new LoginResponseDTO(
+                usuario.getId(), gerarToken(usuario),
+                usuario.getNomeCompleto(), papelEfetivo(usuario));
 
     }
 }

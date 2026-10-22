@@ -1,10 +1,16 @@
 package forcamente.api.service;
 
+import forcamente.api.dto.AlterarStatusRequestDTO;
+import forcamente.api.dto.RenovarCrefRequestDTO;
 import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.FormacaoEnum;
+import forcamente.api.entity.enums.AcaoAuditoriaEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.RecursoAuditoriaEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.exception.ConflitoException;
+import forcamente.api.exception.LimiteDeTentativasException;
 import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.mapper.UsuarioMapper;
@@ -17,10 +23,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.Spy;
 import org.mockito.quality.Strictness;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,6 +54,9 @@ class UsuarioGestaoServiceTest {
 
     @Mock
     private IAuditoriaService auditoriaService;
+
+    @Spy
+    private Clock clock = Clock.fixed(Instant.parse("2026-10-21T13:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -237,6 +250,233 @@ class UsuarioGestaoServiceTest {
         assertThat(edicao.cep()).isEqualTo("08780000");
         assertThat(edicao.complemento()).isNull();
         assertThat(edicao.estado()).isEqualTo("SP");
+    }
+
+    @Test
+    @DisplayName("a fila de verificacao pede somente professor com CREF pendente")
+    void deveListarSomenteProfessorComCrefPendente() {
+        usuarioService.listarPendentesDeVerificacao();
+
+        verify(usuarioRepository).findByPapelAndSituacaoCrefOrderByCriadoEm(
+                PapelUsuarioEnum.PROFESSOR, StatusAprovacaoEnum.PENDENTE);
+    }
+
+    @Test
+    @DisplayName("aprovar a verificacao grava APROVADO, sem motivo, e registra na trilha")
+    void deveAprovarAVerificacaoDoCref() {
+        var professor = umProfessor(ID_ALVO);
+        professor.setSituacaoCref(StatusAprovacaoEnum.PENDENTE);
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+        when(usuarioRepository.save(professor)).thenReturn(professor);
+
+        usuarioService.decidirVerificacaoDoCref(
+                ID_ALVO, new AlterarStatusRequestDTO(StatusAprovacaoEnum.APROVADO, null));
+
+        assertThat(professor.getSituacaoCref()).isEqualTo(StatusAprovacaoEnum.APROVADO);
+        assertThat(professor.getMotivoRejeicaoCref()).isNull();
+        verify(auditoriaService).registrar(
+                AcaoAuditoriaEnum.APROVADO, RecursoAuditoriaEnum.USUARIO, ID_ALVO);
+    }
+
+    @Test
+    @DisplayName("rejeitar a verificacao guarda o motivo aparado e registra REJEITADO")
+    void deveRejeitarAVerificacaoComOMotivoAparado() {
+        var professor = umProfessor(ID_ALVO);
+        professor.setSituacaoCref(StatusAprovacaoEnum.PENDENTE);
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+        when(usuarioRepository.save(professor)).thenReturn(professor);
+
+        usuarioService.decidirVerificacaoDoCref(ID_ALVO, new AlterarStatusRequestDTO(
+                StatusAprovacaoEnum.REJEITADO, "  O CREF informado nao foi encontrado.  "));
+
+        assertThat(professor.getSituacaoCref()).isEqualTo(StatusAprovacaoEnum.REJEITADO);
+        assertThat(professor.getMotivoRejeicaoCref())
+                .isEqualTo("O CREF informado nao foi encontrado.");
+        verify(auditoriaService).registrar(
+                AcaoAuditoriaEnum.REJEITADO, RecursoAuditoriaEnum.USUARIO, ID_ALVO);
+    }
+
+    @Test
+    @DisplayName("decidir uma verificacao que nao esta pendente responde 409")
+    void deveResponder409AoDecidirVerificacaoQueNaoEstaPendente() {
+        var professor = umProfessor(ID_ALVO);
+        professor.setSituacaoCref(StatusAprovacaoEnum.APROVADO);
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+
+        assertThatThrownBy(() -> usuarioService.decidirVerificacaoDoCref(
+                ID_ALVO, new AlterarStatusRequestDTO(StatusAprovacaoEnum.REJEITADO, "tarde")))
+                .isInstanceOf(ConflitoException.class);
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("decidir a verificacao de quem nao e professor responde 400")
+    void deveResponder400AoDecidirVerificacaoDeQuemNaoEProfessor() {
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(umAluno(ID_ALVO)));
+
+        assertThatThrownBy(() -> usuarioService.decidirVerificacaoDoCref(
+                ID_ALVO, new AlterarStatusRequestDTO(StatusAprovacaoEnum.APROVADO, null)))
+                .isInstanceOf(RegraDeNegocioException.class);
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("administrador trocando o CREF devolve a verificacao rejeitada para pendente")
+    void deveVoltarAVerificacaoRejeitadaParaPendenteAoTrocarOCref() {
+        var professor = umProfessor(ID_ALVO);
+        professor.setSituacaoCref(StatusAprovacaoEnum.REJEITADO);
+        professor.setMotivoRejeicaoCref("CREF nao encontrado");
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+        when(usuarioRepository.save(professor)).thenReturn(professor);
+
+        usuarioService.atualizar(ID_ALVO,
+                umaEdicaoDeProfessor("654321-G/SP", FormacaoEnum.BACHARELADO));
+
+        assertThat(professor.getSituacaoCref()).isEqualTo(StatusAprovacaoEnum.PENDENTE);
+        assertThat(professor.getMotivoRejeicaoCref()).isNull();
+    }
+
+    @Test
+    @DisplayName("administrador editando sem mexer no CREF nao reabre a verificacao aprovada")
+    void naoDeveReabrirAVerificacaoAprovadaQuandoOCrefNaoMuda() {
+        var professor = umProfessor(ID_ALVO);
+        professor.setSituacaoCref(StatusAprovacaoEnum.APROVADO);
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+        when(usuarioRepository.save(professor)).thenReturn(professor);
+
+        usuarioService.atualizar(ID_ALVO,
+                umaEdicaoDeProfessor("123456-G/SP", FormacaoEnum.BACHARELADO));
+
+        assertThat(professor.getSituacaoCref()).isEqualTo(StatusAprovacaoEnum.APROVADO);
+    }
+
+    @Test
+    @DisplayName("renovacao grava o CREF novo e devolve a verificacao para pendente")
+    void deveRenovarOCrefEVoltarParaPendente() {
+        var professor = umProfessorAprovado();
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+        when(usuarioRepository.save(professor)).thenReturn(professor);
+
+        usuarioService.renovarCref(ID_ALVO,
+                new RenovarCrefRequestDTO("654321-G/SP", FormacaoEnum.BACHARELADO));
+
+        assertThat(professor.getCref()).isEqualTo("654321-G/SP");
+        assertThat(professor.getSituacaoCref()).isEqualTo(StatusAprovacaoEnum.PENDENTE);
+        assertThat(professor.getMotivoRejeicaoCref()).isNull();
+        verify(auditoriaService).registrar(
+                AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, ID_ALVO);
+    }
+
+    @Test
+    @DisplayName("renovacao com verificacao pendente responde 400: quem corrige e o administrador")
+    void naoDeveRenovarComVerificacaoPendente() {
+        var professor = umProfessor(ID_ALVO);
+        professor.setSituacaoCref(StatusAprovacaoEnum.PENDENTE);
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+
+        assertThatThrownBy(() -> usuarioService.renovarCref(ID_ALVO,
+                new RenovarCrefRequestDTO("654321-G/SP", FormacaoEnum.BACHARELADO)))
+                .isInstanceOf(RegraDeNegocioException.class);
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("renovacao com verificacao rejeitada responde 400")
+    void naoDeveRenovarComVerificacaoRejeitada() {
+        var professor = umProfessor(ID_ALVO);
+        professor.setSituacaoCref(StatusAprovacaoEnum.REJEITADO);
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+
+        assertThatThrownBy(() -> usuarioService.renovarCref(ID_ALVO,
+                new RenovarCrefRequestDTO("654321-G/SP", FormacaoEnum.BACHARELADO)))
+                .isInstanceOf(RegraDeNegocioException.class);
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("aluno nao renova CREF, porque nao tem")
+    void naoDeveRenovarQuemNaoEProfessor() {
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(umAluno(ID_ALVO)));
+
+        assertThatThrownBy(() -> usuarioService.renovarCref(ID_ALVO,
+                new RenovarCrefRequestDTO("654321-G/SP", FormacaoEnum.BACHARELADO)))
+                .isInstanceOf(RegraDeNegocioException.class);
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CREF novo que ja e de outro professor responde 409")
+    void deveResponder409QuandoOCrefNovoJaEDeOutroProfessor() {
+        var professor = umProfessorAprovado();
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+        when(usuarioRepository.existsByCrefAndIdNot("654321-G/SP", ID_ALVO)).thenReturn(true);
+
+        assertThatThrownBy(() -> usuarioService.renovarCref(ID_ALVO,
+                new RenovarCrefRequestDTO("654321-G/SP", FormacaoEnum.BACHARELADO)))
+                .isInstanceOf(ConflitoException.class);
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("a quarta renovacao no mesmo dia responde 429")
+    void deveBarrarAQuartaRenovacaoDoMesmoDia() {
+        var professor = umProfessorAprovado();
+        professor.setCrefReenvioDia(LocalDate.of(2026, 10, 21));
+        professor.setCrefReenvios(3);
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+
+        assertThatThrownBy(() -> usuarioService.renovarCref(ID_ALVO,
+                new RenovarCrefRequestDTO("654321-G/SP", FormacaoEnum.BACHARELADO)))
+                .isInstanceOf(LimiteDeTentativasException.class)
+                .hasMessageContaining("3");
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("o contador zera quando o dia vira")
+    void deveZerarOContadorQuandoODiaVira() {
+        var professor = umProfessorAprovado();
+        professor.setCrefReenvioDia(LocalDate.of(2026, 10, 20));
+        professor.setCrefReenvios(3);
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+        when(usuarioRepository.save(professor)).thenReturn(professor);
+
+        usuarioService.renovarCref(ID_ALVO,
+                new RenovarCrefRequestDTO("654321-G/SP", FormacaoEnum.BACHARELADO));
+
+        assertThat(professor.getCrefReenvioDia()).isEqualTo(LocalDate.of(2026, 10, 21));
+        assertThat(professor.getCrefReenvios()).isEqualTo(1);
+    }
+
+    private UsuarioEntity umProfessorAprovado() {
+        var entity = umProfessor(ID_ALVO);
+        entity.setSituacaoCref(StatusAprovacaoEnum.APROVADO);
+        entity.setMotivoRejeicaoCref("motivo antigo");
+        return entity;
+    }
+
+    private UsuarioAtualizacaoRequestDTO umaEdicaoDeProfessor(String cref, FormacaoEnum formacao) {
+        return new UsuarioAtualizacaoRequestDTO(
+                "Maria Souza", "maria@umc.br", cref, formacao,
+                "08780000", "Rua B", "2", null, "Centro", "Mogi das Cruzes", "SP");
     }
 
     private UsuarioAtualizacaoRequestDTO umaEdicaoDeAluno(String nome, String email) {

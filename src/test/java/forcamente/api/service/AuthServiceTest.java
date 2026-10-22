@@ -7,6 +7,7 @@ import forcamente.api.dto.RedefinirSenhaRequestDTO;
 import forcamente.api.dto.VerificarCodigoRequestDTO;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.entity.enums.TipoCodigoEnum;
 import forcamente.api.exception.CredenciaisInvalidasException;
 import forcamente.api.exception.LimiteDeTentativasException;
@@ -428,6 +429,89 @@ class AuthServiceTest {
         @Override public ZoneId getZone() { return ZoneId.systemDefault(); }
         @Override public Clock withZone(ZoneId zona) { return this; }
         @Override public Instant instant() { return instante; }
+    }
+
+    @Test
+    @DisplayName("professor com CREF pendente recebe papel ALUNO na resposta e na claim")
+    void professorPendenteRecebePapelDeAluno() {
+        var usuario = umProfessor(StatusAprovacaoEnum.PENDENTE);
+
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+
+        var resposta = authService.verificarCodigo(
+                new VerificarCodigoRequestDTO("joao@umc.br", "1234"));
+
+        assertThat(resposta.papel()).isEqualTo(PapelUsuarioEnum.ALUNO);
+        assertThat(claimDePapel(resposta.token())).isEqualTo("ALUNO");
+    }
+
+    @Test
+    @DisplayName("professor com CREF aprovado recebe papel PROFESSOR")
+    void professorAprovadoRecebePapelDeProfessor() {
+        var usuario = umProfessor(StatusAprovacaoEnum.APROVADO);
+
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+
+        var resposta = authService.verificarCodigo(
+                new VerificarCodigoRequestDTO("joao@umc.br", "1234"));
+
+        assertThat(resposta.papel()).isEqualTo(PapelUsuarioEnum.PROFESSOR);
+        assertThat(claimDePapel(resposta.token())).isEqualTo("PROFESSOR");
+    }
+
+    @Test
+    @DisplayName("professor com CREF rejeitado continua com papel ALUNO")
+    void professorRejeitadoRecebePapelDeAluno() {
+        var usuario = umProfessor(StatusAprovacaoEnum.REJEITADO);
+
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+
+        var resposta = authService.verificarCodigo(
+                new VerificarCodigoRequestDTO("joao@umc.br", "1234"));
+
+        assertThat(resposta.papel()).isEqualTo(PapelUsuarioEnum.ALUNO);
+        assertThat(claimDePapel(resposta.token())).isEqualTo("ALUNO");
+    }
+
+    @Test
+    @DisplayName("professor sem situacao de CREF recebe papel ALUNO, e nao permissao por omissao")
+    void professorSemSituacaoDeCrefRecebePapelDeAluno() {
+        var usuario = umProfessor(null);
+
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+
+        var resposta = authService.verificarCodigo(
+                new VerificarCodigoRequestDTO("joao@umc.br", "1234"));
+
+        assertThat(resposta.papel()).isEqualTo(PapelUsuarioEnum.ALUNO);
+        assertThat(claimDePapel(resposta.token())).isEqualTo("ALUNO");
+    }
+
+    @Test
+    @DisplayName("administrador nao e afetado pela verificacao do CREF")
+    void administradorNaoEAfetadoPelaVerificacaoDoCref() {
+        var usuario = umUsuarioAtivo();
+        usuario.setPapel(PapelUsuarioEnum.ADMINISTRADOR);
+
+        when(usuarioRepository.findByEmail("joao@umc.br")).thenReturn(Optional.of(usuario));
+
+        var resposta = authService.verificarCodigo(
+                new VerificarCodigoRequestDTO("joao@umc.br", "1234"));
+
+        assertThat(resposta.papel()).isEqualTo(PapelUsuarioEnum.ADMINISTRADOR);
+        assertThat(claimDePapel(resposta.token())).isEqualTo("ADMINISTRADOR");
+    }
+
+    private UsuarioEntity umProfessor(StatusAprovacaoEnum situacaoCref) {
+        var entity = umUsuarioAtivo();
+        entity.setPapel(PapelUsuarioEnum.PROFESSOR);
+        entity.setCref("123456-G/SP");
+        entity.setSituacaoCref(situacaoCref);
+        return entity;
+    }
+
+    private String claimDePapel(String token) {
+        return segurancaConfig.jwtDecoder(SEGREDO).decode(token).getClaimAsString("papel");
     }
 
     private UsuarioEntity umUsuarioAtivo() {
