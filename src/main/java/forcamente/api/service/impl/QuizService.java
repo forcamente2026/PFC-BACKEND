@@ -1,35 +1,47 @@
 package forcamente.api.service.impl;
 
+import forcamente.api.dto.AlternativaRequestDTO;
 import forcamente.api.dto.AlternativaResponseDTO;
 import forcamente.api.dto.ArtigoSugeridoDTO;
 import forcamente.api.dto.NotaDTO;
 import forcamente.api.dto.OpcaoDTO;
+import forcamente.api.dto.QuestaoRequestDTO;
 import forcamente.api.dto.QuestaoResponseDTO;
 import forcamente.api.dto.QuizDetalheResponseDTO;
+import forcamente.api.dto.QuizEdicaoResponseDTO;
+import forcamente.api.dto.QuizRequestDTO;
 import forcamente.api.dto.QuizResumoResponseDTO;
 import forcamente.api.entity.ArtigoEntity;
+import forcamente.api.entity.QuizAlternativaEntity;
 import forcamente.api.entity.QuizAprovacaoEntity;
 import forcamente.api.entity.QuizEntity;
 import forcamente.api.entity.QuizQuestaoEntity;
 import forcamente.api.entity.QuizTentativaEntity;
 import forcamente.api.entity.UsuarioEntity;
+import forcamente.api.entity.enums.AcaoAuditoriaEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.exception.RecursoNaoEncontradoException;
+import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.repository.IArtigoRepository;
 import forcamente.api.repository.IQuizAprovacaoRepository;
 import forcamente.api.repository.IQuizRepository;
 import forcamente.api.repository.IQuizTentativaRepository;
 import forcamente.api.repository.IUsuarioRepository;
+import forcamente.api.service.IAuditoriaService;
 import forcamente.api.service.IQuizService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -60,6 +72,10 @@ public class QuizService implements IQuizService {
     private final IArtigoRepository artigoRepository;
 
     private final IUsuarioRepository usuarioRepository;
+
+    private final IAuditoriaService auditoriaService;
+
+    private final Clock clock;
 
     @Override
     @Transactional(readOnly = true)
@@ -102,6 +118,159 @@ public class QuizService implements IQuizService {
 
         exigirVisibilidade(quiz, papel, usuarioId);
 
+        return paraDetalhe(quiz, papel, usuarioId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public QuizEdicaoResponseDTO buscarParaEdicao(UUID quizId) {
+        log.info("buscarParaEdicao: {}", quizId);
+
+        var papel = papelAutenticado();
+        var usuarioId = usuarioAutenticado();
+
+        var quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Quiz nao encontrado: " + quizId));
+
+        exigirAutorOuAdministrador(quiz, papel, usuarioId);
+
+        return new QuizEdicaoResponseDTO(
+                quiz.getId(),
+                quiz.getTitulo(),
+                quiz.getDescricao(),
+                quiz.getCategoria(),
+                quiz.getNivel(),
+                List.copyOf(quiz.getArtigoIds()),
+                quiz.getQuestoes().stream().map(this::paraQuestaoRequest).toList()
+        );
+    }
+
+    @Override
+    @Transactional
+    public QuizDetalheResponseDTO criarQuiz(QuizRequestDTO quizRequestDTO) {
+        log.info("criarQuiz: {}", quizRequestDTO.titulo());
+
+        var papel = papelAutenticado();
+        var usuarioId = usuarioAutenticado();
+
+        var quiz = new QuizEntity();
+
+        quiz.setAutorId(usuarioId);
+        quiz.setCriadoEm(LocalDateTime.now(clock));
+        quiz.setStatus(papel == PapelUsuarioEnum.ADMINISTRADOR
+                ? StatusAprovacaoEnum.APROVADO
+                : StatusAprovacaoEnum.PENDENTE);
+
+        aplicar(quizRequestDTO, quiz);
+
+        var salvo = quizRepository.save(quiz);
+
+        auditoriaService.registrar(AcaoAuditoriaEnum.CRIADO, RecursoAuditoriaEnum.QUIZ, salvo.getId());
+
+        return paraDetalhe(salvo, papel, usuarioId);
+    }
+
+    @Override
+    @Transactional
+    public QuizDetalheResponseDTO atualizarQuiz(UUID quizId, QuizRequestDTO quizRequestDTO) {
+        log.info("atualizarQuiz: {}", quizId);
+
+        var papel = papelAutenticado();
+        var usuarioId = usuarioAutenticado();
+
+        var quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Quiz nao encontrado: " + quizId));
+
+        exigirAutorOuAdministrador(quiz, papel, usuarioId);
+
+        aplicar(quizRequestDTO, quiz);
+
+        quiz.setAtualizadoEm(LocalDateTime.now(clock));
+
+        if (papel != PapelUsuarioEnum.ADMINISTRADOR) {
+            quiz.setStatus(StatusAprovacaoEnum.PENDENTE);
+            quiz.setMotivoRejeicao(null);
+            quizAprovacaoRepository.deleteByQuizId(quizId);
+        }
+
+        var salvo = quizRepository.save(quiz);
+
+        auditoriaService.registrar(AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.QUIZ, quizId);
+
+        return paraDetalhe(salvo, papel, usuarioId);
+    }
+
+    private void aplicar(QuizRequestDTO quizRequestDTO, QuizEntity quiz) {
+        quiz.setTitulo(quizRequestDTO.titulo());
+        quiz.setDescricao(quizRequestDTO.descricao());
+        quiz.setCategoria(quizRequestDTO.categoria());
+        quiz.setNivel(quizRequestDTO.nivel());
+
+        var artigos = artigosValidados(quizRequestDTO.artigos());
+
+        quiz.getArtigoIds().clear();
+        quiz.getArtigoIds().addAll(artigos);
+
+        quiz.getQuestoes().clear();
+        quiz.getQuestoes().addAll(questoesDe(quizRequestDTO.questoes()));
+    }
+
+    private List<UUID> artigosValidados(List<UUID> artigos) {
+        if (artigos == null || artigos.isEmpty()) {
+            return List.of();
+        }
+
+        if (new HashSet<>(artigos).size() != artigos.size()) {
+            throw new RegraDeNegocioException("Nao repita o mesmo artigo na leitura sugerida");
+        }
+
+        var publicados = artigoRepository.findAllById(artigos).stream()
+                .filter(artigo -> PUBLICADOS.contains(artigo.getStatus()))
+                .map(ArtigoEntity::getId)
+                .collect(Collectors.toSet());
+
+        var invalido = artigos.stream().filter(artigoId -> !publicados.contains(artigoId)).findFirst();
+
+        if (invalido.isPresent()) {
+            throw new RegraDeNegocioException(
+                    "Artigo indicado nao existe ou nao esta publicado: " + invalido.get());
+        }
+
+        return artigos;
+    }
+
+    private List<QuizQuestaoEntity> questoesDe(List<QuestaoRequestDTO> questoes) {
+        return questoes.stream().map(pedido -> {
+            var questao = new QuizQuestaoEntity();
+
+            questao.setEnunciado(pedido.enunciado());
+            questao.setExplicacao(pedido.explicacao());
+            questao.getAlternativas().addAll(alternativasDe(pedido.alternativas()));
+
+            return questao;
+        }).toList();
+    }
+
+    private List<QuizAlternativaEntity> alternativasDe(List<AlternativaRequestDTO> alternativas) {
+        return alternativas.stream().map(pedido -> {
+            var alternativa = new QuizAlternativaEntity();
+
+            alternativa.setTexto(pedido.texto());
+            alternativa.setCorreta(pedido.correta());
+
+            return alternativa;
+        }).toList();
+    }
+
+    private QuestaoRequestDTO paraQuestaoRequest(QuizQuestaoEntity questao) {
+        var alternativas = questao.getAlternativas().stream()
+                .map(alternativa -> new AlternativaRequestDTO(alternativa.getTexto(), alternativa.isCorreta()))
+                .toList();
+
+        return new QuestaoRequestDTO(questao.getEnunciado(), questao.getExplicacao(), alternativas);
+    }
+
+    private QuizDetalheResponseDTO paraDetalhe(QuizEntity quiz, PapelUsuarioEnum papel, UUID usuarioId) {
         var resumo = paraResumo(List.of(quiz), papel, usuarioId).getFirst();
         boolean gabarito = gabarito(quiz, papel, usuarioId);
 
@@ -136,6 +305,16 @@ public class QuizService implements IQuizService {
         }
 
         throw new RecursoNaoEncontradoException("Quiz nao encontrado: " + quiz.getId());
+    }
+
+    private void exigirAutorOuAdministrador(QuizEntity quiz, PapelUsuarioEnum papel, UUID usuarioId) {
+        if (papel == PapelUsuarioEnum.ADMINISTRADOR) {
+            return;
+        }
+
+        if (!quiz.getAutorId().equals(usuarioId)) {
+            throw new AccessDeniedException("Acesso negado");
+        }
     }
 
     private List<QuizResumoResponseDTO> paraResumo(List<QuizEntity> quizzes,

@@ -1,6 +1,8 @@
 package forcamente.api.controller;
 
+import forcamente.api.entity.ArtigoEntity;
 import forcamente.api.entity.QuizAlternativaEntity;
+import forcamente.api.entity.QuizAprovacaoEntity;
 import forcamente.api.entity.QuizEntity;
 import forcamente.api.entity.QuizQuestaoEntity;
 import forcamente.api.entity.UsuarioEntity;
@@ -8,6 +10,8 @@ import forcamente.api.entity.enums.CategoriaArtigoEnum;
 import forcamente.api.entity.enums.NivelDificuldadeEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
+import forcamente.api.repository.IArtigoRepository;
+import forcamente.api.repository.IQuizAprovacaoRepository;
 import forcamente.api.repository.IQuizRepository;
 import forcamente.api.repository.IUsuarioRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -30,16 +35,20 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-@DisplayName("QuizController - a leitura, e o gabarito que nao pode vazar")
+@DisplayName("QuizController - leitura, escrita, e o gabarito que nao pode vazar")
 class QuizControllerTest {
 
     @Autowired
@@ -50,6 +59,12 @@ class QuizControllerTest {
 
     @Autowired
     private IQuizRepository quizRepository;
+
+    @Autowired
+    private IQuizAprovacaoRepository quizAprovacaoRepository;
+
+    @Autowired
+    private IArtigoRepository artigoRepository;
 
     @Autowired
     private IUsuarioRepository usuarioRepository;
@@ -174,6 +189,212 @@ class QuizControllerTest {
     void deveResponder401SemToken() throws Exception {
         mockMvc.perform(get("/api/quizzes"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("o professor cria e o quiz nasce pendente, com o gabarito visivel para ele")
+    void deveCriarComoProfessorENascerPendente() throws Exception {
+        var autor = professores().getFirst();
+
+        mockMvc.perform(post("/api/quizzes")
+                        .header("Authorization", "Bearer " + tokenPara(autor, "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo("[]", questaoJson("Primeira pergunta", true, false))))
+                .andExpect(status().isCreated())
+                .andExpect(header().exists("Location"))
+                .andExpect(jsonPath("$.status").value("PENDENTE"))
+                .andExpect(jsonPath("$.totalQuestoes").value(3))
+                .andExpect(jsonPath("$.podeEditar").value(true))
+                .andExpect(jsonPath("$.gabarito").value(true))
+                .andExpect(jsonPath("$.questoes[0].alternativas[0].correta").value(true));
+    }
+
+    @Test
+    @DisplayName("o quiz do administrador nasce aprovado")
+    void deveNascerAprovadoQuandoOAutorEAdministrador() throws Exception {
+        mockMvc.perform(post("/api/quizzes")
+                        .header("Authorization", "Bearer " + tokenDe("ADMINISTRADOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo("[]", questaoJson("Primeira pergunta", true, false))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("APROVADO"));
+    }
+
+    @Test
+    @DisplayName("aluno criando quiz recebe 403")
+    void deveRecusarAlunoCriandoQuiz() throws Exception {
+        mockMvc.perform(post("/api/quizzes")
+                        .header("Authorization", "Bearer " + tokenDe("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo("[]", questaoJson("Primeira pergunta", true, false))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("o erro de alternativa aponta a pergunta e a alternativa pelo indice")
+    void deveApontarOCampoComIndice() throws Exception {
+        var autor = professores().getFirst();
+
+        mockMvc.perform(post("/api/quizzes")
+                        .header("Authorization", "Bearer " + tokenPara(autor, "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo("[]", questaoJson("", "", true, false))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Dados invalidos"))
+                .andExpect(jsonPath("$.campos[*].campo",
+                        hasItem("questoes[0].alternativas[0].texto")))
+                .andExpect(jsonPath("$.campos[*].campo", hasItem("questoes[0].enunciado")));
+    }
+
+    @Test
+    @DisplayName("duas alternativas corretas apontam o campo umaAlternativaCorreta da pergunta")
+    void deveRecusarDuasAlternativasCorretas() throws Exception {
+        var autor = professores().getFirst();
+
+        mockMvc.perform(post("/api/quizzes")
+                        .header("Authorization", "Bearer " + tokenPara(autor, "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo("[]", questaoJson("Primeira pergunta", true, true))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos[*].campo",
+                        hasItem("questoes[0].umaAlternativaCorreta")));
+    }
+
+    @Test
+    @DisplayName("marcacao no enunciado responde 400 e aponta o campo, mas comparacao numerica passa")
+    void deveRecusarMarcacaoEAceitarComparacao() throws Exception {
+        var autor = professores().getFirst();
+        var token = tokenPara(autor, "PROFESSOR");
+
+        mockMvc.perform(post("/api/quizzes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo("[]", questaoJson("<script>alert(1)</script>", true, false))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos[*].campo", hasItem("questoes[0].enunciado")));
+
+        mockMvc.perform(post("/api/quizzes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo("[]", questaoJson("Qual carga e > 80% de 1RM?", true, false))))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("artigo indicado que nao esta publicado responde 400 sem lista de campos")
+    void deveRecusarArtigoNaoPublicado() throws Exception {
+        var autor = professores().getFirst();
+        var pendente = artigoSalvo(autor, StatusAprovacaoEnum.PENDENTE);
+
+        mockMvc.perform(post("/api/quizzes")
+                        .header("Authorization", "Bearer " + tokenPara(autor, "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo("[\"" + pendente.getId() + "\"]",
+                                questaoJson("Primeira pergunta", true, false))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos").isEmpty());
+    }
+
+    @Test
+    @DisplayName("a edicao do autor devolve o quiz para pendente e zera as aprovacoes")
+    void deveVoltarParaPendenteNaEdicao() throws Exception {
+        var professores = professores();
+        var autor = professores.get(0);
+        var quiz = quizSalvo(StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES, autor);
+
+        var aprovacao = new QuizAprovacaoEntity();
+        aprovacao.setQuizId(quiz.getId());
+        aprovacao.setProfessorId(professores.get(1));
+        aprovacao.setAprovadoEm(LocalDateTime.now());
+        quizAprovacaoRepository.saveAndFlush(aprovacao);
+
+        mockMvc.perform(put("/api/quizzes/" + quiz.getId())
+                        .header("Authorization", "Bearer " + tokenPara(autor, "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo("[]", questaoJson("Pergunta trocada", true, false))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDENTE"))
+                .andExpect(jsonPath("$.aprovacoesDeProfessores").value(0))
+                .andExpect(jsonPath("$.questoes[0].enunciado").value("Pergunta trocada"));
+    }
+
+    @Test
+    @DisplayName("professor editando quiz de outra pessoa recebe 403")
+    void deveRecusarEdicaoDeOutroProfessor() throws Exception {
+        var professores = professores();
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, professores.get(0));
+
+        mockMvc.perform(put("/api/quizzes/" + quiz.getId())
+                        .header("Authorization", "Bearer " + tokenPara(professores.get(1), "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo("[]", questaoJson("Primeira pergunta", true, false))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("a rota de edicao devolve o corpo de criacao, com o gabarito, so para o autor")
+    void deveDevolverOCorpoDeCriacaoNaEdicao() throws Exception {
+        var professores = professores();
+        var autor = professores.get(0);
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, autor);
+
+        mockMvc.perform(get("/api/quizzes/" + quiz.getId() + "/edicao")
+                        .header("Authorization", "Bearer " + tokenPara(autor, "PROFESSOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.categoria").value("FISIOLOGIA"))
+                .andExpect(jsonPath("$.nivel").value("INICIANTE"))
+                .andExpect(jsonPath("$.artigos").isEmpty())
+                .andExpect(jsonPath("$.questoes[0].alternativas[0].correta").value(true));
+
+        mockMvc.perform(get("/api/quizzes/" + quiz.getId() + "/edicao")
+                        .header("Authorization", "Bearer " + tokenPara(professores.get(1), "PROFESSOR")))
+                .andExpect(status().isForbidden());
+    }
+
+    private String corpo(String artigosJson, String primeiraQuestao) {
+        return """
+                {
+                  "titulo": "Principios da hipertrofia",
+                  "descricao": "Confira o que voce sabe.",
+                  "categoria": "FISIOLOGIA",
+                  "nivel": "INICIANTE",
+                  "artigos": %s,
+                  "questoes": [%s, %s, %s]
+                }
+                """.formatted(artigosJson, primeiraQuestao,
+                questaoJson("Segunda pergunta", true, false),
+                questaoJson("Terceira pergunta", true, false));
+    }
+
+    private String questaoJson(String enunciado, boolean corretaA, boolean corretaB) {
+        return questaoJson(enunciado, "Alternativa A", corretaA, corretaB);
+    }
+
+    private String questaoJson(String enunciado, String textoA, boolean corretaA, boolean corretaB) {
+        return """
+                {
+                  "enunciado": "%s",
+                  "explicacao": "Explicacao de teste.",
+                  "alternativas": [
+                    { "texto": "%s", "correta": %s },
+                    { "texto": "Alternativa B", "correta": %s }
+                  ]
+                }
+                """.formatted(enunciado, textoA, corretaA, corretaB);
+    }
+
+    private ArtigoEntity artigoSalvo(UUID autorId, StatusAprovacaoEnum status) {
+        var artigo = new ArtigoEntity();
+
+        artigo.setTitulo("Artigo para indicar no quiz");
+        artigo.setCategoria(CategoriaArtigoEnum.FISIOLOGIA);
+        artigo.setResumo("Resumo de teste. ".repeat(20));
+        artigo.setFonte("https://doi.org/teste/" + UUID.randomUUID());
+        artigo.setStatus(status);
+        artigo.setAutorId(autorId);
+        artigo.setCriadoEm(LocalDateTime.now());
+
+        return artigoRepository.saveAndFlush(artigo);
     }
 
     private QuizEntity quizSalvo(StatusAprovacaoEnum status, UUID autorId) {
