@@ -29,7 +29,7 @@ public interface IArtigoRepository extends JpaRepository<ArtigoEntity, UUID> {
     List<ArtigoEntity> buscarVisiveis(
             @Param("visiveis")Collection<StatusAprovacaoEnum> visiveis,
             @Param("rejeitado") StatusAprovacaoEnum rejeitado,
-            @Param("usuariosId") UUID usuarioId,
+            @Param("usuarioId") UUID usuarioId,
             @Param("status") StatusAprovacaoEnum status
             );
 }
