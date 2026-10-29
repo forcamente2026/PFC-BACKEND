@@ -78,6 +78,8 @@ public class SegurancaConfig {
                         .requestMatchers(HttpMethod.POST, "/api/artigos").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.PUT, "/api/artigos/*").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.DELETE, "/api/artigos/*").hasAnyRole(EDITORES)
+                        .requestMatchers(HttpMethod.GET, "/api/quizzes/pendentes")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/anonimizacoes-pendentes")
                         .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/pendentes-verificacao")
