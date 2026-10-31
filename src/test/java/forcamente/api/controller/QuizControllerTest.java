@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -492,6 +493,138 @@ class QuizControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @DisplayName("a tentativa e corrigida, devolve o gabarito da correcao e vira a melhor nota")
+    void deveCorrigirATentativaEGuardarANota() throws Exception {
+        var autor = professores().getFirst();
+        var quiz = quizSalvo(StatusAprovacaoEnum.APROVADO, autor);
+        var aluno = umAluno();
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/tentativas")
+                        .header("Authorization", "Bearer " + tokenPara(aluno, "ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(respostasJson(quiz, 1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.acertos").value(1))
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.percentual").value(50))
+                .andExpect(jsonPath("$.concluido").value(false))
+                .andExpect(jsonPath("$.notaMinima").value(70))
+                .andExpect(jsonPath("$.correcao", hasSize(2)))
+                .andExpect(jsonPath("$.correcao[0].acertou").value(true))
+                .andExpect(jsonPath("$.correcao[1].acertou").value(false))
+                .andExpect(jsonPath("$.correcao[0].explicacao").value("Explicacao de teste."))
+                .andExpect(jsonPath("$.correcao[1].alternativaCorretaId").exists())
+                .andExpect(jsonPath("$.correcao[1].alternativaEscolhidaId").exists());
+
+        mockMvc.perform(get("/api/quizzes/" + quiz.getId())
+                        .header("Authorization", "Bearer " + tokenPara(aluno, "ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.melhorTentativa.acertos").value(1))
+                .andExpect(jsonPath("$.melhorTentativa.concluido").value(false));
+    }
+
+    @Test
+    @DisplayName("acertar tudo conclui o quiz, e a melhor tentativa fica com a nota maior")
+    void deveGuardarAMelhorEntreDuasTentativas() throws Exception {
+        var autor = professores().getFirst();
+        var quiz = quizSalvo(StatusAprovacaoEnum.APROVADO, autor);
+        var aluno = umAluno();
+        var token = tokenPara(aluno, "ALUNO");
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/tentativas")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(respostasJson(quiz, 0)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.acertos").value(0));
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/tentativas")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(respostasJson(quiz, 2)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.percentual").value(100))
+                .andExpect(jsonPath("$.concluido").value(true));
+
+        mockMvc.perform(get("/api/quizzes/" + quiz.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.melhorTentativa.acertos").value(2))
+                .andExpect(jsonPath("$.melhorTentativa.concluido").value(true));
+    }
+
+    @Test
+    @DisplayName("responder quiz que nao esta publicado responde 409")
+    void deveRecusarRespostaEmQuizNaoPublicado() throws Exception {
+        var autor = professores().getFirst();
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, autor);
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/tentativas")
+                        .header("Authorization", "Bearer " + tokenPara(autor, "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(respostasJson(quiz, 2)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("resposta faltando, repetida ou de outra pergunta responde 400 com mensagem propria")
+    void deveRecusarRespostasMalFormadas() throws Exception {
+        var autor = professores().getFirst();
+        var quiz = quizSalvo(StatusAprovacaoEnum.APROVADO, autor);
+        var token = tokenPara(umAluno(), "ALUNO");
+
+        var primeira = quiz.getQuestoes().getFirst();
+        var segunda = quiz.getQuestoes().get(1);
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/tentativas")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"respostas\":[%s]}".formatted(
+                                resposta(primeira.getId(), primeira.getAlternativas().getFirst().getId()))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Responda todas as perguntas"));
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/tentativas")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"respostas\":[%s,%s]}".formatted(
+                                resposta(primeira.getId(), primeira.getAlternativas().getFirst().getId()),
+                                resposta(primeira.getId(), primeira.getAlternativas().get(1).getId()))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Responda cada pergunta uma única vez"));
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/tentativas")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"respostas\":[%s,%s]}".formatted(
+                                resposta(primeira.getId(), segunda.getAlternativas().getFirst().getId()),
+                                resposta(segunda.getId(), segunda.getAlternativas().getFirst().getId()))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("A alternativa escolhida não pertence à pergunta"));
+    }
+
+    private String respostasJson(QuizEntity quiz, int quantasCertas) {
+        var itens = new ArrayList<String>();
+        var questoes = quiz.getQuestoes();
+
+        for (int indice = 0; indice < questoes.size(); indice++) {
+            var questao = questoes.get(indice);
+            var escolhida = indice < quantasCertas
+                    ? questao.getAlternativas().getFirst()
+                    : questao.getAlternativas().get(1);
+
+            itens.add(resposta(questao.getId(), escolhida.getId()));
+        }
+
+        return "{\"respostas\":[" + String.join(",", itens) + "]}";
+    }
+
+    private String resposta(UUID questaoId, UUID alternativaId) {
+        return "{\"questaoId\":\"%s\",\"alternativaId\":\"%s\"}".formatted(questaoId, alternativaId);
+    }
+
     private String corpo(String artigosJson, String primeiraQuestao) {
         return """
                 {
@@ -575,6 +708,16 @@ class QuizControllerTest {
         alternativa.setCorreta(correta);
 
         return alternativa;
+    }
+
+    private UUID umAluno() {
+        var aluno = usuarioRepository.findByEmail("ana.ramos@exemplo.test");
+
+        assertThat(aluno)
+                .as("a tentativa tem chave estrangeira para usuarios, entao o aluno precisa existir")
+                .isPresent();
+
+        return aluno.get().getId();
     }
 
     private List<UUID> professores() {

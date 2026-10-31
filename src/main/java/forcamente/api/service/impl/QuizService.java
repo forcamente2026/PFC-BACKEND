@@ -4,6 +4,7 @@ import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.AlternativaRequestDTO;
 import forcamente.api.dto.AlternativaResponseDTO;
 import forcamente.api.dto.ArtigoSugeridoDTO;
+import forcamente.api.dto.CorrecaoDTO;
 import forcamente.api.dto.NotaDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.QuestaoRequestDTO;
@@ -12,6 +13,9 @@ import forcamente.api.dto.QuizDetalheResponseDTO;
 import forcamente.api.dto.QuizEdicaoResponseDTO;
 import forcamente.api.dto.QuizRequestDTO;
 import forcamente.api.dto.QuizResumoResponseDTO;
+import forcamente.api.dto.RespostaRequestDTO;
+import forcamente.api.dto.TentativaRequestDTO;
+import forcamente.api.dto.TentativaResponseDTO;
 import forcamente.api.entity.ArtigoEntity;
 import forcamente.api.entity.QuizAlternativaEntity;
 import forcamente.api.entity.QuizAprovacaoEntity;
@@ -46,6 +50,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -292,9 +297,114 @@ public class QuizService implements IQuizService {
         return paraDetalhe(salvo, papel, usuarioId);
     }
 
+    @Override
+    @Transactional
+    public TentativaResponseDTO responder(UUID quizId, TentativaRequestDTO tentativaRequestDTO) {
+        log.info("responder: {}", quizId);
+
+        var papel = papelAutenticado();
+        var usuarioId = usuarioAutenticado();
+
+        var quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Quiz nao encontrado: " + quizId));
+
+        exigirVisibilidade(quiz, papel, usuarioId);
+
+        if (!PUBLICADOS.contains(quiz.getStatus())) {
+            throw new ConflitoException("Este quiz ainda não foi publicado");
+        }
+
+        var escolhas = escolhasConferidas(quiz, tentativaRequestDTO.respostas());
+
+        var correcao = quiz.getQuestoes().stream()
+                .map(questao -> corrigir(questao, escolhas.get(questao.getId())))
+                .toList();
+
+        int total = quiz.getQuestoes().size();
+        int acertos = (int) correcao.stream().filter(CorrecaoDTO::acertou).count();
+
+        var tentativa = new QuizTentativaEntity();
+
+        tentativa.setQuizId(quizId);
+        tentativa.setUsuarioId(usuarioId);
+        tentativa.setAcertos(acertos);
+        tentativa.setTotal(total);
+        tentativa.setFeitaEm(LocalDateTime.now(clock));
+
+        quizTentativaRepository.save(tentativa);
+
+        return new TentativaResponseDTO(
+                acertos,
+                total,
+                percentual(acertos, total),
+                concluido(acertos, total),
+                NOTA_MINIMA_PARA_CONCLUIR,
+                correcao
+        );
+    }
+
+    private Map<UUID, UUID> escolhasConferidas(QuizEntity quiz, List<RespostaRequestDTO> respostas) {
+        var escolhas = new LinkedHashMap<UUID, UUID>();
+
+        for (var resposta : respostas) {
+            if (escolhas.put(resposta.questaoId(), resposta.alternativaId()) != null) {
+                throw new RegraDeNegocioException("Responda cada pergunta uma única vez");
+            }
+        }
+
+        var idsDasQuestoes = quiz.getQuestoes().stream()
+                .map(QuizQuestaoEntity::getId)
+                .collect(Collectors.toSet());
+
+        if (!idsDasQuestoes.containsAll(escolhas.keySet())) {
+            throw new RegraDeNegocioException("Responda cada pergunta uma única vez");
+        }
+
+        if (!escolhas.keySet().containsAll(idsDasQuestoes)) {
+            throw new RegraDeNegocioException("Responda todas as perguntas");
+        }
+
+        for (var questao : quiz.getQuestoes()) {
+            var escolhidaId = escolhas.get(questao.getId());
+
+            boolean daQuestao = questao.getAlternativas().stream()
+                    .anyMatch(alternativa -> alternativa.getId().equals(escolhidaId));
+
+            if (!daQuestao) {
+                throw new RegraDeNegocioException("A alternativa escolhida não pertence à pergunta");
+            }
+        }
+
+        return escolhas;
+    }
+
+    private CorrecaoDTO corrigir(QuizQuestaoEntity questao, UUID escolhidaId) {
+        var correta = questao.getAlternativas().stream()
+                .filter(QuizAlternativaEntity::isCorreta)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Pergunta sem alternativa correta no banco: " + questao.getId()));
+
+        return new CorrecaoDTO(
+                questao.getId(),
+                correta.getId(),
+                escolhidaId,
+                correta.getId().equals(escolhidaId),
+                questao.getExplicacao()
+        );
+    }
+
+    private int percentual(int acertos, int total) {
+        return Math.round(acertos * 100f / total);
+    }
+
+    private boolean concluido(int acertos, int total) {
+        return acertos * 100 >= NOTA_MINIMA_PARA_CONCLUIR * total;
+    }
+
     private void aplicar(QuizRequestDTO quizRequestDTO, QuizEntity quiz) {
-        quiz.setTitulo(quizRequestDTO.titulo());
-        quiz.setDescricao(quizRequestDTO.descricao());
+        quiz.setTitulo(aparado(quizRequestDTO.titulo()));
+        quiz.setDescricao(aparado(quizRequestDTO.descricao()));
         quiz.setCategoria(quizRequestDTO.categoria());
         quiz.setNivel(quizRequestDTO.nivel());
 
@@ -313,7 +423,7 @@ public class QuizService implements IQuizService {
         }
 
         if (new HashSet<>(artigos).size() != artigos.size()) {
-            throw new RegraDeNegocioException("Nao repita o mesmo artigo na leitura sugerida");
+            throw new RegraDeNegocioException("Não repita artigos na leitura sugerida");
         }
 
         var publicados = artigoRepository.findAllById(artigos).stream()
@@ -321,11 +431,8 @@ public class QuizService implements IQuizService {
                 .map(ArtigoEntity::getId)
                 .collect(Collectors.toSet());
 
-        var invalido = artigos.stream().filter(artigoId -> !publicados.contains(artigoId)).findFirst();
-
-        if (invalido.isPresent()) {
-            throw new RegraDeNegocioException(
-                    "Artigo indicado nao existe ou nao esta publicado: " + invalido.get());
+        if (!publicados.containsAll(artigos)) {
+            throw new RegraDeNegocioException("Indique só artigos publicados");
         }
 
         return artigos;
@@ -335,8 +442,8 @@ public class QuizService implements IQuizService {
         return questoes.stream().map(pedido -> {
             var questao = new QuizQuestaoEntity();
 
-            questao.setEnunciado(pedido.enunciado());
-            questao.setExplicacao(pedido.explicacao());
+            questao.setEnunciado(aparado(pedido.enunciado()));
+            questao.setExplicacao(aparado(pedido.explicacao()));
             questao.getAlternativas().addAll(alternativasDe(pedido.alternativas()));
 
             return questao;
@@ -347,11 +454,21 @@ public class QuizService implements IQuizService {
         return alternativas.stream().map(pedido -> {
             var alternativa = new QuizAlternativaEntity();
 
-            alternativa.setTexto(pedido.texto());
+            alternativa.setTexto(aparado(pedido.texto()));
             alternativa.setCorreta(pedido.correta());
 
             return alternativa;
         }).toList();
+    }
+
+    private String aparado(String texto) {
+        if (texto == null) {
+            return null;
+        }
+
+        var aparado = texto.trim();
+
+        return aparado.isEmpty() ? null : aparado;
     }
 
     private QuestaoRequestDTO paraQuestaoRequest(QuizQuestaoEntity questao) {
@@ -538,13 +655,11 @@ public class QuizService implements IQuizService {
     }
 
     private NotaDTO paraNota(QuizTentativaEntity tentativa) {
-        int percentual = (int) Math.round(tentativa.getAcertos() * 100.0 / tentativa.getTotal());
-
         return new NotaDTO(
                 tentativa.getAcertos(),
                 tentativa.getTotal(),
-                percentual,
-                percentual >= NOTA_MINIMA_PARA_CONCLUIR);
+                percentual(tentativa.getAcertos(), tentativa.getTotal()),
+                concluido(tentativa.getAcertos(), tentativa.getTotal()));
     }
 
     private Map<UUID, String> buscarNomes(List<QuizEntity> quizzes, List<QuizAprovacaoEntity> aprovacoes) {

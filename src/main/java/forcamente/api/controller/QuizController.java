@@ -5,6 +5,8 @@ import forcamente.api.dto.QuizDetalheResponseDTO;
 import forcamente.api.dto.QuizEdicaoResponseDTO;
 import forcamente.api.dto.QuizRequestDTO;
 import forcamente.api.dto.QuizResumoResponseDTO;
+import forcamente.api.dto.TentativaRequestDTO;
+import forcamente.api.dto.TentativaResponseDTO;
 import forcamente.api.service.IQuizService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -70,6 +72,14 @@ public class QuizController {
     @PostMapping("/{id}/aprovacoes")
     public ResponseEntity<QuizDetalheResponseDTO> aprovarComoProfessor(@PathVariable UUID id) {
         return ResponseEntity.ok(quizService.aprovarComoProfessor(id));
+    }
+
+    @PostMapping("/{id}/tentativas")
+    public ResponseEntity<TentativaResponseDTO> responder(
+            @PathVariable UUID id,
+            @Valid @RequestBody TentativaRequestDTO tentativaRequestDTO
+    ) {
+        return ResponseEntity.ok(quizService.responder(id, tentativaRequestDTO));
     }
 
     @PatchMapping("/{id}/status")

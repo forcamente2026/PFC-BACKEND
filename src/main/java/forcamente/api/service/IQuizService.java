@@ -5,6 +5,8 @@ import forcamente.api.dto.QuizDetalheResponseDTO;
 import forcamente.api.dto.QuizEdicaoResponseDTO;
 import forcamente.api.dto.QuizRequestDTO;
 import forcamente.api.dto.QuizResumoResponseDTO;
+import forcamente.api.dto.TentativaRequestDTO;
+import forcamente.api.dto.TentativaResponseDTO;
 
 import java.util.List;
 import java.util.UUID;
@@ -28,4 +30,6 @@ public interface IQuizService {
     QuizDetalheResponseDTO aprovarComoProfessor(UUID quizId);
 
     QuizDetalheResponseDTO decidirSituacao(UUID quizId, AlterarStatusRequestDTO alterarStatusRequestDTO);
+
+    TentativaResponseDTO responder(UUID quizId, TentativaRequestDTO tentativaRequestDTO);
 }
