@@ -12,6 +12,8 @@ import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.repository.IArtigoAprovacaoRepository;
 import forcamente.api.repository.IArtigoRepository;
+import forcamente.api.repository.IQuizAprovacaoRepository;
+import forcamente.api.repository.IQuizRepository;
 import forcamente.api.repository.IUsuarioRepository;
 import forcamente.api.service.IArtigoService;
 import forcamente.api.service.IAuditoriaService;
@@ -39,6 +41,10 @@ public class ArtigoService implements IArtigoService {
 
     private static final int APROVACOES_DE_PROFESSORES_PARA_PUBLICAR = 3;
 
+    private static final Set<StatusAprovacaoEnum> PUBLICADOS = Set.of(
+            StatusAprovacaoEnum.APROVADO,
+            StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES);
+
     private final IArtigoRepository artigoRepository;
 
     private final IArtigoAprovacaoRepository artigoAprovacaoRepository;
@@ -46,6 +52,10 @@ public class ArtigoService implements IArtigoService {
     private final IUsuarioRepository usuarioRepository;
 
     private final IAuditoriaService auditoriaService;
+
+    private final IQuizRepository quizRepository;
+
+    private final IQuizAprovacaoRepository quizAprovacaoRepository;
 
     private final Clock clock;
 
@@ -173,9 +183,37 @@ public class ArtigoService implements IArtigoService {
 
         exigirAutorOuAdministrador(artigo, papel, usuarioId);
 
+        exigirQueNenhumQuizPublicadoIndique(artigo);
+
         artigoRepository.delete(artigo);
 
         auditoriaService.registrar(AcaoAuditoriaEnum.EXCLUIDO, RecursoAuditoriaEnum.ARTIGO, artigoId);
+    }
+
+    private void exigirQueNenhumQuizPublicadoIndique(ArtigoEntity artigo) {
+        var quizzes = quizRepository.buscarPorArtigoIndicado(artigo.getId(), PUBLICADOS);
+
+        if (!quizzes.isEmpty()) {
+            throw new ConflitoException(
+                    "Este artigo é leitura sugerida do quiz \"" + quizzes.getFirst().getTitulo()
+                            + "\". Troque a indicação no quiz antes de excluir"
+            );
+        }
+    }
+
+    private void devolverParaPendenteOsQuizzesQueIndicam(ArtigoEntity artigo) {
+        quizRepository.buscarPorArtigoIndicado(artigo.getId(), PUBLICADOS).forEach(quiz -> {
+            quiz.setStatus(StatusAprovacaoEnum.PENDENTE);
+            quiz.setMotivoRejeicao("O artigo \"" + artigo.getTitulo()
+                    + "\", indicado na leitura sugerida, foi rejeitado. Troque a indicação.");
+
+            quizRepository.save(quiz);
+            quizAprovacaoRepository.deleteByQuizId(quiz.getId());
+
+            auditoriaService.registrar(
+                    AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.QUIZ, quiz.getId()
+            );
+        });
     }
 
     @Override
@@ -247,6 +285,10 @@ public class ArtigoService implements IArtigoService {
         }
 
         boolean rejeitado = alterarStatusArtigoRequestDTO.status() == StatusAprovacaoEnum.REJEITADO;
+
+        if (rejeitado) {
+            devolverParaPendenteOsQuizzesQueIndicam(artigo);
+        }
 
         artigo.setStatus(alterarStatusArtigoRequestDTO.status());
         artigo.setMotivoRejeicao(rejeitado ? alterarStatusArtigoRequestDTO.motivo().trim() : null);

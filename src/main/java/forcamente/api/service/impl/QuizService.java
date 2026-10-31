@@ -1,5 +1,6 @@
 package forcamente.api.service.impl;
 
+import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.AlternativaRequestDTO;
 import forcamente.api.dto.AlternativaResponseDTO;
 import forcamente.api.dto.ArtigoSugeridoDTO;
@@ -22,6 +23,7 @@ import forcamente.api.entity.enums.AcaoAuditoriaEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
+import forcamente.api.exception.ConflitoException;
 import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.repository.IArtigoRepository;
@@ -196,6 +198,96 @@ public class QuizService implements IQuizService {
         var salvo = quizRepository.save(quiz);
 
         auditoriaService.registrar(AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.QUIZ, quizId);
+
+        return paraDetalhe(salvo, papel, usuarioId);
+    }
+
+    @Override
+    @Transactional
+    public void excluirQuiz(UUID quizId) {
+        log.info("excluirQuiz: {}", quizId);
+
+        var papel = papelAutenticado();
+        var usuarioId = usuarioAutenticado();
+
+        var quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Quiz nao encontrado: " + quizId));
+
+        exigirAutorOuAdministrador(quiz, papel, usuarioId);
+
+        quizRepository.delete(quiz);
+
+        auditoriaService.registrar(AcaoAuditoriaEnum.EXCLUIDO, RecursoAuditoriaEnum.QUIZ, quizId);
+    }
+
+    @Override
+    @Transactional
+    public QuizDetalheResponseDTO aprovarComoProfessor(UUID quizId) {
+        log.info("aprovarComoProfessor: {}", quizId);
+
+        var papel = papelAutenticado();
+        var usuarioId = usuarioAutenticado();
+
+        var quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Quiz nao encontrado: " + quizId));
+
+        if (quiz.getAutorId().equals(usuarioId)) {
+            throw new AccessDeniedException("Acesso negado");
+        }
+
+        if (quiz.getStatus() != StatusAprovacaoEnum.PENDENTE) {
+            throw new ConflitoException("Só é possível aprovar um quiz que está pendente");
+        }
+
+        if (quizAprovacaoRepository.existsByQuizIdAndProfessorId(quizId, usuarioId)) {
+            throw new ConflitoException("Você já aprovou este quiz");
+        }
+
+        var aprovacao = new QuizAprovacaoEntity();
+        aprovacao.setQuizId(quizId);
+        aprovacao.setProfessorId(usuarioId);
+        aprovacao.setAprovadoEm(LocalDateTime.now(clock));
+
+        quizAprovacaoRepository.save(aprovacao);
+
+        auditoriaService.registrar(AcaoAuditoriaEnum.APROVADO, RecursoAuditoriaEnum.QUIZ, quizId);
+
+        if (quizAprovacaoRepository.countByQuizId(quizId) >= APROVACOES_DE_PROFESSORES_PARA_PUBLICAR) {
+            quiz.setStatus(StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES);
+            quizRepository.save(quiz);
+        }
+
+        return paraDetalhe(quiz, papel, usuarioId);
+    }
+
+    @Override
+    @Transactional
+    public QuizDetalheResponseDTO decidirSituacao(UUID quizId,
+                                                  AlterarStatusRequestDTO alterarStatusRequestDTO) {
+        log.info("decidirSituacao: {} para {}", quizId, alterarStatusRequestDTO.status());
+
+        var papel = papelAutenticado();
+        var usuarioId = usuarioAutenticado();
+
+        var quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Quiz nao encontrado: " + quizId));
+
+        if (quiz.getStatus() != StatusAprovacaoEnum.PENDENTE
+                && quiz.getStatus() != StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES) {
+
+            throw new ConflitoException("Este quiz já foi decidido");
+        }
+
+        boolean rejeitado = alterarStatusRequestDTO.status() == StatusAprovacaoEnum.REJEITADO;
+
+        quiz.setStatus(alterarStatusRequestDTO.status());
+        quiz.setMotivoRejeicao(rejeitado ? alterarStatusRequestDTO.motivo().trim() : null);
+
+        var salvo = quizRepository.save(quiz);
+
+        auditoriaService.registrar(
+                rejeitado ? AcaoAuditoriaEnum.REJEITADO : AcaoAuditoriaEnum.APROVADO,
+                RecursoAuditoriaEnum.QUIZ, quizId);
 
         return paraDetalhe(salvo, papel, usuarioId);
     }

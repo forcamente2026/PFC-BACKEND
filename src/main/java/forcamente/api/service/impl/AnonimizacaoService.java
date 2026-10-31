@@ -8,6 +8,7 @@ import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.exception.ConflitoException;
 import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.exception.RegraDeNegocioException;
+import forcamente.api.repository.IQuizTentativaRepository;
 import forcamente.api.repository.IUsuarioRepository;
 import forcamente.api.service.IAnonimizacaoService;
 import forcamente.api.service.IAuditoriaService;
@@ -30,6 +31,8 @@ public class AnonimizacaoService implements IAnonimizacaoService {
     private static final String NOME_ANONIMO = "Usuario anonimizado";
 
     private final IUsuarioRepository usuarioRepository;
+
+    private final IQuizTentativaRepository quizTentativaRepository;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -141,6 +144,8 @@ public class AnonimizacaoService implements IAnonimizacaoService {
         usuario.setEstado(null);
 
         limparCodigos(usuario);
+
+        quizTentativaRepository.deleteByUsuarioId(usuario.getId());
 
         usuario.setAtivo(false);
         usuario.setAnonimizadoEm(LocalDateTime.now(clock));

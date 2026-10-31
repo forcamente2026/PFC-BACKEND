@@ -1,5 +1,6 @@
 package forcamente.api.controller;
 
+import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.QuizDetalheResponseDTO;
 import forcamente.api.dto.QuizEdicaoResponseDTO;
 import forcamente.api.dto.QuizRequestDTO;
@@ -57,5 +58,25 @@ public class QuizController {
             @Valid @RequestBody QuizRequestDTO quizRequestDTO
     ) {
         return ResponseEntity.ok(quizService.atualizarQuiz(id, quizRequestDTO));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluirQuiz(@PathVariable UUID id) {
+        quizService.excluirQuiz(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/aprovacoes")
+    public ResponseEntity<QuizDetalheResponseDTO> aprovarComoProfessor(@PathVariable UUID id) {
+        return ResponseEntity.ok(quizService.aprovarComoProfessor(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<QuizDetalheResponseDTO> decidirSituacao(
+            @PathVariable UUID id,
+            @Valid @RequestBody AlterarStatusRequestDTO alterarStatusRequestDTO
+    ) {
+        return ResponseEntity.ok(quizService.decidirSituacao(id, alterarStatusRequestDTO));
     }
 }

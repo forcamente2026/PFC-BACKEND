@@ -38,7 +38,9 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -348,6 +350,145 @@ class QuizControllerTest {
 
         mockMvc.perform(get("/api/quizzes/" + quiz.getId() + "/edicao")
                         .header("Authorization", "Bearer " + tokenPara(professores.get(1), "PROFESSOR")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("o autor exclui o proprio quiz, e outro professor recebe 403")
+    void deveExcluirSomenteComoAutorOuAdministrador() throws Exception {
+        var professores = professores();
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, professores.get(0));
+
+        mockMvc.perform(delete("/api/quizzes/" + quiz.getId())
+                        .header("Authorization", "Bearer " + tokenPara(professores.get(1), "PROFESSOR")))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/api/quizzes/" + quiz.getId())
+                        .header("Authorization", "Bearer " + tokenPara(professores.get(0), "PROFESSOR")))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("o professor aprova o quiz de outra pessoa e a contagem sobe")
+    void deveAprovarComoProfessor() throws Exception {
+        var professores = professores();
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, professores.get(0));
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/aprovacoes")
+                        .header("Authorization", "Bearer " + tokenPara(professores.get(1), "PROFESSOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.aprovacoesDeProfessores").value(1))
+                .andExpect(jsonPath("$.status").value("PENDENTE"));
+    }
+
+    @Test
+    @DisplayName("o autor aprovando o proprio quiz recebe 403, e aprovar duas vezes responde 409")
+    void deveBarrarAutoaprovacaoEAprovacaoRepetida() throws Exception {
+        var professores = professores();
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, professores.get(0));
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/aprovacoes")
+                        .header("Authorization", "Bearer " + tokenPara(professores.get(0), "PROFESSOR")))
+                .andExpect(status().isForbidden());
+
+        var outro = tokenPara(professores.get(1), "PROFESSOR");
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/aprovacoes")
+                        .header("Authorization", "Bearer " + outro))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/aprovacoes")
+                        .header("Authorization", "Bearer " + outro))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("tres aprovacoes levam o quiz a aprovado pelos professores")
+    void deveAtingirOLimiarDeTresAprovacoes() throws Exception {
+        var professores = professores();
+
+        assertThat(professores)
+                .as("o limiar exige o autor mais tres aprovadores distintos")
+                .hasSizeGreaterThanOrEqualTo(4);
+
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, professores.get(0));
+
+        for (int indice = 1; indice <= 2; indice++) {
+            mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/aprovacoes")
+                            .header("Authorization", "Bearer " + tokenPara(professores.get(indice), "PROFESSOR")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("PENDENTE"));
+        }
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/aprovacoes")
+                        .header("Authorization", "Bearer " + tokenPara(professores.get(3), "PROFESSOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.aprovacoesDeProfessores").value(3))
+                .andExpect(jsonPath("$.status").value("APROVADO_PELOS_PROFESSORES"));
+    }
+
+    @Test
+    @DisplayName("aluno aprovando quiz recebe 403, pela cadeia de seguranca")
+    void deveRecusarAlunoAprovando() throws Exception {
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, professores().getFirst());
+
+        mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/aprovacoes")
+                        .header("Authorization", "Bearer " + tokenDe("ALUNO")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("o administrador decide, e decidir de novo responde 409")
+    void deveDecidirUmaVezSo() throws Exception {
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, professores().getFirst());
+        var administrador = tokenDe("ADMINISTRADOR");
+
+        mockMvc.perform(patch("/api/quizzes/" + quiz.getId() + "/status")
+                        .header("Authorization", "Bearer " + administrador)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APROVADO\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APROVADO"))
+                .andExpect(jsonPath("$.motivoRejeicao").value(nullValue()));
+
+        mockMvc.perform(patch("/api/quizzes/" + quiz.getId() + "/status")
+                        .header("Authorization", "Bearer " + administrador)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APROVADO\"}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("rejeitar sem motivo responde 400, e com motivo grava o motivo")
+    void deveExigirMotivoNaRejeicao() throws Exception {
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, professores().getFirst());
+        var administrador = tokenDe("ADMINISTRADOR");
+
+        mockMvc.perform(patch("/api/quizzes/" + quiz.getId() + "/status")
+                        .header("Authorization", "Bearer " + administrador)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REJEITADO\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos").isNotEmpty());
+
+        mockMvc.perform(patch("/api/quizzes/" + quiz.getId() + "/status")
+                        .header("Authorization", "Bearer " + administrador)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REJEITADO\",\"motivo\":\"Pergunta 2 esta ambigua.\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REJEITADO"))
+                .andExpect(jsonPath("$.motivoRejeicao").value("Pergunta 2 esta ambigua."));
+    }
+
+    @Test
+    @DisplayName("professor decidindo a situacao recebe 403: a decisao e do administrador")
+    void deveRecusarProfessorDecidindo() throws Exception {
+        var quiz = quizSalvo(StatusAprovacaoEnum.PENDENTE, professores().getFirst());
+
+        mockMvc.perform(patch("/api/quizzes/" + quiz.getId() + "/status")
+                        .header("Authorization", "Bearer " + tokenDe("PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APROVADO\"}"))
                 .andExpect(status().isForbidden());
     }
 

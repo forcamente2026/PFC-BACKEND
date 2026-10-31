@@ -15,6 +15,8 @@ import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.repository.IArtigoAprovacaoRepository;
 import forcamente.api.repository.IArtigoRepository;
+import forcamente.api.repository.IQuizAprovacaoRepository;
+import forcamente.api.repository.IQuizRepository;
 import forcamente.api.repository.IUsuarioRepository;
 import forcamente.api.service.impl.ArtigoService;
 import org.junit.jupiter.api.AfterEach;
@@ -77,12 +79,18 @@ class ArtigoServiceTest {
     @Mock
     private IAuditoriaService auditoriaService;
 
+    @Mock
+    private IQuizRepository quizRepository;
+
+    @Mock
+    private IQuizAprovacaoRepository quizAprovacaoRepository;
+
 
     @BeforeEach
     void configurar() {
         artigoService = new ArtigoService(
                 artigoRepository, artigoAprovacaoRepository, usuarioRepository,
-                auditoriaService, RELOGIO);
+                auditoriaService, quizRepository, quizAprovacaoRepository, RELOGIO);
     }
 
     @AfterEach
