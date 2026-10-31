@@ -4,6 +4,7 @@ import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.TipoDocumentoLegalEnum;
 import forcamente.api.exception.ConflitoException;
@@ -185,6 +186,46 @@ class UsuarioServiceTest {
     }
 
 
+
+    @Test
+    @DisplayName("cadastro de professor grava a verificacao do CREF como pendente")
+    void deveGravarCrefPendenteAoCadastrarProfessor() {
+        var requestDTO = umProfessor("123456-G/SP");
+        var entity = umaEntidade();
+        entity.setPapel(PapelUsuarioEnum.PROFESSOR);
+
+        when(usuarioRepository.existsByEmail("maria@umc.br")).thenReturn(false);
+        when(usuarioMapper.toEntity(requestDTO)).thenReturn(entity);
+        when(usuarioRepository.save(any(UsuarioEntity.class))).thenReturn(entity);
+        when(usuarioMapper.toDTO(entity)).thenReturn(umaResposta(entity));
+
+        usuarioService.criarUsuario(requestDTO);
+
+        ArgumentCaptor<UsuarioEntity> captor = ArgumentCaptor.forClass(UsuarioEntity.class);
+        verify(usuarioRepository).save(captor.capture());
+
+        assertThat(captor.getValue().getSituacaoCref())
+                .isEqualTo(StatusAprovacaoEnum.PENDENTE);
+    }
+
+    @Test
+    @DisplayName("cadastro de aluno nao grava situacao de CREF, porque nao se aplica")
+    void naoDeveGravarSituacaoDeCrefAoCadastrarAluno() {
+        var requestDTO = umaRequisicaoValida();
+        var entity = umaEntidade();
+
+        when(usuarioRepository.existsByEmail("joao@umc.br")).thenReturn(false);
+        when(usuarioMapper.toEntity(requestDTO)).thenReturn(entity);
+        when(usuarioRepository.save(any(UsuarioEntity.class))).thenReturn(entity);
+        when(usuarioMapper.toDTO(entity)).thenReturn(umaResposta(entity));
+
+        usuarioService.criarUsuario(requestDTO);
+
+        ArgumentCaptor<UsuarioEntity> captor = ArgumentCaptor.forClass(UsuarioEntity.class);
+        verify(usuarioRepository).save(captor.capture());
+
+        assertThat(captor.getValue().getSituacaoCref()).isNull();
+    }
 
     private UsuarioRequestDTO umaRequisicaoValida() {
         return new UsuarioRequestDTO(

@@ -2,7 +2,10 @@ package forcamente.api.service.impl;
 
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
+import forcamente.api.dto.AlterarStatusRequestDTO;
+import forcamente.api.dto.RenovarCrefRequestDTO;
 import forcamente.api.dto.UsuarioDetalheResponseDTO;
+import forcamente.api.dto.VerificacaoPendenteDTO;
 import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
@@ -11,8 +14,10 @@ import forcamente.api.entity.enums.AcaoAuditoriaEnum;
 import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.entity.enums.TipoDocumentoLegalEnum;
 import forcamente.api.exception.ConflitoException;
+import forcamente.api.exception.LimiteDeTentativasException;
 import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.mapper.UsuarioMapper;
@@ -29,15 +34,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class UsuarioService implements IUsuarioService {
+
+    private static final int CREF_REENVIOS_POR_DIA = 3;
 
     private final IUsuarioRepository usuarioRepository;
 
@@ -72,6 +81,10 @@ public class UsuarioService implements IUsuarioService {
         UsuarioEntity usuarioEntity = usuarioMapper.toEntity(usuarioRequestDTO);
 
         usuarioEntity.setSenhaHash(passwordEncoder.encode(usuarioRequestDTO.senha()));
+
+        if (usuarioEntity.getPapel() == PapelUsuarioEnum.PROFESSOR) {
+            usuarioEntity.setSituacaoCref(StatusAprovacaoEnum.PENDENTE);
+        }
 
         registrarAceites(usuarioEntity);
 
@@ -167,6 +180,17 @@ public class UsuarioService implements IUsuarioService {
                 throw new ConflitoException("Ja existe um professor cadastrado com este CREF");
             }
 
+            boolean crefOuFormacaoMudou =
+                    !Objects.equals(usuario.getCref(), dados.cref())
+                            || usuario.getFormacao() != dados.formacao();
+
+            if (crefOuFormacaoMudou
+                    && usuario.getSituacaoCref() == StatusAprovacaoEnum.REJEITADO) {
+
+                usuario.setSituacaoCref(StatusAprovacaoEnum.PENDENTE);
+                usuario.setMotivoRejeicaoCref(null);
+            }
+
             usuario.setCref(dados.cref());
             usuario.setFormacao(dados.formacao());
             usuario.setCep(dados.cep());
@@ -182,6 +206,118 @@ public class UsuarioService implements IUsuarioService {
 
         auditoriaService.registrar(
                 AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
+
+        return usuarioMapper.toDetalheDTO(salvo);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<VerificacaoPendenteDTO> listarPendentesDeVerificacao() {
+        log.info("listarPendentesDeVerificacao");
+
+        return usuarioRepository
+                .findByPapelAndSituacaoCrefOrderByCriadoEm(
+                        PapelUsuarioEnum.PROFESSOR, StatusAprovacaoEnum.PENDENTE)
+                .stream()
+                .map(usuario -> new VerificacaoPendenteDTO(
+                        usuario.getId(),
+                        usuario.getNomeCompleto(),
+                        usuario.getEmail(),
+                        usuario.getCref(),
+                        usuario.getFormacao(),
+                        usuario.getCriadoEm()))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public UsuarioDetalheResponseDTO renovarCref(
+            UUID usuarioId, RenovarCrefRequestDTO renovarCrefRequestDTO) {
+
+        log.info("renovarCref: {}", usuarioId);
+
+        UsuarioEntity usuario = buscarEntidade(usuarioId);
+
+        if (usuario.getPapel() != PapelUsuarioEnum.PROFESSOR) {
+            throw new RegraDeNegocioException(
+                    "Somente a conta de professor tem CREF para renovar");
+        }
+
+        if (usuario.getSituacaoCref() != StatusAprovacaoEnum.APROVADO) {
+            throw new RegraDeNegocioException(
+                    "A renovacao do CREF vale somente com a verificacao aprovada. "
+                            + "Enquanto ela estiver pendente ou rejeitada, "
+                            + "a correcao e feita pelo administrador");
+        }
+
+        if (usuarioRepository.existsByCrefAndIdNot(renovarCrefRequestDTO.cref(), usuarioId)) {
+            throw new ConflitoException("Ja existe um professor cadastrado com este CREF");
+        }
+
+        contarReenvioDoDia(usuario);
+
+        usuario.setCref(renovarCrefRequestDTO.cref());
+        usuario.setFormacao(renovarCrefRequestDTO.formacao());
+        usuario.setSituacaoCref(StatusAprovacaoEnum.PENDENTE);
+        usuario.setMotivoRejeicaoCref(null);
+
+        UsuarioEntity salvo = usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
+
+        return usuarioMapper.toDetalheDTO(salvo);
+    }
+
+    private void contarReenvioDoDia(UsuarioEntity usuario) {
+        LocalDate hoje = LocalDate.now(clock);
+
+        if (!hoje.equals(usuario.getCrefReenvioDia())) {
+            usuario.setCrefReenvioDia(hoje);
+            usuario.setCrefReenvios(0);
+        }
+
+        if (usuario.getCrefReenvios() >= CREF_REENVIOS_POR_DIA) {
+            throw new LimiteDeTentativasException(
+                    "Limite de " + CREF_REENVIOS_POR_DIA
+                            + " renovacoes de CREF por dia atingido. Tente novamente amanha");
+        }
+
+        usuario.setCrefReenvios(usuario.getCrefReenvios() + 1);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioDetalheResponseDTO decidirVerificacaoDoCref(
+            UUID usuarioId, AlterarStatusRequestDTO alterarStatusRequestDTO) {
+
+        log.info("decidirVerificacaoDoCref: {} para {}",
+                usuarioId, alterarStatusRequestDTO.status());
+
+        UsuarioEntity usuario = buscarEntidade(usuarioId);
+
+        if (usuario.getPapel() != PapelUsuarioEnum.PROFESSOR) {
+            throw new RegraDeNegocioException(
+                    "A verificacao de CREF se aplica somente a conta de professor");
+        }
+
+        if (usuario.getSituacaoCref() != StatusAprovacaoEnum.PENDENTE) {
+            throw new ConflitoException(
+                    "Esta verificacao nao esta pendente e por isso nao pode ser decidida");
+        }
+
+        boolean rejeitado =
+                alterarStatusRequestDTO.status() == StatusAprovacaoEnum.REJEITADO;
+
+        usuario.setSituacaoCref(alterarStatusRequestDTO.status());
+        usuario.setMotivoRejeicaoCref(
+                rejeitado ? alterarStatusRequestDTO.motivo().trim() : null);
+
+        UsuarioEntity salvo = usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                rejeitado ? AcaoAuditoriaEnum.REJEITADO : AcaoAuditoriaEnum.APROVADO,
+                RecursoAuditoriaEnum.USUARIO, salvo.getId());
 
         return usuarioMapper.toDetalheDTO(salvo);
     }

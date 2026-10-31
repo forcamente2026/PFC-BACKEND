@@ -2,7 +2,10 @@ package forcamente.api.service;
 
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
+import forcamente.api.dto.AlterarStatusRequestDTO;
+import forcamente.api.dto.RenovarCrefRequestDTO;
 import forcamente.api.dto.UsuarioDetalheResponseDTO;
+import forcamente.api.dto.VerificacaoPendenteDTO;
 import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
@@ -25,6 +28,14 @@ public interface IUsuarioService {
             String busca, PapelUsuarioEnum papel, Boolean ativo, int pagina, int tamanho);
 
     UsuarioDetalheResponseDTO atualizar(UUID usuarioId, UsuarioAtualizacaoRequestDTO dados);
+
+    List<VerificacaoPendenteDTO> listarPendentesDeVerificacao();
+
+    UsuarioDetalheResponseDTO renovarCref(
+            UUID usuarioId, RenovarCrefRequestDTO renovarCrefRequestDTO);
+
+    UsuarioDetalheResponseDTO decidirVerificacaoDoCref(
+            UUID usuarioId, AlterarStatusRequestDTO alterarStatusRequestDTO);
 
     UsuarioDetalheResponseDTO alterarAtivo(UUID usuarioId, boolean ativo, UUID solicitanteId);
 }

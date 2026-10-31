@@ -127,6 +127,10 @@ public class AnonimizacaoService implements IAnonimizacaoService {
 
         usuario.setCref(null);
         usuario.setFormacao(null);
+        usuario.setSituacaoCref(null);
+        usuario.setMotivoRejeicaoCref(null);
+        usuario.setCrefReenvios(null);
+        usuario.setCrefReenvioDia(null);
 
         usuario.setCep(null);
         usuario.setLogradouro(null);

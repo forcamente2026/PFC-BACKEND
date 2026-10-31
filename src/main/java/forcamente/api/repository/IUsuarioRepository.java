@@ -2,6 +2,7 @@ package forcamente.api.repository;
 
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,6 +20,9 @@ public interface IUsuarioRepository extends JpaRepository<UsuarioEntity, UUID> {
     Optional<UsuarioEntity> findByEmail(String email);
 
     List<UsuarioEntity> findByAnonimizacaoSolicitadaEmIsNotNullAndAnonimizadoEmIsNullOrderByAnonimizacaoSolicitadaEm();
+
+    List<UsuarioEntity> findByPapelAndSituacaoCrefOrderByCriadoEm(
+            PapelUsuarioEnum papel, StatusAprovacaoEnum situacaoCref);
 
     boolean existsByEmail(String email);
 

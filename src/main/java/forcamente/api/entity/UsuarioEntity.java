@@ -3,6 +3,7 @@ package forcamente.api.entity;
 
 import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.entity.enums.TipoCodigoEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -111,6 +112,19 @@ public class UsuarioEntity {
 
     @Column(name = "redefinicao_erros_consecutivos")
     private Integer redefinicaoErrosConsecutivos;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "situacao_cref", length = 20)
+    private StatusAprovacaoEnum situacaoCref;
+
+    @Column(name = "motivo_rejeicao_cref", columnDefinition = "TEXT")
+    private String motivoRejeicaoCref;
+
+    @Column(name = "cref_reenvios")
+    private Integer crefReenvios;
+
+    @Column(name = "cref_reenvio_dia")
+    private LocalDate crefReenvioDia;
 
     @Column(name="senha_falhas_janela")
     private Integer senhaFalhasJanela;
