@@ -6,6 +6,7 @@ import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.exception.ConflitoException;
 import forcamente.api.exception.RegraDeNegocioException;
+import forcamente.api.repository.IQuizTentativaRepository;
 import forcamente.api.repository.IUsuarioRepository;
 import forcamente.api.service.impl.AnonimizacaoService;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +43,9 @@ class AnonimizacaoServiceTest {
     @Mock
     private IAuditoriaService auditoriaService;
 
+    @Mock
+    private IQuizTentativaRepository quizTentativaRepository;
+
     private AnonimizacaoService anonimizacaoService;
 
     private UsuarioEntity usuario;
@@ -49,7 +53,8 @@ class AnonimizacaoServiceTest {
     @BeforeEach
     void configurar() {
         anonimizacaoService = new AnonimizacaoService(
-                usuarioRepository, new BCryptPasswordEncoder(), RELOGIO, auditoriaService);
+                usuarioRepository, quizTentativaRepository, new BCryptPasswordEncoder(),
+                RELOGIO, auditoriaService);
         usuario = umProfessor();
     }
 

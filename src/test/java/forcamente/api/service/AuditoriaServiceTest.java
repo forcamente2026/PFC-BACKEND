@@ -267,12 +267,13 @@ class AuditoriaServiceTest {
     }
 
     @Test
-    @DisplayName("deve expor as onze acoes e os quatro recursos como codigo e descricao")
+    @DisplayName("deve expor as onze acoes e os cinco recursos como codigo e descricao")
     void deveListarOpcoes() {
         assertThat(auditoriaService.listarAcoes()).hasSize(11);
         assertThat(auditoriaService.listarAcoes().getFirst().codigo()).isEqualTo("CRIADO");
-        assertThat(auditoriaService.listarRecursos()).hasSize(4);
+        assertThat(auditoriaService.listarRecursos()).hasSize(5);
         assertThat(auditoriaService.listarRecursos().getFirst().descricao()).isEqualTo("Usuário");
+        assertThat(auditoriaService.listarRecursos().getLast().codigo()).isEqualTo("QUIZ");
     }
 
     private RegistroAuditoriaEntity umRegistro(AcaoAuditoriaEnum acao, UUID usuarioId) {

@@ -8,7 +8,8 @@ public enum RecursoAuditoriaEnum {
     USUARIO("Usuário"),
     EXERCICIO("Exercício"),
     AUDITORIA("Trilha de auditoria"),
-    ARTIGO("Artigo");
+    ARTIGO("Artigo"),
+    QUIZ("Quiz");
 
     private final String descricao;
 
