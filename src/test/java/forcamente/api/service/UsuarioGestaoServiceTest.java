@@ -391,18 +391,25 @@ class UsuarioGestaoServiceTest {
     }
 
     @Test
-    @DisplayName("renovacao com verificacao rejeitada responde 400")
-    void naoDeveRenovarComVerificacaoRejeitada() {
+    @DisplayName("com a verificacao rejeitada o professor corrige o proprio CREF, pela decisao de 24/10")
+    void deveCorrigirOCrefComVerificacaoRejeitada() {
         var professor = umProfessor(ID_ALVO);
         professor.setSituacaoCref(StatusAprovacaoEnum.REJEITADO);
+        professor.setMotivoRejeicaoCref("O numero nao confere com o registro");
 
         when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(professor));
+        when(usuarioRepository.save(any(UsuarioEntity.class))).thenAnswer(chamada -> chamada.getArgument(0));
 
-        assertThatThrownBy(() -> usuarioService.renovarCref(ID_ALVO,
-                new RenovarCrefRequestDTO("654321-G/SP", FormacaoEnum.BACHARELADO)))
-                .isInstanceOf(RegraDeNegocioException.class);
+        usuarioService.renovarCref(ID_ALVO,
+                new RenovarCrefRequestDTO("654321-G/SP", FormacaoEnum.BACHARELADO));
 
-        verify(usuarioRepository, never()).save(any());
+        assertThat(professor.getCref()).isEqualTo("654321-G/SP");
+        assertThat(professor.getSituacaoCref())
+                .as("a correcao reabre o pedido na fila do administrador")
+                .isEqualTo(StatusAprovacaoEnum.PENDENTE);
+        assertThat(professor.getMotivoRejeicaoCref())
+                .as("o motivo antigo sai, senao a tela mostra recusa de um CREF que ja foi trocado")
+                .isNull();
     }
 
     @Test

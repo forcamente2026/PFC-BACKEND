@@ -1,9 +1,11 @@
 package forcamente.api.service.impl;
 
+import forcamente.api.dto.MinhaContaRequestDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
 import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.RenovarCrefRequestDTO;
+import forcamente.api.dto.TrocarSenhaRequestDTO;
 import forcamente.api.dto.UsuarioDetalheResponseDTO;
 import forcamente.api.dto.VerificacaoPendenteDTO;
 import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
@@ -243,11 +245,13 @@ public class UsuarioService implements IUsuarioService {
                     "Somente a conta de professor tem CREF para renovar");
         }
 
-        if (usuario.getSituacaoCref() != StatusAprovacaoEnum.APROVADO) {
+        if (usuario.getSituacaoCref() != StatusAprovacaoEnum.APROVADO
+                && usuario.getSituacaoCref() != StatusAprovacaoEnum.REJEITADO) {
+
             throw new RegraDeNegocioException(
-                    "A renovacao do CREF vale somente com a verificacao aprovada. "
-                            + "Enquanto ela estiver pendente ou rejeitada, "
-                            + "a correcao e feita pelo administrador");
+                    "A correcao do CREF vale com a verificacao aprovada ou rejeitada. "
+                            + "Enquanto ela estiver pendente, a conferencia ainda esta "
+                            + "com o administrador");
         }
 
         if (usuarioRepository.existsByCrefAndIdNot(renovarCrefRequestDTO.cref(), usuarioId)) {
@@ -267,6 +271,103 @@ public class UsuarioService implements IUsuarioService {
                 AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
 
         return usuarioMapper.toDetalheDTO(salvo);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioDetalheResponseDTO atualizarMinhaConta(
+            UUID usuarioId, MinhaContaRequestDTO minhaContaRequestDTO) {
+
+        log.info("atualizarMinhaConta: {}", usuarioId);
+
+        UsuarioEntity usuario = buscarEntidade(usuarioId);
+
+        boolean professor = usuario.getPapel() == PapelUsuarioEnum.PROFESSOR;
+
+        if (professor) {
+            exigirEnderecoCompleto(minhaContaRequestDTO);
+        } else {
+            exigirSemEndereco(minhaContaRequestDTO);
+        }
+
+        usuario.setNomeCompleto(minhaContaRequestDTO.nomeCompleto().trim());
+
+        if (professor) {
+            usuario.setCep(minhaContaRequestDTO.cep());
+            usuario.setLogradouro(minhaContaRequestDTO.logradouro().trim());
+            usuario.setNumero(minhaContaRequestDTO.numero().trim());
+            usuario.setComplemento(aparado(minhaContaRequestDTO.complemento()));
+            usuario.setBairro(minhaContaRequestDTO.bairro().trim());
+            usuario.setCidade(minhaContaRequestDTO.cidade().trim());
+            usuario.setEstado(minhaContaRequestDTO.estado().trim().toUpperCase());
+        }
+
+        UsuarioEntity salvo = usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
+
+        return usuarioMapper.toDetalheDTO(salvo);
+    }
+
+    @Override
+    @Transactional
+    public void trocarMinhaSenha(UUID usuarioId, TrocarSenhaRequestDTO trocarSenhaRequestDTO) {
+        log.info("trocarMinhaSenha: {}", usuarioId);
+
+        UsuarioEntity usuario = buscarEntidade(usuarioId);
+
+        if (!passwordEncoder.matches(trocarSenhaRequestDTO.senhaAtual(), usuario.getSenhaHash())) {
+            auditoriaService.registrar(
+                    AcaoAuditoriaEnum.SENHA_FALHOU, RecursoAuditoriaEnum.USUARIO, usuarioId);
+
+            throw new RegraDeNegocioException("A senha atual nao confere");
+        }
+
+        usuario.setSenhaHash(passwordEncoder.encode(trocarSenhaRequestDTO.novaSenha()));
+
+        usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, usuarioId);
+    }
+
+    private void exigirEnderecoCompleto(MinhaContaRequestDTO minhaConta) {
+        boolean faltaAlgum = vazio(minhaConta.cep())
+                || vazio(minhaConta.logradouro())
+                || vazio(minhaConta.numero())
+                || vazio(minhaConta.bairro())
+                || vazio(minhaConta.cidade())
+                || vazio(minhaConta.estado());
+
+        if (faltaAlgum) {
+            throw new RegraDeNegocioException(
+                    "O endereco profissional e obrigatorio para o professor, "
+                            + "menos o complemento");
+        }
+    }
+
+    private void exigirSemEndereco(MinhaContaRequestDTO minhaConta) {
+        boolean algumPreenchido = !vazio(minhaConta.cep())
+                || !vazio(minhaConta.logradouro())
+                || !vazio(minhaConta.numero())
+                || !vazio(minhaConta.complemento())
+                || !vazio(minhaConta.bairro())
+                || !vazio(minhaConta.cidade())
+                || !vazio(minhaConta.estado());
+
+        if (algumPreenchido) {
+            throw new RegraDeNegocioException(
+                    "O endereco e guardado somente para a conta de professor");
+        }
+    }
+
+    private boolean vazio(String valor) {
+        return valor == null || valor.isBlank();
+    }
+
+    private String aparado(String valor) {
+        return vazio(valor) ? null : valor.trim();
     }
 
     private void contarReenvioDoDia(UsuarioEntity usuario) {
