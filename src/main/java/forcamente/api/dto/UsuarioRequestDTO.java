@@ -3,6 +3,7 @@ package forcamente.api.dto;
 
 import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.validation.SemMarcacao;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
@@ -10,6 +11,7 @@ import java.time.LocalDate;
 public record UsuarioRequestDTO(
 
         @NotBlank(message = "O nome completo e obrigatorio")
+        @SemMarcacao
         String nomeCompleto,
 
         @NotNull(message ="A data de nascimento e obrigatoria")
@@ -35,18 +37,24 @@ public record UsuarioRequestDTO(
         @Pattern(regexp = "\\d{8}", message = "O CEP deve conter 8 dígitos, apenas números")
         String cep,
 
+        @SemMarcacao
         String logradouro,
 
+        @SemMarcacao
         String numero,
 
+        @SemMarcacao
         String complemento,
 
 
+        @SemMarcacao
         String bairro,
 
+        @SemMarcacao
         String cidade,
 
         @Size(max = 2, message = "O estado deve ser a sigla com 2 letras")
+        @SemMarcacao
         String estado,
 
         @NotNull(message = "O aceite dos termos de uso e obrigatorio")

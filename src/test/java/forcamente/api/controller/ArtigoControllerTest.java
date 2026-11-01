@@ -237,6 +237,55 @@ class ArtigoControllerTest {
                 .andExpect(jsonPath("$.artigos").isEmpty());
     }
 
+    @Test
+    @DisplayName("titulo com abertura de marcacao responde 400, sem chegar ao banco")
+    void deveRecusarTituloComMarcacao() throws Exception {
+        mockMvc.perform(post("/api/artigos")
+                        .header("Authorization", "Bearer " + tokenDeProfessor())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoCom("<script>alert(1)</script>", resumoDe(260))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("sinal de maior no resumo e aceito: '> 80% de 1RM' e texto legitimo do dominio")
+    void deveAceitarSinalDeMaiorNoResumo() throws Exception {
+        mockMvc.perform(post("/api/artigos")
+                        .header("Authorization", "Bearer " + tokenDeProfessor())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoCom("Cargas altas e hipertrofia",
+                                "Cargas > 80% de 1RM com progressao semanal. ".repeat(7))))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("motivo da rejeicao com abertura de marcacao responde 400")
+    void deveRecusarMotivoDeRejeicaoComMarcacao() throws Exception {
+        var artigo = artigoSalvo(idDeProfessor(), StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES);
+
+        mockMvc.perform(patch("/api/artigos/" + artigo.getId() + "/status")
+                        .header("Authorization", "Bearer " + tokenDe("ADMINISTRADOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REJEITADO\",\"motivo\":\"<b>Fonte fraca</b>\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos").isNotEmpty());
+    }
+
+    private String corpoCom(String titulo, String resumo) {
+        return """
+                {
+                  "titulo": "%s",
+                  "categoria": "FISIOLOGIA",
+                  "resumo": "%s",
+                  "fonte": "%s",
+                  "autoria": "Schoenfeld BJ",
+                  "tipoEstudo": "Rev. sistematica",
+                  "ano": 2024
+                }
+                """.formatted(titulo, resumo, FONTE);
+    }
+
     private UUID idDeProfessor() {
         var professores = usuarioRepository.findByPapelAndSituacaoCrefOrderByCriadoEm(
                 PapelUsuarioEnum.PROFESSOR, StatusAprovacaoEnum.APROVADO);
