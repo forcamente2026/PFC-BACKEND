@@ -1,6 +1,8 @@
 package forcamente.api.service;
 
+import forcamente.api.dto.ConfirmarEmailRequestDTO;
 import forcamente.api.dto.MinhaContaRequestDTO;
+import forcamente.api.dto.TrocarEmailRequestDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
 import forcamente.api.dto.AlterarStatusRequestDTO;
@@ -40,6 +42,11 @@ public interface IUsuarioService {
             UUID usuarioId, MinhaContaRequestDTO minhaContaRequestDTO);
 
     void trocarMinhaSenha(UUID usuarioId, TrocarSenhaRequestDTO trocarSenhaRequestDTO);
+
+    void solicitarTrocaDeEmail(UUID usuarioId, TrocarEmailRequestDTO trocarEmailRequestDTO);
+
+    UsuarioDetalheResponseDTO confirmarTrocaDeEmail(
+            UUID usuarioId, ConfirmarEmailRequestDTO confirmarEmailRequestDTO);
 
     UsuarioDetalheResponseDTO decidirVerificacaoDoCref(
             UUID usuarioId, AlterarStatusRequestDTO alterarStatusRequestDTO);

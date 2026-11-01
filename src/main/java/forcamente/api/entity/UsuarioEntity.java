@@ -41,6 +41,9 @@ public class UsuarioEntity {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
+    @Column(name = "email_pendente")
+    private String emailPendente;
+
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
 

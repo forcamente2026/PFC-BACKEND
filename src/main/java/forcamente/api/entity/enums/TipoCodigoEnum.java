@@ -6,7 +6,8 @@ import lombok.Getter;
 public enum TipoCodigoEnum {
 
     MFA("Segundo fator de autenticacao"),
-    REDEFINICAO_SENHA("Redefinicao de senha");
+    REDEFINICAO_SENHA("Redefinicao de senha"),
+    TROCA_DE_EMAIL("Troca de e-mail");
 
     private final String descricao;
 

@@ -1,6 +1,8 @@
 package forcamente.api.service.impl;
 
+import forcamente.api.dto.ConfirmarEmailRequestDTO;
 import forcamente.api.dto.MinhaContaRequestDTO;
+import forcamente.api.dto.TrocarEmailRequestDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
 import forcamente.api.dto.AlterarStatusRequestDTO;
@@ -17,14 +19,18 @@ import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
+import forcamente.api.entity.enums.TipoCodigoEnum;
 import forcamente.api.entity.enums.TipoDocumentoLegalEnum;
 import forcamente.api.exception.ConflitoException;
+import forcamente.api.exception.CredenciaisInvalidasException;
 import forcamente.api.exception.LimiteDeTentativasException;
 import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.exception.RegraDeNegocioException;
 import forcamente.api.mapper.UsuarioMapper;
 import forcamente.api.repository.IUsuarioRepository;
 import forcamente.api.service.IAuditoriaService;
+import forcamente.api.service.ICodigoVerificacaoService;
+import forcamente.api.service.IEmailService;
 import forcamente.api.service.IDocumentoLegalService;
 import forcamente.api.service.IUsuarioService;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +67,10 @@ public class UsuarioService implements IUsuarioService {
     private final IDocumentoLegalService documentoLegalService;
 
     private final IAuditoriaService auditoriaService;
+
+    private final ICodigoVerificacaoService codigoVerificacaoService;
+
+    private final IEmailService emailService;
 
 
     @Override
@@ -317,12 +327,7 @@ public class UsuarioService implements IUsuarioService {
 
         UsuarioEntity usuario = buscarEntidade(usuarioId);
 
-        if (!passwordEncoder.matches(trocarSenhaRequestDTO.senhaAtual(), usuario.getSenhaHash())) {
-            auditoriaService.registrar(
-                    AcaoAuditoriaEnum.SENHA_FALHOU, RecursoAuditoriaEnum.USUARIO, usuarioId);
-
-            throw new RegraDeNegocioException("A senha atual nao confere");
-        }
+        exigirSenhaAtual(usuario, trocarSenhaRequestDTO.senhaAtual(), usuarioId);
 
         usuario.setSenhaHash(passwordEncoder.encode(trocarSenhaRequestDTO.novaSenha()));
 
@@ -330,6 +335,93 @@ public class UsuarioService implements IUsuarioService {
 
         auditoriaService.registrar(
                 AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, usuarioId);
+    }
+
+    @Override
+    @Transactional
+    public void solicitarTrocaDeEmail(UUID usuarioId, TrocarEmailRequestDTO trocarEmailRequestDTO) {
+        log.info("solicitarTrocaDeEmail: {}", usuarioId);
+
+        UsuarioEntity usuario = buscarEntidade(usuarioId);
+
+        exigirSenhaAtual(usuario, trocarEmailRequestDTO.senhaAtual(), usuarioId);
+
+        String novoEmail = trocarEmailRequestDTO.novoEmail().trim();
+
+        if (novoEmail.equalsIgnoreCase(usuario.getEmail())) {
+            throw new RegraDeNegocioException("O e-mail novo e igual ao atual");
+        }
+
+        if (usuarioRepository.existsByEmail(novoEmail)) {
+            throw new ConflitoException("Ja existe um usuario cadastrado com este e-mail");
+        }
+
+        usuario.setEmailPendente(novoEmail);
+
+        String codigo = codigoVerificacaoService.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL);
+
+        usuarioRepository.save(usuario);
+
+        emailService.enviar(novoEmail, "ForcaMente: confirme seu e-mail novo", """
+                Recebemos um pedido para trocar o e-mail da sua conta no ForcaMente.
+
+                Seu codigo de confirmacao e %s, e vale por %d minutos.
+
+                Se nao foi voce, ignore esta mensagem: o e-mail da conta so muda
+                depois que este codigo for informado.
+                """.formatted(codigo,
+                codigoVerificacaoService.validadeEmSegundos(TipoCodigoEnum.TROCA_DE_EMAIL) / 60));
+    }
+
+    @Override
+    @Transactional(noRollbackFor = RegraDeNegocioException.class)
+    public UsuarioDetalheResponseDTO confirmarTrocaDeEmail(
+            UUID usuarioId, ConfirmarEmailRequestDTO confirmarEmailRequestDTO) {
+
+        log.info("confirmarTrocaDeEmail: {}", usuarioId);
+
+        UsuarioEntity usuario = buscarEntidade(usuarioId);
+
+        if (usuario.getEmailPendente() == null) {
+            throw new RegraDeNegocioException("Nao existe troca de e-mail pendente");
+        }
+
+        try {
+            codigoVerificacaoService.validarCodigo(
+                    usuario, TipoCodigoEnum.TROCA_DE_EMAIL, confirmarEmailRequestDTO.codigo());
+        } catch (CredenciaisInvalidasException excecao) {
+            usuarioRepository.save(usuario);
+
+            throw new RegraDeNegocioException(excecao.getMessage());
+        }
+
+        String emailAntigo = usuario.getEmail();
+
+        usuario.setEmail(usuario.getEmailPendente());
+        usuario.setEmailPendente(null);
+
+        UsuarioEntity salvo = usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, usuarioId);
+
+        emailService.enviarAssincrono(emailAntigo, "ForcaMente: o e-mail da sua conta foi trocado", """
+                O e-mail de acesso da sua conta no ForcaMente passou a ser %s.
+
+                Se nao foi voce que pediu esta troca, fale com o administrador
+                pelo endereco forcamente2026@gmail.com.
+                """.formatted(salvo.getEmail()));
+
+        return usuarioMapper.toDetalheDTO(salvo);
+    }
+
+    private void exigirSenhaAtual(UsuarioEntity usuario, String senhaAtual, UUID usuarioId) {
+        if (!passwordEncoder.matches(senhaAtual, usuario.getSenhaHash())) {
+            auditoriaService.registrar(
+                    AcaoAuditoriaEnum.SENHA_FALHOU, RecursoAuditoriaEnum.USUARIO, usuarioId);
+
+            throw new RegraDeNegocioException("A senha atual nao confere");
+        }
     }
 
     private void exigirEnderecoCompleto(MinhaContaRequestDTO minhaConta) {

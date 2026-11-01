@@ -7,6 +7,7 @@ import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.repository.IRegistroAuditoriaRepository;
 import forcamente.api.repository.IUsuarioRepository;
 import org.junit.jupiter.api.DisplayName;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,6 +18,7 @@ import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +27,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -47,6 +54,9 @@ class MinhaContaControllerTest {
 
     @Autowired
     private IRegistroAuditoriaRepository registroAuditoriaRepository;
+
+    @MockitoBean
+    private forcamente.api.service.IEmailService emailService;
 
     @Test
     @DisplayName("o aluno corrige o proprio nome: a regra do administrador em PUT /api/usuarios/* nao o barra")
@@ -255,6 +265,125 @@ class MinhaContaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"senhaAtual\":\"Senha@123\",\"novaSenha\":\"Senha@456\"}"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("a troca de e-mail acontece em dois passos, com o codigo no endereco novo e o aviso no antigo")
+    void deveTrocarOEmailEmDoisPassos() throws Exception {
+        var aluno = umAluno();
+        var emailAntigo = aluno.getEmail();
+        var token = tokenPara(aluno.getId(), "ALUNO");
+
+        mockMvc.perform(post("/api/usuarios/me/email")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"novoEmail\":\"ana.nova@exemplo.test\",\"senhaAtual\":\"Senha@123\"}"))
+                .andExpect(status().isAccepted());
+
+        var destino = ArgumentCaptor.forClass(String.class);
+        var texto = ArgumentCaptor.forClass(String.class);
+
+        verify(emailService).enviar(destino.capture(), any(), texto.capture());
+
+        assertThat(destino.getValue())
+                .as("o codigo vai para o endereco novo, nunca para o atual")
+                .isEqualTo("ana.nova@exemplo.test");
+
+        mockMvc.perform(post("/api/usuarios/me/email/confirmacao")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"codigo\":\"%s\"}".formatted(codigoDe(texto.getValue()))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("ana.nova@exemplo.test"));
+
+        verify(emailService).enviarAssincrono(eq(emailAntigo), any(), any());
+    }
+
+    @Test
+    @DisplayName("pedido com a senha atual errada responde 400 e nao envia e-mail nenhum")
+    void deveRecusarPedidoComSenhaErrada() throws Exception {
+        var aluno = umAluno();
+
+        mockMvc.perform(post("/api/usuarios/me/email")
+                        .header("Authorization", "Bearer " + tokenPara(aluno.getId(), "ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"novoEmail\":\"ana.nova@exemplo.test\",\"senhaAtual\":\"Errada@123\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("A senha atual nao confere"));
+
+        verify(emailService, never()).enviar(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("e-mail de outra conta responde 409, e e-mail igual ao atual responde 400")
+    void deveRecusarEmailRepetidoEIgual() throws Exception {
+        var aluno = umAluno();
+        var token = tokenPara(aluno.getId(), "ALUNO");
+
+        var outro = usuarioRepository.findByPapelAndSituacaoCrefOrderByCriadoEm(
+                PapelUsuarioEnum.PROFESSOR, StatusAprovacaoEnum.APROVADO).getFirst();
+
+        mockMvc.perform(post("/api/usuarios/me/email")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"novoEmail\":\"%s\",\"senhaAtual\":\"Senha@123\"}"
+                                .formatted(outro.getEmail())))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(post("/api/usuarios/me/email")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"novoEmail\":\"%s\",\"senhaAtual\":\"Senha@123\"}"
+                                .formatted(aluno.getEmail())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("codigo errado responde 400 e nao 401, e o pedido pendente sobrevive")
+    void deveResponder400NoCodigoErrado() throws Exception {
+        var aluno = umAluno();
+        var token = tokenPara(aluno.getId(), "ALUNO");
+
+        mockMvc.perform(post("/api/usuarios/me/email")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"novoEmail\":\"ana.nova@exemplo.test\",\"senhaAtual\":\"Senha@123\"}"))
+                .andExpect(status().isAccepted());
+
+        mockMvc.perform(post("/api/usuarios/me/email/confirmacao")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"codigo\":\"0000\"}"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/usuarios/me")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email")
+                        .value(org.hamcrest.Matchers.not("ana.nova@exemplo.test")));
+    }
+
+    @Test
+    @DisplayName("confirmar sem pedido pendente responde 400")
+    void deveRecusarConfirmacaoSemPedido() throws Exception {
+        var aluno = umAluno();
+
+        mockMvc.perform(post("/api/usuarios/me/email/confirmacao")
+                        .header("Authorization", "Bearer " + tokenPara(aluno.getId(), "ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"codigo\":\"1234\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Nao existe troca de e-mail pendente"));
+    }
+
+    private String codigoDe(String textoDoEmail) {
+        var encontrado = java.util.regex.Pattern.compile("\\b(\\d{4})\\b")
+                .matcher(textoDoEmail);
+
+        assertThat(encontrado.find()).as("o e-mail precisa levar o codigo de 4 digitos").isTrue();
+
+        return encontrado.group(1);
     }
 
     private UsuarioEntity umAluno() {
