@@ -5,7 +5,7 @@ on: push
 jobs:
   unitarios:
     name: Unitarios, sem banco
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     steps:
@@ -24,7 +24,7 @@ jobs:
   integracao:
     name: Integracao, com PostgreSQL
     needs: unitarios
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     services:
