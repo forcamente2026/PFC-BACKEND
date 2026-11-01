@@ -14,4 +14,7 @@ public record TrocarEmailRequestDTO(
         @NotBlank(message = "Informe a senha atual")
         String senhaAtual
 ) {
+    public TrocarEmailRequestDTO {
+        novoEmail = novoEmail == null ? null : novoEmail.trim().toLowerCase();
+    }
 }
