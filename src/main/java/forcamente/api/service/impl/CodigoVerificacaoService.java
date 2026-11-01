@@ -193,6 +193,10 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
     }
 
     private void zerarContadores(UsuarioEntity usuario, TipoCodigoEnum tipo) {
+        if (tipo == TipoCodigoEnum.TROCA_DE_EMAIL) {
+            return;
+        }
+
         if (tipo == TipoCodigoEnum.MFA) {
             usuario.setMfaPedidos(0);
             usuario.setMfaJanelaInicio(null);
