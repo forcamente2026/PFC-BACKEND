@@ -42,9 +42,11 @@ Modelo **cliente-servidor**: o front-end (React, publicado na Vercel) envia requ
 ## Segurança e LGPD
 
 - Autenticação via login e senha com token **JWT** para controle de sessão, com expiração configurada
-- Senhas e dados sensíveis (CPF, histórico de saúde) armazenados com hash **BCrypt**, nunca em texto puro
+- Senhas armazenadas com hash **BCrypt**, nunca em texto puro, e os códigos de verificação também guardados apenas como hash
 - Autorização por perfil de usuário (roles) via **Spring Security**: Aluno, Professor e Administrador
-- Comunicação via **HTTPS** e proteção contra vulnerabilidades comuns de API (injeção SQL, XSS)
+- Proteção contra **injeção de SQL** por construção: todo acesso ao banco passa por JPA com parâmetros vinculados, sem concatenação de consulta
+- Proteção contra **XSS** em duas camadas: o front escapa por padrão e o back recusa abertura de marcação nos campos de texto livre
+- **Pendente para a publicação:** HTTPS com redirecionamento e HSTS, política de conteúdo (CSP) e TLS na conexão com o banco. O sistema roda hoje somente em ambiente local
 - Tratamento de dados pessoais conforme a **LGPD**: consentimento no cadastro, possibilidade de exclusão/anonimização de dados mediante solicitação do titular, e registro de auditoria para acessos a dados sensíveis
 
 ## Módulos principais previstos

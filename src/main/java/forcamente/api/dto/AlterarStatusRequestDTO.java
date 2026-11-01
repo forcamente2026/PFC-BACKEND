@@ -1,6 +1,7 @@
 package forcamente.api.dto;
 
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
+import forcamente.api.validation.SemMarcacao;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -10,6 +11,7 @@ public record AlterarStatusRequestDTO(
         StatusAprovacaoEnum status,
 
         @Size(max = 500, message = "O motivo deve ter no máximo 500 caracteres")
+        @SemMarcacao
         String motivo
 ) {
     @AssertTrue(message = "A situação deve ser Aprovado ou Rejeitado")
