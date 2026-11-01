@@ -112,6 +112,10 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
     }
 
     private void verificarBloqueio(UsuarioEntity usuario, TipoCodigoEnum tipo, LocalDateTime agora) {
+        if (tipo == TipoCodigoEnum.TROCA_DE_EMAIL) {
+            return;
+        }
+
         LocalDateTime bloqueadoAte = tipo == TipoCodigoEnum.MFA ? usuario.getMfaBloqueadoAte() : usuario.getRedefinicaoBloqueadoAte();
 
         if (bloqueadoAte != null && bloqueadoAte.isAfter(agora)) {
@@ -120,6 +124,10 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
     }
 
     private void contarPedido(UsuarioEntity usuario, TipoCodigoEnum tipo, LocalDateTime agora) {
+        if (tipo == TipoCodigoEnum.TROCA_DE_EMAIL) {
+            return;
+        }
+
 
         if (tipo == TipoCodigoEnum.MFA) {
             contarPedidoMfa(usuario, agora);

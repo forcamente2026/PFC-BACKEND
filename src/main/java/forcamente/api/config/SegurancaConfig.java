@@ -97,6 +97,7 @@ public class SegurancaConfig {
                         .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.GET, "/api/usuarios")
                         .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/usuarios/me").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/usuarios/*")
                         .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.PATCH, "/api/usuarios/*/ativo")

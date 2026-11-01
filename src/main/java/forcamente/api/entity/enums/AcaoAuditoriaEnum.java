@@ -13,6 +13,7 @@ public enum AcaoAuditoriaEnum {
     LOGIN_FALHOU("Falha no login"),
     LOGIN_BLOQUEADO("Login bloqueado por tentativas"),
     MFA_FALHOU("Falha na verificação do código"),
+    SENHA_FALHOU("Senha atual errada na troca de senha"),
     ANONIMIZADO("Conta anonimizada"),
     APROVADO("Aprovado"),
     REJEITADO("Rejeitado");

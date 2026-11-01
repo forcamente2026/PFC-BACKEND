@@ -267,10 +267,13 @@ class AuditoriaServiceTest {
     }
 
     @Test
-    @DisplayName("deve expor as onze acoes e os cinco recursos como codigo e descricao")
+    @DisplayName("deve expor as doze acoes e os cinco recursos como codigo e descricao")
     void deveListarOpcoes() {
-        assertThat(auditoriaService.listarAcoes()).hasSize(11);
+        assertThat(auditoriaService.listarAcoes()).hasSize(12);
         assertThat(auditoriaService.listarAcoes().getFirst().codigo()).isEqualTo("CRIADO");
+        assertThat(auditoriaService.listarAcoes())
+                .as("a acao da falha de senha precisa aparecer no filtro da trilha")
+                .anyMatch(opcao -> opcao.codigo().equals("SENHA_FALHOU"));
         assertThat(auditoriaService.listarRecursos()).hasSize(5);
         assertThat(auditoriaService.listarRecursos().getFirst().descricao()).isEqualTo("Usuário");
         assertThat(auditoriaService.listarRecursos().getLast().codigo()).isEqualTo("QUIZ");

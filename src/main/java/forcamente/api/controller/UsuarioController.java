@@ -3,9 +3,13 @@ package forcamente.api.controller;
 import forcamente.api.dto.AlterarAtivoRequestDTO;
 import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.AnonimizadorPendenteDTO;
+import forcamente.api.dto.ConfirmarEmailRequestDTO;
+import forcamente.api.dto.MinhaContaRequestDTO;
+import forcamente.api.dto.TrocarEmailRequestDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
 import forcamente.api.dto.RenovarCrefRequestDTO;
+import forcamente.api.dto.TrocarSenhaRequestDTO;
 import forcamente.api.dto.UsuarioDetalheResponseDTO;
 import forcamente.api.dto.VerificacaoPendenteDTO;
 import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
@@ -119,6 +123,45 @@ public class UsuarioController {
     public ResponseEntity<UsuarioDetalheResponseDTO> minhaConta(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(
                 usuarioService.buscarDetalhePorId(UUID.fromString(jwt.getSubject())));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UsuarioDetalheResponseDTO> atualizarMinhaConta(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody MinhaContaRequestDTO minhaContaRequestDTO) {
+
+        return ResponseEntity.ok(usuarioService.atualizarMinhaConta(
+                UUID.fromString(jwt.getSubject()), minhaContaRequestDTO));
+    }
+
+    @PostMapping("/me/email")
+    public ResponseEntity<Void> solicitarTrocaDeEmail(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody TrocarEmailRequestDTO trocarEmailRequestDTO) {
+
+        usuarioService.solicitarTrocaDeEmail(
+                UUID.fromString(jwt.getSubject()), trocarEmailRequestDTO);
+
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/me/email/confirmacao")
+    public ResponseEntity<UsuarioDetalheResponseDTO> confirmarTrocaDeEmail(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody ConfirmarEmailRequestDTO confirmarEmailRequestDTO) {
+
+        return ResponseEntity.ok(usuarioService.confirmarTrocaDeEmail(
+                UUID.fromString(jwt.getSubject()), confirmarEmailRequestDTO));
+    }
+
+    @PatchMapping("/me/senha")
+    public ResponseEntity<Void> trocarMinhaSenha(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody TrocarSenhaRequestDTO trocarSenhaRequestDTO) {
+
+        usuarioService.trocarMinhaSenha(UUID.fromString(jwt.getSubject()), trocarSenhaRequestDTO);
+
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/me/cref")
