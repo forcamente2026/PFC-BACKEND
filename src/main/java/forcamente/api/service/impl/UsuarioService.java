@@ -173,10 +173,7 @@ public class UsuarioService implements IUsuarioService {
 
         UsuarioEntity usuario = buscarEntidade(usuarioId);
 
-        if (usuario.getAnonimizadoEm() != null) {
-            throw new RegraDeNegocioException(
-                    "Conta anonimizada nao pode ser editada: os dados pessoais foram apagados");
-        }
+        exigirNaoAnonimizada(usuario);
 
         if (usuarioRepository.existsByEmailAndIdNot(dados.email(), usuarioId)) {
             throw new ConflitoException("Ja existe um usuario cadastrado com o e-mail: " + dados.email());
@@ -250,6 +247,8 @@ public class UsuarioService implements IUsuarioService {
 
         UsuarioEntity usuario = buscarEntidade(usuarioId);
 
+        exigirNaoAnonimizada(usuario);
+
         if (usuario.getPapel() != PapelUsuarioEnum.PROFESSOR) {
             throw new RegraDeNegocioException(
                     "Somente a conta de professor tem CREF para renovar");
@@ -292,6 +291,8 @@ public class UsuarioService implements IUsuarioService {
 
         UsuarioEntity usuario = buscarEntidade(usuarioId);
 
+        exigirNaoAnonimizada(usuario);
+
         boolean professor = usuario.getPapel() == PapelUsuarioEnum.PROFESSOR;
 
         if (professor) {
@@ -327,6 +328,8 @@ public class UsuarioService implements IUsuarioService {
 
         UsuarioEntity usuario = buscarEntidade(usuarioId);
 
+        exigirNaoAnonimizada(usuario);
+
         exigirSenhaAtual(usuario, trocarSenhaRequestDTO.senhaAtual(), usuarioId);
 
         usuario.setSenhaHash(passwordEncoder.encode(trocarSenhaRequestDTO.novaSenha()));
@@ -344,9 +347,11 @@ public class UsuarioService implements IUsuarioService {
 
         UsuarioEntity usuario = buscarEntidade(usuarioId);
 
+        exigirNaoAnonimizada(usuario);
+
         exigirSenhaAtual(usuario, trocarEmailRequestDTO.senhaAtual(), usuarioId);
 
-        String novoEmail = trocarEmailRequestDTO.novoEmail().trim();
+        String novoEmail = trocarEmailRequestDTO.novoEmail();
 
         if (novoEmail.equalsIgnoreCase(usuario.getEmail())) {
             throw new RegraDeNegocioException("O e-mail novo e igual ao atual");
@@ -382,6 +387,8 @@ public class UsuarioService implements IUsuarioService {
 
         UsuarioEntity usuario = buscarEntidade(usuarioId);
 
+        exigirNaoAnonimizada(usuario);
+
         if (usuario.getEmailPendente() == null) {
             throw new RegraDeNegocioException("Nao existe troca de e-mail pendente");
         }
@@ -413,6 +420,13 @@ public class UsuarioService implements IUsuarioService {
                 """.formatted(salvo.getEmail()));
 
         return usuarioMapper.toDetalheDTO(salvo);
+    }
+
+    private void exigirNaoAnonimizada(UsuarioEntity usuario) {
+        if (usuario.getAnonimizadoEm() != null) {
+            throw new RegraDeNegocioException(
+                    "Conta anonimizada nao pode ser editada: os dados pessoais foram apagados");
+        }
     }
 
     private void exigirSenhaAtual(UsuarioEntity usuario, String senhaAtual, UUID usuarioId) {
