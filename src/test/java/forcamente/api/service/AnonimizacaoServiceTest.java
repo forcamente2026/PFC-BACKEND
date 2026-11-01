@@ -85,6 +85,7 @@ class AnonimizacaoServiceTest {
     @DisplayName("deve apagar os dados que identificam e preservar o registro do aceite")
     void deveAnonimizarPreservandoOAceite() {
         usuario.setAnonimizacaoSolicitadaEm(LocalDateTime.of(2026, 9, 1, 8, 0));
+        usuario.setEmailPendente("maria.nova@umc.br");
         when(usuarioRepository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
 
         var idOriginal = usuario.getId();
@@ -96,6 +97,7 @@ class AnonimizacaoServiceTest {
 
         assertThat(usuario.getNomeCompleto()).isEqualTo("Usuario anonimizado");
         assertThat(usuario.getEmail()).isEqualTo("anonimizado-" + idOriginal + "@forcamente.invalid");
+        assertThat(usuario.getEmailPendente()).isNull();
         assertThat(usuario.getDataNascimento()).isNull();
         assertThat(usuario.getCref()).isNull();
         assertThat(usuario.getFormacao()).isNull();
