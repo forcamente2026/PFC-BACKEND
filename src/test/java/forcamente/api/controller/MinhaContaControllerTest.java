@@ -377,6 +377,42 @@ class MinhaContaControllerTest {
                 .andExpect(jsonPath("$.message").value("Nao existe troca de e-mail pendente"));
     }
 
+    @Test
+    @DisplayName("o e-mail novo vai aparado e em minusculas para o email_pendente, senao o login nao acha mais a conta")
+    void deveGravarOEmailNovoEmMinusculas() throws Exception {
+        var aluno = umAluno();
+
+        mockMvc.perform(post("/api/usuarios/me/email")
+                        .header("Authorization", "Bearer " + tokenPara(aluno.getId(), "ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"novoEmail\":\"  Ana.Nova@Exemplo.TEST \",\"senhaAtual\":\"Senha@123\"}"))
+                .andExpect(status().isAccepted());
+
+        assertThat(usuarioRepository.findById(aluno.getId()).orElseThrow().getEmailPendente())
+                .as("o login procura em minusculas, e o findByEmail e sensivel a caixa")
+                .isEqualTo("ana.nova@exemplo.test");
+    }
+
+    @Test
+    @DisplayName("conta anonimizada nao corrige os proprios dados: responde 400 e o nome no banco nao muda")
+    void deveRecusarCorrecaoEmContaAnonimizada() throws Exception {
+        var aluno = umAluno();
+        var nomeOriginal = aluno.getNomeCompleto();
+        aluno.setAnonimizadoEm(LocalDateTime.now());
+        usuarioRepository.save(aluno);
+
+        mockMvc.perform(put("/api/usuarios/me")
+                        .header("Authorization", "Bearer " + tokenPara(aluno.getId(), "ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nomeCompleto\":\"Ana Ramos de Souza\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(
+                        "Conta anonimizada nao pode ser editada: os dados pessoais foram apagados"));
+
+        assertThat(usuarioRepository.findById(aluno.getId()).orElseThrow().getNomeCompleto())
+                .isEqualTo(nomeOriginal);
+    }
+
     private String codigoDe(String textoDoEmail) {
         var encontrado = java.util.regex.Pattern.compile("\\b(\\d{4})\\b")
                 .matcher(textoDoEmail);

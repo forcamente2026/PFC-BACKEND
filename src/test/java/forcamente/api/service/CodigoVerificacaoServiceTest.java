@@ -240,6 +240,39 @@ class CodigoVerificacaoServiceTest {
         assertThat(usuario.getMfaOcorrenciasBloqueio()).isNull();
     }
 
+    @Test
+    @DisplayName("confirmar a troca de e-mail nao zera o bloqueio de 4 horas da redefinicao de senha")
+    void trocaDeEmailNaoZeraOsContadoresDaRedefinicao() {
+        var bloqueadoAte = java.time.LocalDateTime.now(relogio).plusHours(4);
+        usuario.setRedefinicaoBloqueadoAte(bloqueadoAte);
+        usuario.setRedefinicaoDia(java.time.LocalDate.now(relogio));
+        usuario.setRedefinicaoPedidos(3);
+        usuario.setRedefinicaoErrosConsecutivos(5);
+
+        String codigo = servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL);
+        servico.validarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL, codigo);
+
+        assertThat(usuario.getRedefinicaoBloqueadoAte()).isEqualTo(bloqueadoAte);
+        assertThat(usuario.getRedefinicaoDia()).isEqualTo(java.time.LocalDate.now(relogio));
+        assertThat(usuario.getRedefinicaoPedidos()).isEqualTo(3);
+        assertThat(usuario.getRedefinicaoErrosConsecutivos()).isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("a redefinicao de senha continua zerando os proprios contadores")
+    void redefinicaoContinuaZerandoOsContadores() {
+        servico.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA);
+        String codigo = servico.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA);
+
+        assertThat(usuario.getRedefinicaoPedidos()).isEqualTo(2);
+
+        servico.validarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA, codigo);
+
+        assertThat(usuario.getRedefinicaoPedidos()).isZero();
+        assertThat(usuario.getRedefinicaoDia()).isNull();
+        assertThat(usuario.getRedefinicaoErrosConsecutivos()).isZero();
+    }
+
     private void estourarPedidosDeMfa() {
         for (int i = 0; i < 6; i++) {
             servico.gerarCodigo(usuario, TipoCodigoEnum.MFA);
