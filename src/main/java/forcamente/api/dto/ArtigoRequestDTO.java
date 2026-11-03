@@ -30,7 +30,7 @@ public record ArtigoRequestDTO(
         @SemMarcacao
         String autoria,
 
-        @Size(max = 255, message = "O tipo de estudo deve ter no máximo 255 caracteres")
+        @Size(max = 100, message = "O tipo de estudo deve ter no máximo 100 caracteres")
         @SemMarcacao
         String tipoEstudo,
 

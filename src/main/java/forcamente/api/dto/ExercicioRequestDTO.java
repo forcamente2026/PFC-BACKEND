@@ -19,14 +19,19 @@ public record ExercicioRequestDTO(
         NivelDificuldadeEnum nivel,
 
         @NotBlank(message = "A descricao da execucao e obrigatoria")
+        @Size(max = 1000, message = "A descrição da execução deve ter no máximo 1000 caracteres")
         String descricaoExecucao,
 
+        @Size(max = 500, message = "Os erros comuns devem ter no máximo 500 caracteres")
         String errosComuns,
 
+        @Size(max = 500, message = "O aquecimento recomendado deve ter no máximo 500 caracteres")
         String aquecimentoRecomendado,
 
+        @Size(max = 100, message = "O equipamento deve ter no máximo 100 caracteres")
         String equipamento,
 
+        @Size(max = 255, message = "O link do GIF deve ter no máximo 255 caracteres")
         String gifUrl
 ) {
         public ExercicioRequestDTO{
