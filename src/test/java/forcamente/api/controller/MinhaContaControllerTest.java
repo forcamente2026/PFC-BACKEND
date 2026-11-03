@@ -350,10 +350,14 @@ class MinhaContaControllerTest {
                         .content("{\"novoEmail\":\"ana.nova@exemplo.test\",\"senhaAtual\":\"Senha@123\"}"))
                 .andExpect(status().isAccepted());
 
+        var texto = ArgumentCaptor.forClass(String.class);
+
+        verify(emailService).enviar(any(), any(), texto.capture());
+
         mockMvc.perform(post("/api/usuarios/me/email/confirmacao")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"codigo\":\"0000\"}"))
+                        .content("{\"codigo\":\"%s\"}".formatted(outroCodigoQueNaoO(codigoDe(texto.getValue())))))
                 .andExpect(status().isBadRequest());
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
@@ -411,6 +415,10 @@ class MinhaContaControllerTest {
 
         assertThat(usuarioRepository.findById(aluno.getId()).orElseThrow().getNomeCompleto())
                 .isEqualTo(nomeOriginal);
+    }
+
+    private String outroCodigoQueNaoO(String codigo) {
+        return "%04d".formatted((Integer.parseInt(codigo) + 1) % 10000);
     }
 
     private String codigoDe(String textoDoEmail) {
