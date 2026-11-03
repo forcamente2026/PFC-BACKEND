@@ -174,6 +174,12 @@ public class AnonimizacaoService implements IAnonimizacaoService {
         usuario.setRedefinicaoDia(null);
         usuario.setRedefinicaoBloqueadoAte(null);
         usuario.setRedefinicaoErrosConsecutivos(null);
+
+        usuario.setSenhaFalhasJanela(null);
+        usuario.setSenhaJanelaInicio(null);
+        usuario.setSenhaErrosConsecutivos(null);
+        usuario.setSenhaPausaOcorrencias(null);
+        usuario.setSenhaBloqueadoAte(null);
     }
 
     private UsuarioEntity buscar(UUID usuarioID) {
