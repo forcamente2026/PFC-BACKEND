@@ -1,6 +1,7 @@
 package forcamente.api.service;
 
 import forcamente.api.dto.AlterarStatusRequestDTO;
+import forcamente.api.dto.ConfirmarEmailRequestDTO;
 import forcamente.api.dto.RenovarCrefRequestDTO;
 import forcamente.api.dto.UsuarioAtualizacaoRequestDTO;
 import forcamente.api.entity.UsuarioEntity;
@@ -9,6 +10,7 @@ import forcamente.api.entity.enums.AcaoAuditoriaEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
+import forcamente.api.entity.enums.TipoCodigoEnum;
 import forcamente.api.exception.ConflitoException;
 import forcamente.api.exception.LimiteDeTentativasException;
 import forcamente.api.exception.RecursoNaoEncontradoException;
@@ -55,11 +57,53 @@ class UsuarioGestaoServiceTest {
     @Mock
     private IAuditoriaService auditoriaService;
 
+    @Mock
+    private ICodigoVerificacaoService codigoVerificacaoService;
+
     @Spy
     private Clock clock = Clock.fixed(Instant.parse("2026-10-21T13:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks
     private UsuarioService usuarioService;
+
+    @Test
+    @DisplayName("codigo sobrescrito por outro tipo apaga o e-mail pendente, que ficaria guardado sem finalidade")
+    void deveApagarOEmailPendenteQuandoOCodigoDeixaDeSerDaTroca() {
+        var aluno = umAluno(ID_ALVO);
+        aluno.setEmailPendente("novo@umc.br");
+        aluno.setCodigoHash("$2a$10$hashQualquer");
+        aluno.setCodigoTipo(TipoCodigoEnum.MFA);
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(aluno));
+
+        assertThatThrownBy(() -> usuarioService.confirmarTrocaDeEmail(
+                ID_ALVO, new ConfirmarEmailRequestDTO("1234")))
+                .isInstanceOf(RegraDeNegocioException.class)
+                .hasMessageContaining("nao vale mais");
+
+        assertThat(aluno.getEmailPendente()).isNull();
+        assertThat(aluno.getEmail()).isNotEqualTo("novo@umc.br");
+    }
+
+    @Test
+    @DisplayName("endereco tomado por outra conta entre o pedido e a confirmacao responde 409, sem gravar")
+    void deveRecusarAConfirmacaoQuandoOEnderecoFoiTomado() {
+        var aluno = umAluno(ID_ALVO);
+        var emailOriginal = aluno.getEmail();
+        aluno.setEmailPendente("novo@umc.br");
+        aluno.setCodigoHash("$2a$10$hashQualquer");
+        aluno.setCodigoTipo(TipoCodigoEnum.TROCA_DE_EMAIL);
+
+        when(usuarioRepository.findById(ID_ALVO)).thenReturn(Optional.of(aluno));
+        when(usuarioRepository.existsByEmailAndIdNot("novo@umc.br", ID_ALVO)).thenReturn(true);
+
+        assertThatThrownBy(() -> usuarioService.confirmarTrocaDeEmail(
+                ID_ALVO, new ConfirmarEmailRequestDTO("1234")))
+                .isInstanceOf(ConflitoException.class);
+
+        assertThat(aluno.getEmail()).isEqualTo(emailOriginal);
+        assertThat(aluno.getEmailPendente()).isNull();
+    }
 
     private static final UUID ID_ALVO = UUID.randomUUID();
     private static final UUID ID_ADMIN = UUID.randomUUID();

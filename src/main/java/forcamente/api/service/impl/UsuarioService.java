@@ -379,7 +379,7 @@ public class UsuarioService implements IUsuarioService {
     }
 
     @Override
-    @Transactional(noRollbackFor = RegraDeNegocioException.class)
+    @Transactional(noRollbackFor = {RegraDeNegocioException.class, ConflitoException.class})
     public UsuarioDetalheResponseDTO confirmarTrocaDeEmail(
             UUID usuarioId, ConfirmarEmailRequestDTO confirmarEmailRequestDTO) {
 
@@ -393,6 +393,16 @@ public class UsuarioService implements IUsuarioService {
             throw new RegraDeNegocioException("Nao existe troca de e-mail pendente");
         }
 
+        if (usuario.getCodigoHash() == null
+                || usuario.getCodigoTipo() != TipoCodigoEnum.TROCA_DE_EMAIL) {
+
+            usuario.setEmailPendente(null);
+            usuarioRepository.save(usuario);
+
+            throw new RegraDeNegocioException(
+                    "O codigo da troca de e-mail nao vale mais. Peca a troca outra vez");
+        }
+
         try {
             codigoVerificacaoService.validarCodigo(
                     usuario, TipoCodigoEnum.TROCA_DE_EMAIL, confirmarEmailRequestDTO.codigo());
@@ -400,6 +410,13 @@ public class UsuarioService implements IUsuarioService {
             usuarioRepository.save(usuario);
 
             throw new RegraDeNegocioException(excecao.getMessage());
+        }
+
+        if (usuarioRepository.existsByEmailAndIdNot(usuario.getEmailPendente(), usuarioId)) {
+            usuario.setEmailPendente(null);
+            usuarioRepository.save(usuario);
+
+            throw new ConflitoException("Ja existe um usuario cadastrado com este e-mail");
         }
 
         String emailAntigo = usuario.getEmail();
