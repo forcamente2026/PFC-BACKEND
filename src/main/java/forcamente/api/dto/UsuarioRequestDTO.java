@@ -3,6 +3,7 @@ package forcamente.api.dto;
 
 import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.validation.LimiteDeBytes;
 import forcamente.api.validation.SemMarcacao;
 import jakarta.validation.constraints.*;
 
@@ -25,7 +26,10 @@ public record UsuarioRequestDTO(
         String email,
 
         @NotBlank(message = "A senha e obrigatoria")
-        @Size(min = RegrasSenha.TAMANHO_MINIMO, message = "A senha deve ter no minimo 8 caracteres")
+        @Size(min = RegrasSenha.TAMANHO_MINIMO, max = RegrasSenha.TAMANHO_MAXIMO,
+                message = "A senha deve ter de 8 a 64 caracteres")
+        @LimiteDeBytes(max = RegrasSenha.MAXIMO_BYTES,
+                message = "A senha é longa demais: acentos e símbolos contam mais de um caractere")
         @Pattern( regexp = RegrasSenha.PADRAO, message = RegrasSenha.MENSAGEM)
         String senha,
 

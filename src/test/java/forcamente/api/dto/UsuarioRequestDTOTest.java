@@ -155,6 +155,22 @@ class UsuarioRequestDTOTest {
         assertThat(validar(dto)).isEmpty();
     }
 
+    @Test
+    @DisplayName("senha de 64 caracteres simples e aceita")
+    void deveAceitarSenhaDe64Caracteres() {
+        var dto = umAluno("joao@umc.br", "08780000", "Aa1@" + "x".repeat(60));
+
+        assertThat(validar(dto)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("senha de 64 letras acentuadas e recusada: passa de 72 bytes e o BCrypt daria 500")
+    void deveRejeitarSenhaQuePassaDe72Bytes() {
+        var dto = umAluno("joao@umc.br", "08780000", "Aá1@" + "á".repeat(60));
+
+        assertThat(campos(validar(dto))).contains("senha");
+    }
+
     private UsuarioRequestDTO umAlunoNascidoEm(LocalDate nascimento) {
         return new UsuarioRequestDTO(
                 "Joao da Silva", nascimento, "joao@umc.br", "Senha@123",
