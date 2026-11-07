@@ -160,7 +160,9 @@ class AnonimizacaoServiceTest {
         var resultado = anonimizacaoService.listarPendentes();
 
         assertThat(resultado).hasSize(1);
-        assertThat(resultado.getFirst().email()).isEqualTo("maria@umc.br");
+        assertThat(resultado.getFirst().email())
+                .as("a fila de exclusao sai mascarada desde 07/11: era o quarto DTO com e-mail inteiro")
+                .isEqualTo("m***@umc.br");
         assertThat(resultado.getFirst().solicitadaEm()).isEqualTo(LocalDateTime.of(2026, 9, 1, 8, 0));
     }
 

@@ -16,7 +16,8 @@ public enum AcaoAuditoriaEnum {
     SENHA_FALHOU("Senha atual errada"),
     ANONIMIZADO("Conta anonimizada"),
     APROVADO("Aprovado"),
-    REJEITADO("Rejeitado");
+    REJEITADO("Rejeitado"),
+    DADO_COMPLETO_LIDO("Dados completos abertos");
 
 
     private final String descricao;
