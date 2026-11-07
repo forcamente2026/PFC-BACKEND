@@ -1,5 +1,6 @@
 package forcamente.api.service;
 
+import forcamente.api.config.ModoApresentacao;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.TipoCodigoEnum;
 import forcamente.api.exception.CredenciaisInvalidasException;
@@ -27,14 +28,49 @@ class CodigoVerificacaoServiceTest {
 
     private CodigoVerificacaoService servico;
 
+    private ModoApresentacao modoApresentacao;
+
     private UsuarioEntity usuario;
 
     @BeforeEach
     void configurar() {
         relogio = new RelogioDeTeste(Instant.parse("2026-09-25T10:00:00Z"));
-        servico = new CodigoVerificacaoService(new BCryptPasswordEncoder(), relogio);
+        modoApresentacao = new ModoApresentacao(false);
+        servico = new CodigoVerificacaoService(new BCryptPasswordEncoder(), relogio, modoApresentacao);
         usuario = new UsuarioEntity();
         usuario.setId(UUID.randomUUID());
+    }
+
+    @Test
+    @DisplayName("com o modo de apresentacao ligado, o codigo e fixo nos tres tipos")
+    void deveGerarOCodigoFixoNoModoApresentacao() {
+        modoApresentacao.definir(true);
+
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).isEqualTo("0000");
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA)).isEqualTo("0000");
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL)).isEqualTo("0000");
+    }
+
+    @Test
+    @DisplayName("desligado, o codigo volta a ser sorteado no mesmo instante")
+    void deveVoltarASortearQuandoDesligado() {
+        modoApresentacao.definir(true);
+
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).isEqualTo("0000");
+
+        modoApresentacao.definir(false);
+
+        var sorteados = new java.util.HashSet<String>();
+
+        for (int i = 0; i < 20; i++) {
+            sorteados.add(servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL));
+        }
+
+        assertThat(sorteados)
+                .as("vinte geracoes seguidas nao podem dar sempre o mesmo codigo; uso o tipo da troca de e-mail porque e o unico sem teto por hora, pela decisao (c) de 01/11")
+                .hasSizeGreaterThan(1);
+
+        assertThat(sorteados).allMatch(codigo -> codigo.matches("\\d{4}"));
     }
 
     @Test
