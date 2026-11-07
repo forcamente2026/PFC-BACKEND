@@ -97,6 +97,8 @@ public class SegurancaConfig {
                         .requestMatchers(HttpMethod.POST, "/api/quizzes").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.PUT, "/api/quizzes/*").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.DELETE, "/api/quizzes/*").hasAnyRole(EDITORES)
+                        .requestMatchers("/api/configuracao/**")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/anonimizacoes-pendentes")
                         .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/*/dados-completos")
