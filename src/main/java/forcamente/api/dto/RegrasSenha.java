@@ -9,6 +9,10 @@ public final class RegrasSenha {
 
     public static final int TAMANHO_MINIMO = 8;
 
+    public static final int TAMANHO_MAXIMO = 64;
+
+    public static final int MAXIMO_BYTES = 72;
+
     private RegrasSenha(){
     }
 }
