@@ -16,7 +16,7 @@ public class ModoApresentacao {
         this.ativo = inicial;
 
         if (inicial) {
-            log.warn("MODO APRESENTACAO LIGADO NA PARTIDA, pela variavel MODO_APRESENTACAO: "
+            log.error("MODO APRESENTACAO LIGADO NA PARTIDA, pela variavel MODO_APRESENTACAO: "
                     + "o codigo de verificacao nasce fixo em todos os fluxos. "
                     + "Subir sem a variavel volta ao sorteio.");
         }
@@ -34,7 +34,7 @@ public class ModoApresentacao {
         this.ativo = ativo;
 
         if (ativo) {
-            log.warn("MODO APRESENTACAO LIGADO: o codigo de verificacao passou a ser fixo. "
+            log.error("MODO APRESENTACAO LIGADO: o codigo de verificacao passou a ser fixo. "
                     + "Isso enfraquece o segundo fator e vale para login, redefinicao de senha "
                     + "e troca de e-mail. Reiniciar sem a variavel desliga.");
         } else {
