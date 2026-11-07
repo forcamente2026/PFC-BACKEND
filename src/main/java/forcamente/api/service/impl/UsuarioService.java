@@ -6,6 +6,7 @@ import forcamente.api.dto.TrocarEmailRequestDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
 import forcamente.api.dto.AlterarStatusRequestDTO;
+import forcamente.api.dto.Mascaras;
 import forcamente.api.dto.RenovarCrefRequestDTO;
 import forcamente.api.dto.TrocarSenhaRequestDTO;
 import forcamente.api.dto.UsuarioDetalheResponseDTO;
@@ -37,7 +38,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -121,7 +125,7 @@ public class UsuarioService implements IUsuarioService {
 
         auditoriaService.registrar(AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.USUARIO, usuarioId);
 
-        return usuarioMapper.toDTO(usuarioEntity);
+        return paraResposta(usuarioEntity);
     }
 
     @Override
@@ -135,7 +139,7 @@ public class UsuarioService implements IUsuarioService {
 
         auditoriaService.registrar(AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.USUARIO, usuarioId);
 
-        return usuarioMapper.toDetalheDTO(usuario);
+        return paraDetalhe(usuario);
     }
 
     @Override
@@ -159,7 +163,7 @@ public class UsuarioService implements IUsuarioService {
         auditoriaService.registrar(AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.USUARIO, null);
 
         return new PaginaDTO<>(
-                resultado.getContent().stream().map(usuarioMapper::toDetalheDTO).toList(),
+                resultado.getContent().stream().map(this::paraDetalhe).toList(),
                 resultado.getNumber(),
                 resultado.getSize(),
                 resultado.getTotalElements(),
@@ -216,7 +220,7 @@ public class UsuarioService implements IUsuarioService {
         auditoriaService.registrar(
                 AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
 
-        return usuarioMapper.toDetalheDTO(salvo);
+        return paraDetalhe(salvo);
     }
 
     @Override
@@ -228,13 +232,13 @@ public class UsuarioService implements IUsuarioService {
                 .findByPapelAndSituacaoCrefOrderByCriadoEm(
                         PapelUsuarioEnum.PROFESSOR, StatusAprovacaoEnum.PENDENTE)
                 .stream()
-                .map(usuario -> new VerificacaoPendenteDTO(
+                .map(usuario -> Mascaras.mascarar(new VerificacaoPendenteDTO(
                         usuario.getId(),
                         usuario.getNomeCompleto(),
                         usuario.getEmail(),
                         usuario.getCref(),
                         usuario.getFormacao(),
-                        usuario.getCriadoEm()))
+                        usuario.getCriadoEm())))
                 .toList();
     }
 
@@ -279,7 +283,7 @@ public class UsuarioService implements IUsuarioService {
         auditoriaService.registrar(
                 AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
 
-        return usuarioMapper.toDetalheDTO(salvo);
+        return paraDetalhe(salvo);
     }
 
     @Override
@@ -318,7 +322,7 @@ public class UsuarioService implements IUsuarioService {
         auditoriaService.registrar(
                 AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
 
-        return usuarioMapper.toDetalheDTO(salvo);
+        return paraDetalhe(salvo);
     }
 
     @Override
@@ -436,7 +440,7 @@ public class UsuarioService implements IUsuarioService {
                 pelo endereco forcamente2026@gmail.com.
                 """.formatted(salvo.getEmail()));
 
-        return usuarioMapper.toDetalheDTO(salvo);
+        return paraDetalhe(salvo);
     }
 
     private void exigirNaoAnonimizada(UsuarioEntity usuario) {
@@ -543,7 +547,7 @@ public class UsuarioService implements IUsuarioService {
                 rejeitado ? AcaoAuditoriaEnum.REJEITADO : AcaoAuditoriaEnum.APROVADO,
                 RecursoAuditoriaEnum.USUARIO, salvo.getId());
 
-        return usuarioMapper.toDetalheDTO(salvo);
+        return paraDetalhe(salvo);
     }
 
     @Override
@@ -569,7 +573,37 @@ public class UsuarioService implements IUsuarioService {
         auditoriaService.registrar(
                 AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.USUARIO, salvo.getId());
 
-        return usuarioMapper.toDetalheDTO(salvo);
+        return paraDetalhe(salvo);
+    }
+
+    private UsuarioDetalheResponseDTO paraDetalhe(UsuarioEntity usuario) {
+        var detalhe = usuarioMapper.toDetalheDTO(usuario);
+
+        return ehOTitular(usuario.getId()) ? detalhe : Mascaras.mascarar(detalhe);
+    }
+
+    private UsuarioResponseDTO paraResposta(UsuarioEntity usuario) {
+        var resposta = usuarioMapper.toDTO(usuario);
+
+        return ehOTitular(usuario.getId()) ? resposta : Mascaras.mascarar(resposta);
+    }
+
+    private boolean ehOTitular(UUID usuarioId) {
+        return usuarioId != null && usuarioId.equals(usuarioAutenticado());
+    }
+
+    private UUID usuarioAutenticado() {
+        Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+
+        if (autenticacao == null || !(autenticacao.getPrincipal() instanceof Jwt jwt)) {
+            return null;
+        }
+
+        try {
+            return UUID.fromString(jwt.getSubject());
+        } catch (IllegalArgumentException excecao) {
+            return null;
+        }
     }
 
     private UsuarioEntity buscarEntidade(UUID usuarioId) {
