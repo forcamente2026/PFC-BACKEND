@@ -241,6 +241,55 @@ class SegurancaRotasTest {
     }
 
     @Test
+    @DisplayName("administrador nao aprova exercicio como professor: a regra de aprovacoes vem antes da generica de POST")
+    void administradorNaoAprovaExercicioComoProfessor() throws Exception {
+        mockMvc.perform(post("/api/exercicios/" + UUID.randomUUID() + "/aprovacoes")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ADMINISTRADOR")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("professor passa pela autorizacao ao aprovar exercicio: chega ao service e recebe 404")
+    void professorPassaPelaAutorizacaoAoAprovarExercicio() throws Exception {
+        mockMvc.perform(post("/api/exercicios/" + UUID.randomUUID() + "/aprovacoes")
+                        .header("Authorization", "Bearer " + tokenDeTeste("PROFESSOR")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("professor nao ve a fila de exercicios pendentes")
+    void professorNaoVeAFilaDeExerciciosPendentes() throws Exception {
+        mockMvc.perform(get("/api/exercicios/pendentes")
+                        .header("Authorization", "Bearer " + tokenDeTeste("PROFESSOR")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("professor nao decide a situacao de exercicio: o PATCH e do administrador")
+    void professorNaoDecideSituacaoDeExercicio() throws Exception {
+        mockMvc.perform(patch("/api/exercicios/" + UUID.randomUUID() + "/status")
+                        .header("Authorization", "Bearer " + tokenDeTeste("PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APROVADO\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("administrador chega na fila de exercicios pendentes: prova que o caminho literal ganha do {id}")
+    void administradorChegaNaFilaDeExerciciosPendentes() throws Exception {
+        mockMvc.perform(get("/api/exercicios/pendentes")
+                        .header("Authorization", "Bearer " + tokenDeTeste("ADMINISTRADOR")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("sem token, a fila de exercicios pendentes responde 401")
+    void semTokenAFilaDeExerciciosResponde401() throws Exception {
+        mockMvc.perform(get("/api/exercicios/pendentes"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("documentos legais sao publicos: sem token devolve os dois vigentes")
     void documentosLegaisSaoPublicos() throws Exception {
         mockMvc.perform(get("/api/documentos-legais"))

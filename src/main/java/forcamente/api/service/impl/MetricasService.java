@@ -16,6 +16,7 @@ import forcamente.api.dto.HidratacaoResponseDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.entity.enums.NivelAtividadeEnum;
 import forcamente.api.entity.enums.SexoBiologicoEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,9 @@ public class MetricasService implements IMetricasService {
 
     private final IExercicioRepository exercicioRepository;
     private static final String FORMULA_TMB = "Mifflin-St Jeor";
+
+    private static final Set<StatusAprovacaoEnum> NO_SITE = Set.of(
+            StatusAprovacaoEnum.APROVADO, StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES);
 
     @Override
     @Transactional(readOnly = true)
@@ -50,6 +55,7 @@ public class MetricasService implements IMetricasService {
 
         Map<UUID, ExercicioEntity> exercicios = exercicioRepository.findAllById(ids)
                 .stream()
+                .filter(exercicio -> NO_SITE.contains(exercicio.getStatus()))
                 .collect(Collectors.toMap(ExercicioEntity::getId, exercicio -> exercicio));
 
         if (exercicios.size() < ids.size()) {

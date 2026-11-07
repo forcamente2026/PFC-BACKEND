@@ -6,6 +6,7 @@ import forcamente.api.dto.SerieRequestDTO;
 import forcamente.api.dto.VolumeTreinoRequestDTO;
 import forcamente.api.entity.ExercicioEntity;
 import forcamente.api.entity.enums.GrupoMuscularEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.entity.enums.NivelAtividadeEnum;
 import forcamente.api.entity.enums.SexoBiologicoEnum;
 import forcamente.api.exception.RecursoNaoEncontradoException;
@@ -79,6 +80,20 @@ class MetricasServiceTest {
         assertThat(resposta.volumeTotalKg()).isZero();
         assertThat(resposta.totalRepeticoes()).isEqualTo(45);
         assertThat(resposta.intensidadeMediaKgPorRep()).isZero();
+    }
+
+    @Test
+    @DisplayName("exercicio pendente na lista recebe a mesma resposta de exercicio inexistente")
+    void deveRecusarExercicioQueNaoEstaNoSite() {
+        var pendente = umExercicio(SUPINO, GrupoMuscularEnum.PEITO);
+        pendente.setStatus(StatusAprovacaoEnum.PENDENTE);
+
+        when(exercicioRepository.findAllById(any())).thenReturn(List.of(pendente));
+
+        assertThatThrownBy(() -> metricasService.calcularVolumeTreino(new VolumeTreinoRequestDTO(
+                List.of(new SerieRequestDTO(SUPINO, 4, 10, 60.0)))))
+                .isInstanceOf(RecursoNaoEncontradoException.class)
+                .hasMessageContaining("não existe");
     }
 
     @Test
@@ -167,6 +182,7 @@ class MetricasServiceTest {
         var exercicio = new ExercicioEntity();
         exercicio.setId(id);
         exercicio.setGrupoMuscular(grupo);
+        exercicio.setStatus(StatusAprovacaoEnum.APROVADO);
         return exercicio;
     }
 }
