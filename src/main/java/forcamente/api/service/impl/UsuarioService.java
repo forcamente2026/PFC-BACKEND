@@ -576,6 +576,19 @@ public class UsuarioService implements IUsuarioService {
         return paraDetalhe(salvo);
     }
 
+    @Override
+    @Transactional
+    public UsuarioDetalheResponseDTO buscarDadosCompletos(UUID usuarioId) {
+        log.info("buscarDadosCompletos: {}", usuarioId);
+
+        UsuarioEntity usuario = buscarEntidade(usuarioId);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.USUARIO, usuarioId);
+
+        return usuarioMapper.toDetalheDTO(usuario);
+    }
+
     private UsuarioDetalheResponseDTO paraDetalhe(UsuarioEntity usuario) {
         var detalhe = usuarioMapper.toDetalheDTO(usuario);
 

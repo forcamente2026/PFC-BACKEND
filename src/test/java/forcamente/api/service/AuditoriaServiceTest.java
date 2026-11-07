@@ -129,7 +129,9 @@ class AuditoriaServiceTest {
 
         assertThat(pagina.conteudo()).hasSize(2);
         assertThat(pagina.conteudo().getFirst().usuarioNome()).isEqualTo("Maria Souza");
-        assertThat(pagina.conteudo().getFirst().usuarioEmail()).isEqualTo("maria@umc.br");
+        assertThat(pagina.conteudo().getFirst().usuarioEmail())
+                .as("a trilha sai com o e-mail mascarado desde 06/11, pelo L11")
+                .isEqualTo("m***@umc.br");
         assertThat(pagina.conteudo().getFirst().descricaoAcao()).isEqualTo("Criado");
         verify(usuarioRepository).findAllById(List.of(usuarioId));
     }
@@ -207,7 +209,9 @@ class AuditoriaServiceTest {
 
         assertThat(linhas).hasSize(2);
         assertThat(linhas[0]).isEqualTo("Quando;Acao;Usuario;E-mail;Recurso;Identificador do recurso");
-        assertThat(linhas[1]).startsWith("\"27/09/2026 12:00:00\";\"Criado\";\"Maria Souza\";\"maria@umc.br\"");
+        assertThat(linhas[1])
+                .as("arquivo baixado sai do alcance do expurgo, entao o e-mail vai mascarado")
+                .startsWith("\"27/09/2026 12:00:00\";\"Criado\";\"Maria Souza\";\"m***@umc.br\"");
     }
 
     @Test

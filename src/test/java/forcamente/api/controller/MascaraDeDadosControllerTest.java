@@ -1,9 +1,13 @@
 package forcamente.api.controller;
 
 import forcamente.api.dto.Mascaras;
+import forcamente.api.entity.RegistroAuditoriaEntity;
 import forcamente.api.entity.UsuarioEntity;
+import forcamente.api.entity.enums.AcaoAuditoriaEnum;
+import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
+import forcamente.api.repository.IRegistroAuditoriaRepository;
 import forcamente.api.repository.IUsuarioRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,6 +49,9 @@ class MascaraDeDadosControllerTest {
 
     @Autowired
     private IUsuarioRepository usuarioRepository;
+
+    @Autowired
+    private IRegistroAuditoriaRepository registroAuditoriaRepository;
 
     @Test
     @DisplayName("o titular ve os proprios dados sem mascara, pelo art. 18 III")
@@ -132,6 +140,83 @@ class MascaraDeDadosControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(professor.getEmail()))
                 .andExpect(jsonPath("$.cref").value(professor.getCref()));
+    }
+
+    @Test
+    @DisplayName("o administrador pede os dados completos e a trilha grava quem olhou qual conta")
+    void deveDevolverOsDadosCompletosERegistrarNaTrilha() throws Exception {
+        var professor = umProfessor();
+
+        long antes = registroAuditoriaRepository.count();
+
+        mockMvc.perform(get("/api/usuarios/" + professor.getId() + "/dados-completos")
+                        .header("Authorization", "Bearer " + tokenDeAdministrador()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(professor.getEmail()))
+                .andExpect(jsonPath("$.cref").value(professor.getCref()))
+                .andExpect(jsonPath("$.cep").value(professor.getCep()))
+                .andExpect(jsonPath("$.logradouro").value(professor.getLogradouro()));
+
+        assertThat(registroAuditoriaRepository.count())
+                .as("olhar dado pessoal de outra conta tem de deixar rastro")
+                .isEqualTo(antes + 1);
+
+        assertThat(registroAuditoriaRepository.findAll().stream()
+                .anyMatch(registro -> professor.getId().equals(registro.getRecursoId())
+                        && registro.getAcao() == AcaoAuditoriaEnum.LIDO))
+                .as("a trilha diz qual conta foi olhada")
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("professor e aluno recebem 403 nos dados completos, e sem token 401")
+    void deveBarrarQuemNaoEAdministradorNosDadosCompletos() throws Exception {
+        var professor = umProfessor();
+        String rota = "/api/usuarios/" + professor.getId() + "/dados-completos";
+
+        mockMvc.perform(get(rota)
+                        .header("Authorization", "Bearer " + tokenPara(professor.getId(), "PROFESSOR")))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get(rota)
+                        .header("Authorization", "Bearer " + tokenPara(UUID.randomUUID(), "ALUNO")))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get(rota)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("a trilha e o CSV saem com o e-mail mascarado, pelo L11")
+    void deveMascararOEmailNaTrilhaENoCsv() throws Exception {
+        var professor = umProfessor();
+
+        var registro = new RegistroAuditoriaEntity();
+        registro.setAcao(AcaoAuditoriaEnum.CRIADO);
+        registro.setRecursoTipo(RecursoAuditoriaEnum.USUARIO);
+        registro.setRecursoId(professor.getId());
+        registro.setUsuarioId(professor.getId());
+        registro.setOcorridoEm(LocalDateTime.now());
+        registroAuditoriaRepository.saveAndFlush(registro);
+
+        var trilha = mockMvc.perform(get("/api/auditoria")
+                        .header("Authorization", "Bearer " + tokenDeAdministrador()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(trilha)
+                .as("a tela da auditoria nao pode trazer e-mail inteiro")
+                .contains(Mascaras.email(professor.getEmail()))
+                .doesNotContain(professor.getEmail());
+
+        var csv = mockMvc.perform(get("/api/auditoria/csv")
+                        .header("Authorization", "Bearer " + tokenDeAdministrador()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(csv)
+                .as("arquivo baixado sai do alcance do expurgo, entao e onde o dado duraria mais")
+                .contains(Mascaras.email(professor.getEmail()))
+                .doesNotContain(professor.getEmail());
     }
 
     private UsuarioEntity umProfessor() {

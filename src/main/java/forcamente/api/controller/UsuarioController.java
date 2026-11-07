@@ -85,6 +85,13 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.buscarPorId(id));
     }
 
+    @GetMapping("/{id}/dados-completos")
+    public ResponseEntity<UsuarioDetalheResponseDTO> buscarDadosCompletos(
+            @PathVariable("id") UUID id) {
+
+        return ResponseEntity.ok(usuarioService.buscarDadosCompletos(id));
+    }
+
     @GetMapping
     public ResponseEntity<PaginaDTO<UsuarioDetalheResponseDTO>> listar(
             @RequestParam(name = "busca", required = false) String busca,

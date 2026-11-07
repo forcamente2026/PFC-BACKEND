@@ -2,6 +2,7 @@ package forcamente.api.service.impl;
 
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.PaginaDTO;
+import forcamente.api.dto.Mascaras;
 import forcamente.api.dto.RegistroAuditoriaResponseDTO;
 import forcamente.api.entity.RegistroAuditoriaEntity;
 import forcamente.api.entity.UsuarioEntity;
@@ -199,7 +200,7 @@ public class AuditoriaService implements IAuditoriaService {
                             registro.getRecursoId(),
                             registro.getUsuarioId(),
                             usuario == null ? null : usuario.getNomeCompleto(),
-                            usuario == null ? null : usuario.getEmail());
+                            usuario == null ? null : Mascaras.email(usuario.getEmail()));
                 })
                 .toList();
     }
