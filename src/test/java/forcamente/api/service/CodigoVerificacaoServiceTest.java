@@ -35,7 +35,7 @@ class CodigoVerificacaoServiceTest {
     @BeforeEach
     void configurar() {
         relogio = new RelogioDeTeste(Instant.parse("2026-09-25T10:00:00Z"));
-        modoApresentacao = new ModoApresentacao();
+        modoApresentacao = new ModoApresentacao(false);
         servico = new CodigoVerificacaoService(new BCryptPasswordEncoder(), relogio, modoApresentacao);
         usuario = new UsuarioEntity();
         usuario.setId(UUID.randomUUID());
