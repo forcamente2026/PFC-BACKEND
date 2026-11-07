@@ -1,5 +1,6 @@
 package forcamente.api.controller;
 
+import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.ExercicioRequestDTO;
 import forcamente.api.dto.ExercicioResponseDTO;
 import forcamente.api.dto.OpcaoDTO;
@@ -41,6 +42,24 @@ public class ExercicioController {
                 : exercicioService.listarPorGrupoMuscular(grupoMuscular);
 
         return ResponseEntity.ok(exercicios);
+    }
+
+    @PostMapping("/{id}/aprovacoes")
+    public ResponseEntity<ExercicioResponseDTO> aprovarComoProfessor(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(exercicioService.aprovarComoProfessor(id));
+    }
+
+    @GetMapping("/pendentes")
+    public ResponseEntity<List<ExercicioResponseDTO>> listarPendentes() {
+        return ResponseEntity.ok(exercicioService.listarPendentes());
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ExercicioResponseDTO> decidirSituacao(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody AlterarStatusRequestDTO alterarStatusRequestDTO) {
+
+        return ResponseEntity.ok(exercicioService.decidirSituacao(id, alterarStatusRequestDTO));
     }
 
     @GetMapping("/grupos-musculares")

@@ -1,5 +1,6 @@
 package forcamente.api.service;
 
+import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.ExercicioRequestDTO;
 import forcamente.api.dto.ExercicioResponseDTO;
 import forcamente.api.entity.ExercicioAprovacaoEntity;
@@ -22,14 +23,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,6 +44,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,6 +69,9 @@ class ExercicioServiceTest {
 
     @Mock
     private IAuditoriaService auditoriaService;
+
+    @Spy
+    private Clock clock = Clock.fixed(Instant.parse("2026-11-06T13:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks
     private ExercicioService exercicioService;
@@ -137,7 +148,7 @@ class ExercicioServiceTest {
 
         var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.PENDENTE);
 
-        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any()))
+        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any(), any()))
                 .thenReturn(List.of(entity));
         when(usuarioRepository.findAllById(anyCollection()))
                 .thenReturn(List.of(umUsuario(ID_AUTOR, "Carlos Pereira")));
@@ -162,7 +173,7 @@ class ExercicioServiceTest {
 
         var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.PENDENTE);
 
-        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any()))
+        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any(), any()))
                 .thenReturn(List.of(entity));
         when(usuarioRepository.findAllById(anyCollection()))
                 .thenReturn(List.of(umUsuario(ID_AUTOR, "Carlos Pereira")));
@@ -180,7 +191,7 @@ class ExercicioServiceTest {
 
         var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.PENDENTE);
 
-        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any()))
+        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any(), any()))
                 .thenReturn(List.of(entity));
         when(exercicioAprovacaoRepository.findByExercicioIdIn(anyCollection()))
                 .thenReturn(List.of(umaAprovacao(entity.getId(), ID_OUTRO)));
@@ -199,7 +210,7 @@ class ExercicioServiceTest {
     void deveDeixarSoOAdministradorEditarExercicioSemAutor() {
         var entity = umaEntidade(null, StatusAprovacaoEnum.APROVADO);
 
-        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any()))
+        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any(), any()))
                 .thenReturn(List.of(entity));
 
         autenticarComo(ID_OUTRO, PapelUsuarioEnum.PROFESSOR);
@@ -233,7 +244,7 @@ class ExercicioServiceTest {
         var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.REJEITADO);
         entity.setMotivoRejeicao("Sem fonte confiavel.");
 
-        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any()))
+        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any(), any()))
                 .thenReturn(List.of(entity));
         when(usuarioRepository.findAllById(anyCollection()))
                 .thenReturn(List.of(umUsuario(ID_AUTOR, "Carlos Pereira")));
@@ -253,7 +264,7 @@ class ExercicioServiceTest {
     void deveMostrarOsAprovadoresSoParaOAdministrador() {
         var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.PENDENTE);
 
-        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any()))
+        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any(), any()))
                 .thenReturn(List.of(entity));
         when(exercicioAprovacaoRepository.findByExercicioIdIn(anyCollection()))
                 .thenReturn(List.of(umaAprovacao(entity.getId(), ID_OUTRO)));
@@ -272,24 +283,177 @@ class ExercicioServiceTest {
     }
 
     @Test
-    @DisplayName("o filtro por grupo muscular respeita a visibilidade")
-    void deveFiltrarPorGrupoMuscularDentroDoQueEVisivel() {
+    @DisplayName("o filtro por grupo muscular vai para a consulta, junto com a visibilidade")
+    void deveFiltrarPorGrupoMuscularNaConsulta() {
         autenticarComo(ID_OUTRO, PapelUsuarioEnum.ALUNO);
 
         var doPeito = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.APROVADO);
-        var dasCostas = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.APROVADO);
-        dasCostas.setNome("Remada curvada");
-        dasCostas.setGrupoMuscular(GrupoMuscularEnum.COSTAS);
 
-        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any()))
-                .thenReturn(List.of(doPeito, dasCostas));
+        when(exercicioRepository.buscarVisiveis(anyCollection(), any(), any(), any()))
+                .thenReturn(List.of(doPeito));
         when(usuarioRepository.findAllById(anyCollection()))
                 .thenReturn(List.of(umUsuario(ID_AUTOR, "Carlos Pereira")));
 
         var resultado = exercicioService.listarPorGrupoMuscular(GrupoMuscularEnum.PEITO);
 
         assertThat(resultado).hasSize(1);
-        assertThat(resultado.getFirst().nome()).isEqualTo("Supino reto");
+
+        verify(exercicioRepository).buscarVisiveis(
+                argThat(visiveis -> visiveis.contains(StatusAprovacaoEnum.APROVADO)
+                        && !visiveis.contains(StatusAprovacaoEnum.PENDENTE)),
+                eq(StatusAprovacaoEnum.REJEITADO),
+                any(),
+                eq(GrupoMuscularEnum.PEITO));
+    }
+
+    @Test
+    @DisplayName("professor que nao e o autor recebe 403 ao editar")
+    void deveBarrarEdicaoDeQuemNaoEOAutor() {
+        autenticarComo(ID_OUTRO, PapelUsuarioEnum.PROFESSOR);
+
+        var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.APROVADO);
+
+        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> exercicioService.atualizarExercicio(entity.getId(), umaRequisicaoValida()))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(exercicioRepository, never()).save(any(ExercicioEntity.class));
+    }
+
+    @Test
+    @DisplayName("edicao do autor devolve o item para PENDENTE e zera as aprovacoes")
+    void deveDevolverParaPendenteNaEdicaoDoAutor() {
+        autenticarComo(ID_AUTOR, PapelUsuarioEnum.PROFESSOR);
+
+        var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES);
+        entity.setMotivoRejeicao("motivo antigo");
+
+        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(exercicioRepository.save(entity)).thenReturn(entity);
+
+        exercicioService.atualizarExercicio(entity.getId(), umaRequisicaoValida());
+
+        assertThat(entity.getStatus()).isEqualTo(StatusAprovacaoEnum.PENDENTE);
+        assertThat(entity.getMotivoRejeicao()).isNull();
+
+        verify(exercicioAprovacaoRepository).deleteByExercicioId(entity.getId());
+    }
+
+    @Test
+    @DisplayName("edicao do administrador nao reabre a aprovacao")
+    void naoDeveReabrirAAprovacaoNaEdicaoDoAdministrador() {
+        autenticarComo(ID_OUTRO, PapelUsuarioEnum.ADMINISTRADOR);
+
+        var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.APROVADO);
+
+        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(exercicioRepository.save(entity)).thenReturn(entity);
+
+        exercicioService.atualizarExercicio(entity.getId(), umaRequisicaoValida());
+
+        assertThat(entity.getStatus()).isEqualTo(StatusAprovacaoEnum.APROVADO);
+
+        verify(exercicioAprovacaoRepository, never()).deleteByExercicioId(any());
+    }
+
+    @Test
+    @DisplayName("professor que nao e o autor recebe 403 ao excluir")
+    void deveBarrarExclusaoDeQuemNaoEOAutor() {
+        autenticarComo(ID_OUTRO, PapelUsuarioEnum.PROFESSOR);
+
+        var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.APROVADO);
+
+        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> exercicioService.excluirExercicio(entity.getId()))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(exercicioRepository, never()).delete(any(ExercicioEntity.class));
+    }
+
+    @Test
+    @DisplayName("o autor nao aprova o proprio exercicio: 403")
+    void deveBarrarOAutorAprovandoOProprioItem() {
+        autenticarComo(ID_AUTOR, PapelUsuarioEnum.PROFESSOR);
+
+        var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.PENDENTE);
+
+        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> exercicioService.aprovarComoProfessor(entity.getId()))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("aprovar item que nao esta PENDENTE responde 409, e aprovar duas vezes tambem")
+    void deveRecusarAprovacaoRepetidaOuForaDaFila() {
+        autenticarComo(ID_OUTRO, PapelUsuarioEnum.PROFESSOR);
+
+        var aprovado = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.APROVADO);
+
+        when(exercicioRepository.findById(aprovado.getId())).thenReturn(Optional.of(aprovado));
+
+        assertThatThrownBy(() -> exercicioService.aprovarComoProfessor(aprovado.getId()))
+                .isInstanceOf(ConflitoException.class)
+                .hasMessageContaining("pendente");
+
+        var pendente = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.PENDENTE);
+
+        when(exercicioRepository.findById(pendente.getId())).thenReturn(Optional.of(pendente));
+        when(exercicioAprovacaoRepository.existsByExercicioIdAndProfessorId(pendente.getId(), ID_OUTRO))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> exercicioService.aprovarComoProfessor(pendente.getId()))
+                .isInstanceOf(ConflitoException.class)
+                .hasMessageContaining("já aprovou");
+    }
+
+    @Test
+    @DisplayName("a terceira aprovacao de professor publica o exercicio")
+    void deveMudarParaAprovadoPelosProfessoresNaTerceira() {
+        autenticarComo(ID_OUTRO, PapelUsuarioEnum.PROFESSOR);
+
+        var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.PENDENTE);
+
+        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(exercicioAprovacaoRepository.countByExercicioId(entity.getId())).thenReturn(3L);
+
+        exercicioService.aprovarComoProfessor(entity.getId());
+
+        assertThat(entity.getStatus()).isEqualTo(StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES);
+    }
+
+    @Test
+    @DisplayName("decidir item ja decidido responde 409")
+    void deveRecusarDecidirDuasVezes() {
+        autenticarComo(ID_OUTRO, PapelUsuarioEnum.ADMINISTRADOR);
+
+        var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.REJEITADO);
+
+        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> exercicioService.decidirSituacao(entity.getId(),
+                new AlterarStatusRequestDTO(StatusAprovacaoEnum.APROVADO, null)))
+                .isInstanceOf(ConflitoException.class)
+                .hasMessageContaining("já foi decidido");
+    }
+
+    @Test
+    @DisplayName("a rejeicao do administrador guarda o motivo aparado")
+    void deveGuardarOMotivoDaRejeicao() {
+        autenticarComo(ID_OUTRO, PapelUsuarioEnum.ADMINISTRADOR);
+
+        var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES);
+
+        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(exercicioRepository.save(entity)).thenReturn(entity);
+
+        exercicioService.decidirSituacao(entity.getId(),
+                new AlterarStatusRequestDTO(StatusAprovacaoEnum.REJEITADO, "  Execucao descrita errada.  "));
+
+        assertThat(entity.getStatus()).isEqualTo(StatusAprovacaoEnum.REJEITADO);
+        assertThat(entity.getMotivoRejeicao()).isEqualTo("Execucao descrita errada.");
     }
 
     @Test

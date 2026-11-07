@@ -1,5 +1,6 @@
 package forcamente.api.service.impl;
 
+import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.ExercicioRequestDTO;
 import forcamente.api.dto.ExercicioResponseDTO;
 import forcamente.api.dto.OpcaoDTO;
@@ -22,12 +23,14 @@ import forcamente.api.service.IAuditoriaService;
 import forcamente.api.service.IExercicioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -54,6 +57,8 @@ public class ExercicioService implements IExercicioService {
     private final ExercicioMapper exercicioMapper;
 
     private final IAuditoriaService auditoriaService;
+
+    private final Clock clock;
 
     @Override
     @Transactional
@@ -91,7 +96,7 @@ public class ExercicioService implements IExercicioService {
         PapelUsuarioEnum papel = papelAutenticado();
         UUID usuarioId = usuarioAutenticado();
 
-        return paraDTO(visiveis(papel, usuarioId), papel, usuarioId);
+        return paraDTO(visiveis(papel, usuarioId, null), papel, usuarioId);
     }
 
     @Override
@@ -102,11 +107,7 @@ public class ExercicioService implements IExercicioService {
         PapelUsuarioEnum papel = papelAutenticado();
         UUID usuarioId = usuarioAutenticado();
 
-        var doGrupo = visiveis(papel, usuarioId).stream()
-                .filter(exercicio -> exercicio.getGrupoMuscular() == grupoMuscular)
-                .toList();
-
-        return paraDTO(doGrupo, papel, usuarioId);
+        return paraDTO(visiveis(papel, usuarioId, grupoMuscular), papel, usuarioId);
     }
 
     @Override
@@ -131,7 +132,12 @@ public class ExercicioService implements IExercicioService {
     public ExercicioResponseDTO atualizarExercicio(UUID exercicioId, ExercicioRequestDTO exercicioRequestDTO) {
         log.info("atualizarExercicio:{}", exercicioId);
 
+        PapelUsuarioEnum papel = papelAutenticado();
+        UUID usuarioId = usuarioAutenticado();
+
         ExercicioEntity exercicioEntity = findById(exercicioId);
+
+        exigirAutorOuAdministrador(exercicioEntity, papel, usuarioId);
 
         if (exercicioEntity.getGrupoMuscular() != exercicioRequestDTO.grupoMuscular()) {
             throw new ConflitoException("O Grupo Muscular não pode ser alterado");
@@ -143,19 +149,31 @@ public class ExercicioService implements IExercicioService {
         }
 
         exercicioMapper.atualizarEntity(exercicioRequestDTO, exercicioEntity);
+
+        if (papel != PapelUsuarioEnum.ADMINISTRADOR) {
+            exercicioEntity.setStatus(StatusAprovacaoEnum.PENDENTE);
+            exercicioEntity.setMotivoRejeicao(null);
+            exercicioAprovacaoRepository.deleteByExercicioId(exercicioId);
+        }
+
         ExercicioEntity exercicioSalvo = exercicioRepository.save(exercicioEntity);
 
         auditoriaService.registrar(
                 AcaoAuditoriaEnum.ATUALIZADO, RecursoAuditoriaEnum.EXERCICIO, exercicioSalvo.getId());
 
-        return paraDTO(List.of(exercicioSalvo), papelAutenticado(), usuarioAutenticado()).getFirst();
+        return paraDTO(List.of(exercicioSalvo), papel, usuarioId).getFirst();
     }
 
     @Override
     @Transactional
     public void excluirExercicio(UUID exercicioId) {
         log.info("excluirExercicio: {}", exercicioId);
-        exercicioRepository.delete(findById(exercicioId));
+
+        ExercicioEntity exercicio = findById(exercicioId);
+
+        exigirAutorOuAdministrador(exercicio, papelAutenticado(), usuarioAutenticado());
+
+        exercicioRepository.delete(exercicio);
 
         auditoriaService.registrar(
                 AcaoAuditoriaEnum.EXCLUIDO, RecursoAuditoriaEnum.EXERCICIO, exercicioId);
@@ -183,9 +201,110 @@ public class ExercicioService implements IExercicioService {
                 .toList();
     }
 
-    private List<ExercicioEntity> visiveis(PapelUsuarioEnum papel, UUID usuarioId) {
+    @Override
+    @Transactional
+    public ExercicioResponseDTO aprovarComoProfessor(UUID exercicioId) {
+        log.info("aprovarComoProfessor: {}", exercicioId);
+
+        PapelUsuarioEnum papel = papelAutenticado();
+        UUID usuarioId = usuarioAutenticado();
+
+        ExercicioEntity exercicio = findById(exercicioId);
+
+        if (ehOAutor(exercicio, usuarioId)) {
+            throw new AccessDeniedException("Acesso negado");
+        }
+
+        if (exercicio.getStatus() != StatusAprovacaoEnum.PENDENTE) {
+            throw new ConflitoException("Só é possível aprovar um exercício que está pendente");
+        }
+
+        if (exercicioAprovacaoRepository.existsByExercicioIdAndProfessorId(exercicioId, usuarioId)) {
+            throw new ConflitoException("Você já aprovou este exercício");
+        }
+
+        var aprovacao = new ExercicioAprovacaoEntity();
+        aprovacao.setExercicioId(exercicioId);
+        aprovacao.setProfessorId(usuarioId);
+        aprovacao.setAprovadoEm(LocalDateTime.now(clock));
+
+        exercicioAprovacaoRepository.save(aprovacao);
+
+        auditoriaService.registrar(
+                AcaoAuditoriaEnum.APROVADO, RecursoAuditoriaEnum.EXERCICIO, exercicioId);
+
+        if (exercicioAprovacaoRepository.countByExercicioId(exercicioId)
+                >= APROVACOES_DE_PROFESSORES_PARA_PUBLICAR) {
+
+            exercicio.setStatus(StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES);
+            exercicioRepository.save(exercicio);
+        }
+
+        return paraDTO(List.of(exercicio), papel, usuarioId).getFirst();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExercicioResponseDTO> listarPendentes() {
+        log.info("listarPendentes");
+
+        var pendentes = exercicioRepository.findByStatusInOrderByCriadoEmAsc(
+                List.of(StatusAprovacaoEnum.PENDENTE, StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES));
+
+        return paraDTO(pendentes, papelAutenticado(), usuarioAutenticado());
+    }
+
+    @Override
+    @Transactional
+    public ExercicioResponseDTO decidirSituacao(UUID exercicioId,
+                                                AlterarStatusRequestDTO alterarStatusRequestDTO) {
+
+        log.info("decidirSituacao: {} para {}", exercicioId, alterarStatusRequestDTO.status());
+
+        PapelUsuarioEnum papel = papelAutenticado();
+        UUID usuarioId = usuarioAutenticado();
+
+        ExercicioEntity exercicio = findById(exercicioId);
+
+        if (exercicio.getStatus() != StatusAprovacaoEnum.PENDENTE
+                && exercicio.getStatus() != StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES) {
+
+            throw new ConflitoException("Este exercício já foi decidido");
+        }
+
+        boolean rejeitado = alterarStatusRequestDTO.status() == StatusAprovacaoEnum.REJEITADO;
+
+        exercicio.setStatus(alterarStatusRequestDTO.status());
+        exercicio.setMotivoRejeicao(rejeitado ? alterarStatusRequestDTO.motivo().trim() : null);
+
+        ExercicioEntity salvo = exercicioRepository.save(exercicio);
+
+        auditoriaService.registrar(
+                rejeitado ? AcaoAuditoriaEnum.REJEITADO : AcaoAuditoriaEnum.APROVADO,
+                RecursoAuditoriaEnum.EXERCICIO, exercicioId);
+
+        return paraDTO(List.of(salvo), papel, usuarioId).getFirst();
+    }
+
+    private void exigirAutorOuAdministrador(ExercicioEntity exercicio,
+                                            PapelUsuarioEnum papel,
+                                            UUID usuarioId) {
+
+        if (papel == PapelUsuarioEnum.ADMINISTRADOR) {
+            return;
+        }
+
+        if (!ehOAutor(exercicio, usuarioId)) {
+            throw new AccessDeniedException("Acesso negado");
+        }
+    }
+
+    private List<ExercicioEntity> visiveis(PapelUsuarioEnum papel,
+                                           UUID usuarioId,
+                                           GrupoMuscularEnum grupoMuscular) {
+
         return exercicioRepository.buscarVisiveis(
-                statusVisiveis(papel), StatusAprovacaoEnum.REJEITADO, usuarioId);
+                statusVisiveis(papel), StatusAprovacaoEnum.REJEITADO, usuarioId, grupoMuscular);
     }
 
     private Set<StatusAprovacaoEnum> statusVisiveis(PapelUsuarioEnum papel) {

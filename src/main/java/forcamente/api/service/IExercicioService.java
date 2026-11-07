@@ -1,5 +1,6 @@
 package forcamente.api.service;
 
+import forcamente.api.dto.AlterarStatusRequestDTO;
 import forcamente.api.dto.ExercicioRequestDTO;
 import forcamente.api.dto.ExercicioResponseDTO;
 import forcamente.api.dto.OpcaoDTO;
@@ -20,6 +21,12 @@ public interface IExercicioService {
     ExercicioResponseDTO atualizarExercicio(UUID exercicioId, ExercicioRequestDTO exercicioRequestDTO);
 
     void excluirExercicio(UUID exercicioId);
+
+    ExercicioResponseDTO aprovarComoProfessor(UUID exercicioId);
+
+    List<ExercicioResponseDTO> listarPendentes();
+
+    ExercicioResponseDTO decidirSituacao(UUID exercicioId, AlterarStatusRequestDTO alterarStatusRequestDTO);
 
     List<OpcaoDTO> listarGruposMusculares();
 

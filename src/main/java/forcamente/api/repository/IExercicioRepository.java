@@ -15,8 +15,6 @@ import java.util.UUID;
 @Repository
 public interface IExercicioRepository extends JpaRepository<ExercicioEntity, UUID> {
 
-    List<ExercicioEntity> findByGrupoMuscular(GrupoMuscularEnum grupoMuscular);
-
     boolean existsByNomeIgnoreCase(String nome);
 
     boolean existsByNomeIgnoreCaseAndIdNot(String nome, UUID id);
@@ -25,13 +23,15 @@ public interface IExercicioRepository extends JpaRepository<ExercicioEntity, UUI
 
     @Query("""
             select e from ExercicioEntity e
-            where e.status in :visiveis
-               or (e.status = :rejeitado and e.autorId = :usuarioId)
+            where (e.status in :visiveis
+                   or (e.status = :rejeitado and e.autorId = :usuarioId))
+              and (:grupoMuscular is null or e.grupoMuscular = :grupoMuscular)
             order by e.nome asc
             """)
     List<ExercicioEntity> buscarVisiveis(
             @Param("visiveis") Collection<StatusAprovacaoEnum> visiveis,
             @Param("rejeitado") StatusAprovacaoEnum rejeitado,
-            @Param("usuarioId") UUID usuarioId
+            @Param("usuarioId") UUID usuarioId,
+            @Param("grupoMuscular") GrupoMuscularEnum grupoMuscular
     );
 }
