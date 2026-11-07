@@ -2,6 +2,7 @@ package forcamente.api.entity;
 
 import forcamente.api.entity.enums.GrupoMuscularEnum;
 import forcamente.api.entity.enums.NivelDificuldadeEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -56,6 +57,16 @@ public class ExercicioEntity {
 
     @Column(name = "gif_url")
     private String gifUrl;
+
+    @Column(name = "autor_id")
+    private UUID autorId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
+    private StatusAprovacaoEnum status;
+
+    @Column(name = "motivo_rejeicao", columnDefinition = "TEXT")
+    private String motivoRejeicao;
 
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm;
