@@ -25,5 +25,6 @@ public interface UsuarioMapper {
 
     UsuarioResponseDTO toDTO(UsuarioEntity usuarioEntity);
 
+    @Mapping(target = "dataNascimento", dateFormat = "dd/MM/yyyy")
     UsuarioDetalheResponseDTO toDetalheDTO(UsuarioEntity usuarioEntity);
 }

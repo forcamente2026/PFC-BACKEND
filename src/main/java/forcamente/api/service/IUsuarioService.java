@@ -26,6 +26,8 @@ public interface IUsuarioService {
 
     UsuarioDetalheResponseDTO buscarDetalhePorId(UUID usuarioId);
 
+    UsuarioDetalheResponseDTO buscarDadosCompletos(UUID usuarioId);
+
     List<OpcaoDTO> listarFormacoes();
 
     PaginaDTO<UsuarioDetalheResponseDTO> listar(

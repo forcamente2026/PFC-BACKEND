@@ -4,7 +4,6 @@ import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -13,7 +12,7 @@ public record UsuarioDetalheResponseDTO(
         String nomeCompleto,
         String email,
         PapelUsuarioEnum papel,
-        LocalDate dataNascimento,
+        String dataNascimento,
         String cref,
         FormacaoEnum formacao,
         StatusAprovacaoEnum situacaoCref,
