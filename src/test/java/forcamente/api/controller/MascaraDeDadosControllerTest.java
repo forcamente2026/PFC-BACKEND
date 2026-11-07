@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -32,6 +33,7 @@ import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -163,9 +165,35 @@ class MascaraDeDadosControllerTest {
 
         assertThat(registroAuditoriaRepository.findAll().stream()
                 .anyMatch(registro -> professor.getId().equals(registro.getRecursoId())
-                        && registro.getAcao() == AcaoAuditoriaEnum.LIDO))
-                .as("a trilha diz qual conta foi olhada")
+                        && registro.getAcao() == AcaoAuditoriaEnum.DADO_COMPLETO_LIDO))
+                .as("a trilha diz qual conta foi aberta, com acao propria")
                 .isTrue();
+    }
+
+    @Test
+    @DisplayName("a trilha distingue a leitura mascarada da abertura dos dados completos")
+    void deveDistinguirLeituraMascaradaDeAberturaCompleta() throws Exception {
+        var professor = umProfessor();
+        var idAdministrador = UUID.randomUUID();
+        String token = tokenPara(idAdministrador, "ADMINISTRADOR");
+
+        mockMvc.perform(get("/api/usuarios/" + professor.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/usuarios/" + professor.getId() + "/dados-completos")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        var daConta = registroAuditoriaRepository.findAll().stream()
+                .filter(registro -> professor.getId().equals(registro.getRecursoId())
+                        && idAdministrador.equals(registro.getUsuarioId()))
+                .toList();
+
+        assertThat(daConta)
+                .as("a leitura mascarada e a abertura precisam deixar registros diferentes")
+                .extracting(registro -> registro.getAcao())
+                .contains(AcaoAuditoriaEnum.LIDO, AcaoAuditoriaEnum.DADO_COMPLETO_LIDO);
     }
 
     @Test
@@ -217,6 +245,72 @@ class MascaraDeDadosControllerTest {
                 .as("arquivo baixado sai do alcance do expurgo, entao e onde o dado duraria mais")
                 .contains(Mascaras.email(professor.getEmail()))
                 .doesNotContain(professor.getEmail());
+    }
+
+    @Test
+    @DisplayName("salvar a conta mascarada responde 400 e nao destroi o e-mail real")
+    void deveRecusarOEmailMascaradoNoPut() throws Exception {
+        var aluno = usuarioRepository.findByEmail("ana.ramos@exemplo.test").orElseThrow();
+        String emailOriginal = aluno.getEmail();
+
+        var mascarado = mockMvc.perform(get("/api/usuarios/" + aluno.getId())
+                        .header("Authorization", "Bearer " + tokenDeAdministrador()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(mascarado).as("a tela do administrador traz o e-mail mascarado").contains("***");
+
+        mockMvc.perform(put("/api/usuarios/" + aluno.getId())
+                        .header("Authorization", "Bearer " + tokenDeAdministrador())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nomeCompleto": "Ana Ramos Corrigida",
+                                  "email": "%s"
+                                }
+                                """.formatted(Mascaras.email(emailOriginal))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos[*].campo").value(org.hamcrest.Matchers.hasItem("email")));
+
+        assertThat(usuarioRepository.findById(aluno.getId()).orElseThrow().getEmail())
+                .as("o e-mail real nao pode ser substituido pela mascara: a pessoa perderia o acesso")
+                .isEqualTo(emailOriginal);
+    }
+
+    @Test
+    @DisplayName("a fila de pedidos de exclusao sai com o e-mail mascarado")
+    void deveMascararAFilaDePedidosDeExclusao() throws Exception {
+        var aluno = usuarioRepository.findByEmail("bruno.lima@exemplo.test").orElseThrow();
+        aluno.setAnonimizacaoSolicitadaEm(LocalDateTime.now());
+        usuarioRepository.saveAndFlush(aluno);
+
+        var json = mockMvc.perform(get("/api/usuarios/anonimizacoes-pendentes")
+                        .header("Authorization", "Bearer " + tokenDeAdministrador()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(json)
+                .as("a fila de exclusao e tela de LGPD, e era o quarto DTO com e-mail inteiro")
+                .contains(Mascaras.email(aluno.getEmail()))
+                .doesNotContain(aluno.getEmail());
+    }
+
+    @Test
+    @DisplayName("a busca da gestao acha o e-mail por igualdade exata e nao por pedaco")
+    void deveBuscarOEmailSoPorIgualdadeExata() throws Exception {
+        var aluno = usuarioRepository.findByEmail("ana.ramos@exemplo.test").orElseThrow();
+
+        mockMvc.perform(get("/api/usuarios")
+                        .param("busca", aluno.getEmail())
+                        .header("Authorization", "Bearer " + tokenDeAdministrador()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalDeItens").value(1));
+
+        mockMvc.perform(get("/api/usuarios")
+                        .param("busca", "ana.ram")
+                        .header("Authorization", "Bearer " + tokenDeAdministrador()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.conteudo[?(@.id == '" + aluno.getId() + "')]").isEmpty());
     }
 
     private UsuarioEntity umProfessor() {

@@ -584,7 +584,7 @@ public class UsuarioService implements IUsuarioService {
         UsuarioEntity usuario = buscarEntidade(usuarioId);
 
         auditoriaService.registrar(
-                AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.USUARIO, usuarioId);
+                AcaoAuditoriaEnum.DADO_COMPLETO_LIDO, RecursoAuditoriaEnum.USUARIO, usuarioId);
 
         return usuarioMapper.toDetalheDTO(usuario);
     }
