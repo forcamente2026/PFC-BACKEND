@@ -1,6 +1,7 @@
 package forcamente.api.service.impl;
 
 import forcamente.api.dto.AnonimizadorPendenteDTO;
+import forcamente.api.dto.Mascaras;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.AcaoAuditoriaEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
@@ -99,8 +100,8 @@ public class AnonimizacaoService implements IAnonimizacaoService {
 
         return usuarioRepository.findByAnonimizacaoSolicitadaEmIsNotNullAndAnonimizadoEmIsNullOrderByAnonimizacaoSolicitadaEm()
                 .stream()
-                .map(usuario -> new AnonimizadorPendenteDTO(usuario.getId(),usuario.getNomeCompleto(),usuario.getEmail(),usuario.getPapel(),usuario.getAnonimizacaoSolicitadaEm())
-                ).toList();
+                .map(usuario -> Mascaras.mascarar(new AnonimizadorPendenteDTO(usuario.getId(),usuario.getNomeCompleto(),usuario.getEmail(),usuario.getPapel(),usuario.getAnonimizacaoSolicitadaEm())))
+                .toList();
     }
 
     @Override

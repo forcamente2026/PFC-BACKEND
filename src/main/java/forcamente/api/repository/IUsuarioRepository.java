@@ -40,7 +40,7 @@ public interface IUsuarioRepository extends JpaRepository<UsuarioEntity, UUID> {
               and (:ativo is null or u.ativo = :ativo)
               and (:busca is null
                    or lower(u.nomeCompleto) like lower(concat('%', cast(:busca as string), '%'))
-                   or lower(u.email) like lower(concat('%', cast(:busca as string), '%')))
+                   or lower(u.email) = lower(cast(:busca as string)))
             order by u.nomeCompleto
             """)
     Page<UsuarioEntity> buscarComFiltros(

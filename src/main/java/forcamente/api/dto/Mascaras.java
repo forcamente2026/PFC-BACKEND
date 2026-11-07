@@ -43,6 +43,19 @@ public final class Mascaras {
         return cref.charAt(0) + OCULTO + cref.substring(4);
     }
 
+    public static AnonimizadorPendenteDTO mascarar(AnonimizadorPendenteDTO pendente) {
+        if (pendente == null) {
+            return null;
+        }
+
+        return new AnonimizadorPendenteDTO(
+                pendente.id(),
+                pendente.nomeCompleto(),
+                email(pendente.email()),
+                pendente.papel(),
+                pendente.solicitadaEm());
+    }
+
     public static UsuarioDetalheResponseDTO mascarar(UsuarioDetalheResponseDTO detalhe) {
         if (detalhe == null) {
             return null;
