@@ -13,5 +13,9 @@ public interface IQuizTentativaRepository extends JpaRepository<QuizTentativaEnt
 
     List<QuizTentativaEntity> findByUsuarioIdAndQuizIdIn(UUID usuarioId, Collection<UUID> quizzesIds);
 
+    List<QuizTentativaEntity> findByUsuarioIdOrderByFeitaEmAsc(UUID usuarioId);
+
+    List<QuizTentativaEntity> findByQuizIdIn(Collection<UUID> quizzesIds);
+
     void deleteByUsuarioId(UUID usuarioId);
 }

@@ -1,10 +1,12 @@
 package forcamente.api.controller;
 
 import forcamente.api.dto.AlterarStatusRequestDTO;
+import forcamente.api.dto.DesempenhoQuizResponseDTO;
 import forcamente.api.dto.QuizDetalheResponseDTO;
 import forcamente.api.dto.QuizEdicaoResponseDTO;
 import forcamente.api.dto.QuizRequestDTO;
 import forcamente.api.dto.QuizResumoResponseDTO;
+import forcamente.api.dto.TentativaHistoricoResponseDTO;
 import forcamente.api.dto.TentativaRequestDTO;
 import forcamente.api.dto.TentativaResponseDTO;
 import forcamente.api.service.IQuizService;
@@ -33,6 +35,16 @@ public class QuizController {
     @GetMapping("/pendentes")
     public ResponseEntity<List<QuizResumoResponseDTO>> listarPendentes() {
         return ResponseEntity.ok(quizService.listarPendentes());
+    }
+
+    @GetMapping("/minhas-tentativas")
+    public ResponseEntity<List<TentativaHistoricoResponseDTO>> listarMinhasTentativas() {
+        return ResponseEntity.ok(quizService.listarMinhasTentativas());
+    }
+
+    @GetMapping("/meus/desempenho")
+    public ResponseEntity<List<DesempenhoQuizResponseDTO>> listarDesempenhoDosMeusQuizzes() {
+        return ResponseEntity.ok(quizService.listarDesempenhoDosMeusQuizzes());
     }
 
     @GetMapping("/{id}")

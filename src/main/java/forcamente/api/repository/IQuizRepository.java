@@ -16,6 +16,8 @@ public interface IQuizRepository extends JpaRepository<QuizEntity, UUID> {
 
     List<QuizEntity> findByStatusInOrderByCriadoEmAsc(Collection<StatusAprovacaoEnum> status);
 
+    List<QuizEntity> findByAutorIdOrderByCriadoEmAsc(UUID autorId);
+
     @Query("""
             select q from QuizEntity q
             where q.status in :visiveis
