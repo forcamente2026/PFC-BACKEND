@@ -5,6 +5,7 @@ import forcamente.api.dto.AlternativaRequestDTO;
 import forcamente.api.dto.AlternativaResponseDTO;
 import forcamente.api.dto.ArtigoSugeridoDTO;
 import forcamente.api.dto.CorrecaoDTO;
+import forcamente.api.dto.DesempenhoQuizResponseDTO;
 import forcamente.api.dto.NotaDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.dto.QuestaoRequestDTO;
@@ -14,6 +15,7 @@ import forcamente.api.dto.QuizEdicaoResponseDTO;
 import forcamente.api.dto.QuizRequestDTO;
 import forcamente.api.dto.QuizResumoResponseDTO;
 import forcamente.api.dto.RespostaRequestDTO;
+import forcamente.api.dto.TentativaHistoricoResponseDTO;
 import forcamente.api.dto.TentativaRequestDTO;
 import forcamente.api.dto.TentativaResponseDTO;
 import forcamente.api.entity.ArtigoEntity;
@@ -392,6 +394,82 @@ public class QuizService implements IQuizService {
                 correta.getId().equals(escolhidaId),
                 questao.getExplicacao()
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TentativaHistoricoResponseDTO> listarMinhasTentativas() {
+        UUID usuarioId = usuarioAutenticado();
+
+        if (usuarioId == null) {
+            return List.of();
+        }
+
+        List<QuizTentativaEntity> tentativas =
+                quizTentativaRepository.findByUsuarioIdOrderByFeitaEmAsc(usuarioId);
+
+        Map<UUID, String> titulos = titulosDosQuizzes(
+                tentativas.stream().map(QuizTentativaEntity::getQuizId).toList());
+
+        return tentativas.stream()
+                .map(tentativa -> new TentativaHistoricoResponseDTO(
+                        titulos.get(tentativa.getQuizId()),
+                        tentativa.getAcertos(),
+                        tentativa.getTotal(),
+                        percentual(tentativa.getAcertos(), tentativa.getTotal()),
+                        tentativa.getFeitaEm()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DesempenhoQuizResponseDTO> listarDesempenhoDosMeusQuizzes() {
+        UUID autorId = usuarioAutenticado();
+
+        if (autorId == null) {
+            return List.of();
+        }
+
+        List<QuizEntity> meusQuizzes = quizRepository.findByAutorIdOrderByCriadoEmAsc(autorId);
+
+        if (meusQuizzes.isEmpty()) {
+            return List.of();
+        }
+
+        Map<UUID, String> titulos = meusQuizzes.stream()
+                .collect(Collectors.toMap(QuizEntity::getId, QuizEntity::getTitulo));
+
+        Map<UUID, List<QuizTentativaEntity>> porQuiz =
+                quizTentativaRepository.findByQuizIdIn(titulos.keySet()).stream()
+                        .filter(tentativa -> !autorId.equals(tentativa.getUsuarioId()))
+                        .collect(Collectors.groupingBy(QuizTentativaEntity::getQuizId));
+
+        return meusQuizzes.stream()
+                .map(QuizEntity::getId)
+                .filter(porQuiz::containsKey)
+                .map(quizId -> new DesempenhoQuizResponseDTO(
+                        titulos.get(quizId),
+                        porQuiz.get(quizId).size(),
+                        notaMedia(porQuiz.get(quizId))))
+                .toList();
+    }
+
+    private Map<UUID, String> titulosDosQuizzes(List<UUID> quizzesIds) {
+        if (quizzesIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return quizRepository.findAllById(quizzesIds).stream()
+                .collect(Collectors.toMap(QuizEntity::getId, QuizEntity::getTitulo));
+    }
+
+    private int notaMedia(List<QuizTentativaEntity> tentativas) {
+        double media = tentativas.stream()
+                .mapToInt(tentativa -> percentual(tentativa.getAcertos(), tentativa.getTotal()))
+                .average()
+                .orElse(0);
+
+        return (int) Math.round(media);
     }
 
     private int percentual(int acertos, int total) {

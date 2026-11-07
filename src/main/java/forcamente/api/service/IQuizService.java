@@ -1,10 +1,12 @@
 package forcamente.api.service;
 
 import forcamente.api.dto.AlterarStatusRequestDTO;
+import forcamente.api.dto.DesempenhoQuizResponseDTO;
 import forcamente.api.dto.QuizDetalheResponseDTO;
 import forcamente.api.dto.QuizEdicaoResponseDTO;
 import forcamente.api.dto.QuizRequestDTO;
 import forcamente.api.dto.QuizResumoResponseDTO;
+import forcamente.api.dto.TentativaHistoricoResponseDTO;
 import forcamente.api.dto.TentativaRequestDTO;
 import forcamente.api.dto.TentativaResponseDTO;
 
@@ -32,4 +34,8 @@ public interface IQuizService {
     QuizDetalheResponseDTO decidirSituacao(UUID quizId, AlterarStatusRequestDTO alterarStatusRequestDTO);
 
     TentativaResponseDTO responder(UUID quizId, TentativaRequestDTO tentativaRequestDTO);
+
+    List<TentativaHistoricoResponseDTO> listarMinhasTentativas();
+
+    List<DesempenhoQuizResponseDTO> listarDesempenhoDosMeusQuizzes();
 }

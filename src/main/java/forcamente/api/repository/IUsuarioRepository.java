@@ -19,6 +19,8 @@ public interface IUsuarioRepository extends JpaRepository<UsuarioEntity, UUID> {
 
     Optional<UsuarioEntity> findByEmail(String email);
 
+    long countByPapelAndAnonimizadoEmIsNull(PapelUsuarioEnum papel);
+
     List<UsuarioEntity> findByAnonimizacaoSolicitadaEmIsNotNullAndAnonimizadoEmIsNullOrderByAnonimizacaoSolicitadaEm();
 
     List<UsuarioEntity> findByPapelAndSituacaoCrefOrderByCriadoEm(

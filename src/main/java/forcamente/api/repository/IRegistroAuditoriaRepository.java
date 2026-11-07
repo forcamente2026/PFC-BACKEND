@@ -26,5 +26,8 @@ public interface IRegistroAuditoriaRepository extends JpaRepository<RegistroAudi
     List<RegistroAuditoriaEntity> findByOcorridoEmBetweenAndAcaoOrderByOcorridoEmDesc(
             LocalDateTime inicio, LocalDateTime fim, AcaoAuditoriaEnum acao);
 
+    List<RegistroAuditoriaEntity> findByOcorridoEmGreaterThanEqualAndAcaoNot(
+            LocalDateTime inicio, AcaoAuditoriaEnum acao);
+
     long deleteByOcorridoEmBeforeAndAcaoNot(LocalDateTime limite, AcaoAuditoriaEnum acaoPreservada);
 }
