@@ -17,6 +17,8 @@ public record UsuarioAtualizacaoRequestDTO(
         @NotBlank(message = "O e-mail e obrigatorio")
         @Email(message = "E-mail em formato invalido")
         @Size(max = 255, message = "O e-mail deve ter no máximo 255 caracteres")
+        @Pattern(regexp = "[^*]*",
+                message = "Nao salve o e-mail mascarado: abra os dados completos da conta antes de editar")
         String email,
 
         @Pattern(regexp = "\\d{6}-[A-Z]/[A-Z]{2}", message = "O CREF deve estar no formato 123456-G/SP")
