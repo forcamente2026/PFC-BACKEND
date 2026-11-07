@@ -379,7 +379,7 @@ class ExercicioServiceTest {
 
         var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.PENDENTE);
 
-        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(exercicioRepository.buscarParaEscrita(entity.getId())).thenReturn(Optional.of(entity));
 
         assertThatThrownBy(() -> exercicioService.aprovarComoProfessor(entity.getId()))
                 .isInstanceOf(AccessDeniedException.class);
@@ -392,7 +392,7 @@ class ExercicioServiceTest {
 
         var aprovado = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.APROVADO);
 
-        when(exercicioRepository.findById(aprovado.getId())).thenReturn(Optional.of(aprovado));
+        when(exercicioRepository.buscarParaEscrita(aprovado.getId())).thenReturn(Optional.of(aprovado));
 
         assertThatThrownBy(() -> exercicioService.aprovarComoProfessor(aprovado.getId()))
                 .isInstanceOf(ConflitoException.class)
@@ -400,7 +400,7 @@ class ExercicioServiceTest {
 
         var pendente = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.PENDENTE);
 
-        when(exercicioRepository.findById(pendente.getId())).thenReturn(Optional.of(pendente));
+        when(exercicioRepository.buscarParaEscrita(pendente.getId())).thenReturn(Optional.of(pendente));
         when(exercicioAprovacaoRepository.existsByExercicioIdAndProfessorId(pendente.getId(), ID_OUTRO))
                 .thenReturn(true);
 
@@ -416,7 +416,7 @@ class ExercicioServiceTest {
 
         var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.PENDENTE);
 
-        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(exercicioRepository.buscarParaEscrita(entity.getId())).thenReturn(Optional.of(entity));
         when(exercicioAprovacaoRepository.countByExercicioId(entity.getId())).thenReturn(3L);
 
         exercicioService.aprovarComoProfessor(entity.getId());
@@ -431,7 +431,7 @@ class ExercicioServiceTest {
 
         var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.REJEITADO);
 
-        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(exercicioRepository.buscarParaEscrita(entity.getId())).thenReturn(Optional.of(entity));
 
         assertThatThrownBy(() -> exercicioService.decidirSituacao(entity.getId(),
                 new AlterarStatusRequestDTO(StatusAprovacaoEnum.APROVADO, null)))
@@ -446,7 +446,7 @@ class ExercicioServiceTest {
 
         var entity = umaEntidade(ID_AUTOR, StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES);
 
-        when(exercicioRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(exercicioRepository.buscarParaEscrita(entity.getId())).thenReturn(Optional.of(entity));
         when(exercicioRepository.save(entity)).thenReturn(entity);
 
         exercicioService.decidirSituacao(entity.getId(),

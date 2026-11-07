@@ -235,7 +235,7 @@ public class QuizService implements IQuizService {
         var papel = papelAutenticado();
         var usuarioId = usuarioAutenticado();
 
-        var quiz = quizRepository.findById(quizId)
+        var quiz = quizRepository.buscarParaEscrita(quizId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Quiz nao encontrado: " + quizId));
 
         if (quiz.getAutorId().equals(usuarioId)) {
@@ -276,7 +276,7 @@ public class QuizService implements IQuizService {
         var papel = papelAutenticado();
         var usuarioId = usuarioAutenticado();
 
-        var quiz = quizRepository.findById(quizId)
+        var quiz = quizRepository.buscarParaEscrita(quizId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Quiz nao encontrado: " + quizId));
 
         if (quiz.getStatus() != StatusAprovacaoEnum.PENDENTE

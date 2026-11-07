@@ -224,7 +224,7 @@ public class ArtigoService implements IArtigoService {
         var papel = papelAutenticado();
         var usuarioId = usuarioAutenticado();
 
-        var artigo = artigoRepository.findById(artigoId).orElseThrow(() -> new RecursoNaoEncontradoException("Artigo nao encontrado: " + artigoId));
+        var artigo = artigoRepository.buscarParaEscrita(artigoId).orElseThrow(() -> new RecursoNaoEncontradoException("Artigo nao encontrado: " + artigoId));
 
         if (artigo.getAutorId().equals(usuarioId)) {
             throw new AccessDeniedException("Acesso negado");
@@ -276,7 +276,7 @@ public class ArtigoService implements IArtigoService {
         var papel = papelAutenticado();
         var usuarioId = usuarioAutenticado();
 
-        var artigo = artigoRepository.findById(artigoId).orElseThrow(() -> new RecursoNaoEncontradoException("Artigo nao encontrado: " + artigoId));
+        var artigo = artigoRepository.buscarParaEscrita(artigoId).orElseThrow(() -> new RecursoNaoEncontradoException("Artigo nao encontrado: " + artigoId));
 
         if (artigo.getStatus() != StatusAprovacaoEnum.PENDENTE && artigo.getStatus() != StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES) {
             throw new ConflitoException(
