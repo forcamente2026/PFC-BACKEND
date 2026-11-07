@@ -179,6 +179,12 @@ public class ExercicioService implements IExercicioService {
                 AcaoAuditoriaEnum.EXCLUIDO, RecursoAuditoriaEnum.EXERCICIO, exercicioId);
     }
 
+    private ExercicioEntity buscarParaEscrita(UUID exercicioId) {
+        return exercicioRepository.buscarParaEscrita(exercicioId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                        "Exercicio nao encontrado: " + exercicioId));
+    }
+
     private ExercicioEntity findById(UUID exercicioId) {
         return exercicioRepository.findById(exercicioId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException(
@@ -209,7 +215,7 @@ public class ExercicioService implements IExercicioService {
         PapelUsuarioEnum papel = papelAutenticado();
         UUID usuarioId = usuarioAutenticado();
 
-        ExercicioEntity exercicio = findById(exercicioId);
+        ExercicioEntity exercicio = buscarParaEscrita(exercicioId);
 
         if (ehOAutor(exercicio, usuarioId)) {
             throw new AccessDeniedException("Acesso negado");
@@ -264,7 +270,7 @@ public class ExercicioService implements IExercicioService {
         PapelUsuarioEnum papel = papelAutenticado();
         UUID usuarioId = usuarioAutenticado();
 
-        ExercicioEntity exercicio = findById(exercicioId);
+        ExercicioEntity exercicio = buscarParaEscrita(exercicioId);
 
         if (exercicio.getStatus() != StatusAprovacaoEnum.PENDENTE
                 && exercicio.getStatus() != StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES) {

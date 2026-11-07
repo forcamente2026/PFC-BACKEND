@@ -3,13 +3,16 @@ package forcamente.api.repository;
 import forcamente.api.entity.ExercicioEntity;
 import forcamente.api.entity.enums.GrupoMuscularEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -34,4 +37,8 @@ public interface IExercicioRepository extends JpaRepository<ExercicioEntity, UUI
             @Param("usuarioId") UUID usuarioId,
             @Param("grupoMuscular") GrupoMuscularEnum grupoMuscular
     );
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from ExercicioEntity e where e.id = :exercicioId")
+    Optional<ExercicioEntity> buscarParaEscrita(@Param("exercicioId") UUID exercicioId);
+
 }

@@ -488,7 +488,7 @@ class ArtigoServiceTest {
     void deveResponder403QuandoOAutorTentaAprovarOProprio() {
         autenticarComo(AUTOR, PapelUsuarioEnum.PROFESSOR);
 
-        when(artigoRepository.findById(ARTIGO))
+        when(artigoRepository.buscarParaEscrita(ARTIGO))
                 .thenReturn(Optional.of(artigo(StatusAprovacaoEnum.PENDENTE, AUTOR)));
 
         assertThatThrownBy(() -> artigoService.aprovarComoProfessor(ARTIGO))
@@ -502,7 +502,7 @@ class ArtigoServiceTest {
     void deveResponder409AoAprovarUmArtigoQueNaoEstaPendente() {
         autenticarComo(OUTRO_PROFESSOR, PapelUsuarioEnum.PROFESSOR);
 
-        when(artigoRepository.findById(ARTIGO))
+        when(artigoRepository.buscarParaEscrita(ARTIGO))
                 .thenReturn(Optional.of(artigo(StatusAprovacaoEnum.APROVADO, AUTOR)));
 
         assertThatThrownBy(() -> artigoService.aprovarComoProfessor(ARTIGO))
@@ -516,7 +516,7 @@ class ArtigoServiceTest {
     void deveResponder409QuandoOProfessorAprovaDuasVezes() {
         autenticarComo(OUTRO_PROFESSOR, PapelUsuarioEnum.PROFESSOR);
 
-        when(artigoRepository.findById(ARTIGO))
+        when(artigoRepository.buscarParaEscrita(ARTIGO))
                 .thenReturn(Optional.of(artigo(StatusAprovacaoEnum.PENDENTE, AUTOR)));
         when(artigoAprovacaoRepository.existsByArtigoIdAndProfessorId(ARTIGO, OUTRO_PROFESSOR))
                 .thenReturn(true);
@@ -594,7 +594,7 @@ class ArtigoServiceTest {
     void deveResponder409AoDecidirUmArtigoJaDecidido() {
         autenticarComo(ADMINISTRADOR, PapelUsuarioEnum.ADMINISTRADOR);
 
-        when(artigoRepository.findById(ARTIGO))
+        when(artigoRepository.buscarParaEscrita(ARTIGO))
                 .thenReturn(Optional.of(artigo(StatusAprovacaoEnum.REJEITADO, AUTOR)));
 
         assertThatThrownBy(() -> artigoService.decidirSituacao(ARTIGO,
@@ -609,7 +609,7 @@ class ArtigoServiceTest {
     void deveResponder404AoDecidirUmArtigoInexistente() {
         autenticarComo(ADMINISTRADOR, PapelUsuarioEnum.ADMINISTRADOR);
 
-        when(artigoRepository.findById(ARTIGO)).thenReturn(Optional.empty());
+        when(artigoRepository.buscarParaEscrita(ARTIGO)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> artigoService.decidirSituacao(ARTIGO,
                 new AlterarStatusRequestDTO(StatusAprovacaoEnum.APROVADO, null)))
@@ -617,7 +617,7 @@ class ArtigoServiceTest {
     }
 
     private void prepararAprovacao(ArtigoEntity existente, long aprovacoesDepois) {
-        when(artigoRepository.findById(ARTIGO)).thenReturn(Optional.of(existente));
+        when(artigoRepository.buscarParaEscrita(ARTIGO)).thenReturn(Optional.of(existente));
         when(artigoAprovacaoRepository.countByArtigoId(ARTIGO)).thenReturn(aprovacoesDepois);
         when(artigoAprovacaoRepository.findByArtigoIdIn(any())).thenReturn(List.of());
         when(usuarioRepository.findAllById(any()))
@@ -625,7 +625,7 @@ class ArtigoServiceTest {
     }
 
     private void prepararDecisao(ArtigoEntity existente) {
-        when(artigoRepository.findById(ARTIGO)).thenReturn(Optional.of(existente));
+        when(artigoRepository.buscarParaEscrita(ARTIGO)).thenReturn(Optional.of(existente));
         when(artigoRepository.save(any())).thenAnswer(invocacao -> invocacao.getArgument(0));
         when(artigoAprovacaoRepository.findByArtigoIdIn(any())).thenReturn(List.of());
         when(usuarioRepository.findAllById(any()))
