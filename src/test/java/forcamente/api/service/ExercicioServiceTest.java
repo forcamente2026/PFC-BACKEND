@@ -488,7 +488,8 @@ class ExercicioServiceTest {
                 "Abrir demais os cotovelos e quicar a barra no peito.",
                 "Rotacao de ombros e 1 serie leve de aquecimento.",
                 "Barra e banco reto",
-                "https://exemplo.com/supino.gif");
+                "https://exemplo.com/supino.gif",
+                null);
     }
 
     private ExercicioEntity umaEntidade(UUID autorId, StatusAprovacaoEnum status) {

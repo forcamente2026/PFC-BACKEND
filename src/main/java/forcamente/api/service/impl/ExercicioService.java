@@ -380,6 +380,7 @@ public class ExercicioService implements IExercicioService {
                 exercicio.getAquecimentoRecomendado(),
                 exercicio.getEquipamento(),
                 exercicio.getGifUrl(),
+                exercicio.getVideoYoutubeId(),
                 exercicio.getAutorId() == null ? null : nomes.get(exercicio.getAutorId()),
                 exercicio.getStatus(),
                 (autor || administrador) ? exercicio.getMotivoRejeicao() : null,

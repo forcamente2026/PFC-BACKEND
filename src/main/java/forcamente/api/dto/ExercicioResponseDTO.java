@@ -18,6 +18,7 @@ public record ExercicioResponseDTO(
         String aquecimentoRecomendado,
         String equipamento,
         String gifUrl,
+        String videoYoutubeId,
         String autorNome,
         StatusAprovacaoEnum status,
         String motivoRejeicao,
