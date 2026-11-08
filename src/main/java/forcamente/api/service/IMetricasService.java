@@ -16,4 +16,7 @@ public interface IMetricasService {
 
     HidratacaoResponseDTO calcularHidratacao(HidratacaoRequestDTO hidratacaoRequestDTO);
 
+    ConsumoAguaResponseDTO resumirConsumoDeAgua(ConsumoAguaRequestDTO consumoAguaRequestDTO);
+
+
 }
