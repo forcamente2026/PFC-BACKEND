@@ -58,6 +58,9 @@ public class ExercicioEntity {
     @Column(name = "gif_url")
     private String gifUrl;
 
+    @Column(name = "video_youtube_id", length = 11)
+    private String videoYoutubeId;
+
     @Column(name = "autor_id")
     private UUID autorId;
 

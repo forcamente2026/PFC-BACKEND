@@ -155,6 +155,46 @@ class ExercicioControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("aceita o id do video do YouTube e devolve o campo no corpo")
+    void deveGuardarOIdDoVideo() throws Exception {
+        var autor = professores().get(0);
+
+        mockMvc.perform(post("/api/exercicios")
+                        .header("Authorization", "Bearer " + tokenPara(autor.getId(), "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoComVideo("Exercicio com video " + UUID.randomUUID(), "aBcD1234_-x")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.videoYoutubeId").value("aBcD1234_-x"));
+    }
+
+    @Test
+    @DisplayName("recusa o endereco completo do YouTube, porque o campo guarda so o id")
+    void deveRecusarUrlNoLugarDoId() throws Exception {
+        var autor = professores().get(0);
+
+        mockMvc.perform(post("/api/exercicios")
+                        .header("Authorization", "Bearer " + tokenPara(autor.getId(), "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoComVideo("Exercicio com url " + UUID.randomUUID(),
+                                "https://www.youtube.com/watch?v=aBcD1234_-x")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos[0].campo").value("videoYoutubeId"));
+    }
+
+    @Test
+    @DisplayName("campo de video vazio e tratado como ausente, e nao como invalido")
+    void deveTratarVideoVazioComoAusente() throws Exception {
+        var autor = professores().get(0);
+
+        mockMvc.perform(post("/api/exercicios")
+                        .header("Authorization", "Bearer " + tokenPara(autor.getId(), "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoComVideo("Exercicio sem video " + UUID.randomUUID(), "")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.videoYoutubeId").doesNotExist());
+    }
+
     private UUID criarComoProfessor(UsuarioEntity autor) throws Exception {
         String nome = "Exercicio de teste " + UUID.randomUUID();
 
@@ -189,6 +229,18 @@ class ExercicioControllerTest {
                   "descricaoExecucao": "%s"
                 }
                 """.formatted(nome, descricao);
+    }
+
+    private String corpoComVideo(String nome, String videoYoutubeId) {
+        return """
+                {
+                  "nome": "%s",
+                  "grupoMuscular": "PEITO",
+                  "nivel": "INICIANTE",
+                  "descricaoExecucao": "Descricao da execucao do exercicio de teste.",
+                  "videoYoutubeId": "%s"
+                }
+                """.formatted(nome, videoYoutubeId);
     }
 
     private List<UsuarioEntity> professores() {
