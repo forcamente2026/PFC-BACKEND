@@ -13,6 +13,8 @@ import forcamente.api.dto.GastoEnergeticoRequestDTO;
 import forcamente.api.dto.GastoEnergeticoResponseDTO;
 import forcamente.api.dto.HidratacaoRequestDTO;
 import forcamente.api.dto.HidratacaoResponseDTO;
+import forcamente.api.dto.ConsumoAguaRequestDTO;
+import forcamente.api.dto.ConsumoAguaResponseDTO;
 import forcamente.api.dto.OpcaoDTO;
 import forcamente.api.entity.enums.NivelAtividadeEnum;
 import forcamente.api.entity.enums.SexoBiologicoEnum;
@@ -135,6 +137,23 @@ public class MetricasService implements IMetricasService {
 
         return new HidratacaoResponseDTO(mlPorDia, arredondar(mlPorDia / 1000.0), baseCorporalMl, adicionalTreinoMl);
     }
+
+    @Override
+    public ConsumoAguaResponseDTO resumirConsumoDeAgua(ConsumoAguaRequestDTO consumoAguaRequestDTO) {
+        log.info("resumirConsumoDeAgua");
+
+        int metaMl = calcularHidratacao(new HidratacaoRequestDTO(
+                consumoAguaRequestDTO.pesoKg(),
+                consumoAguaRequestDTO.minutosTreinoPorDia())).mlPorDia();
+
+        int totalConsumidoMl = consumoAguaRequestDTO.totalConsumidoMl()
+                + consumoAguaRequestDTO.quantidadeMl();
+        int restanteMl = Math.max(0, metaMl - totalConsumidoMl);
+        int percentualDaMeta = (int) Math.round(totalConsumidoMl * 100.0 / metaMl);
+
+        return new ConsumoAguaResponseDTO(metaMl, totalConsumidoMl, restanteMl, percentualDaMeta);
+    }
+
 
 
             private double arredondar(double valor){

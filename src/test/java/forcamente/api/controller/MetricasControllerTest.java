@@ -55,6 +55,33 @@ class MetricasControllerTest {
                 .andExpect(jsonPath("$.adicionalTreinoMl").value(500));
     }
 
+    @Test
+    @DisplayName("consumo de agua aceita o acumulado do front e devolve meta, total, restante e percentual")
+    void consumoDeAguaComJsonDoFront() throws Exception {
+        mockMvc.perform(post("/api/metricas/hidratacao/consumo")
+                        .header("Authorization", "Bearer " + tokenDeTeste())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pesoKg\":80,\"minutosTreinoPorDia\":60,\"totalConsumidoMl\":1500,\"quantidadeMl\":500}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.metaMl").value(3300))
+                .andExpect(jsonPath("$.totalConsumidoMl").value(2000))
+                .andExpect(jsonPath("$.restanteMl").value(1300))
+                .andExpect(jsonPath("$.percentualDaMeta").value(61));
+    }
+
+    @Test
+    @DisplayName("consumo de agua sem quantidadeMl so recalcula o resumo")
+    void consumoDeAguaSemQuantidade() throws Exception {
+        mockMvc.perform(post("/api/metricas/hidratacao/consumo")
+                        .header("Authorization", "Bearer " + tokenDeTeste())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pesoKg\":80,\"minutosTreinoPorDia\":60,\"totalConsumidoMl\":1500}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalConsumidoMl").value(1500))
+                .andExpect(jsonPath("$.restanteMl").value(1800));
+    }
+
+
     private String tokenDeTeste() {
         var agora = Instant.now();
         var claims = JwtClaimsSet.builder()

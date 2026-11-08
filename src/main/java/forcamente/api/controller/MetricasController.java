@@ -11,6 +11,8 @@ import forcamente.api.dto.GastoEnergeticoRequestDTO;
 import forcamente.api.dto.GastoEnergeticoResponseDTO;
 import forcamente.api.dto.HidratacaoRequestDTO;
 import forcamente.api.dto.HidratacaoResponseDTO;
+import forcamente.api.dto.ConsumoAguaRequestDTO;
+import forcamente.api.dto.ConsumoAguaResponseDTO;
 import forcamente.api.dto.OpcaoDTO;
 import java.util.List;
 
@@ -53,5 +55,13 @@ public class MetricasController {
     ) {
         return ResponseEntity.ok(metricasService.calcularHidratacao(hidratacaoRequestDTO));
     }
+
+    @PostMapping("/hidratacao/consumo")
+    public ResponseEntity<ConsumoAguaResponseDTO> resumirConsumoDeAgua(
+            @Valid @RequestBody ConsumoAguaRequestDTO consumoAguaRequestDTO
+    ) {
+        return ResponseEntity.ok(metricasService.resumirConsumoDeAgua(consumoAguaRequestDTO));
+    }
+
 }
 

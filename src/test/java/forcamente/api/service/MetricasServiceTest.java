@@ -1,5 +1,6 @@
 package forcamente.api.service;
 
+import forcamente.api.dto.ConsumoAguaRequestDTO;
 import forcamente.api.dto.GastoEnergeticoRequestDTO;
 import forcamente.api.dto.HidratacaoRequestDTO;
 import forcamente.api.dto.SerieRequestDTO;
@@ -154,6 +155,49 @@ class MetricasServiceTest {
         assertThat(resposta.mlPorDia()).isEqualTo(3038);
         assertThat(resposta.litrosPorDia()).isEqualTo(3.04);
     }
+
+    @Test
+    @DisplayName("a meta do consumo de agua e a mesma do calculo de hidratacao")
+    void deveUsarAMesmaMetaDaHidratacao() {
+        var resposta = metricasService.resumirConsumoDeAgua(
+                new ConsumoAguaRequestDTO(72.5, 60, 0, 0));
+
+        assertThat(resposta.metaMl()).isEqualTo(
+                metricasService.calcularHidratacao(new HidratacaoRequestDTO(72.5, 60)).mlPorDia());
+    }
+
+    @Test
+    @DisplayName("soma a quantidade nova ao acumulado que o front enviou, sem guardar nada")
+    void deveSomarAoAcumuladoDoFront() {
+        var resposta = metricasService.resumirConsumoDeAgua(
+                new ConsumoAguaRequestDTO(72.5, 60, 1500, 500));
+
+        assertThat(resposta.totalConsumidoMl()).isEqualTo(2000);
+        assertThat(resposta.restanteMl()).isEqualTo(1038);
+        assertThat(resposta.percentualDaMeta()).isEqualTo(66);
+    }
+
+    @Test
+    @DisplayName("o restante nao fica negativo quando passa da meta, e o percentual passa de 100")
+    void naoDeveDevolverRestanteNegativo() {
+        var resposta = metricasService.resumirConsumoDeAgua(
+                new ConsumoAguaRequestDTO(72.5, 60, 3000, 500));
+
+        assertThat(resposta.totalConsumidoMl()).isEqualTo(3500);
+        assertThat(resposta.restanteMl()).isZero();
+        assertThat(resposta.percentualDaMeta()).isEqualTo(115);
+    }
+
+    @Test
+    @DisplayName("quantidade ausente so recalcula o resumo, sem somar nada")
+    void deveAceitarQuantidadeAusente() {
+        var resposta = metricasService.resumirConsumoDeAgua(
+                new ConsumoAguaRequestDTO(72.5, 60, 1500, null));
+
+        assertThat(resposta.totalConsumidoMl()).isEqualTo(1500);
+        assertThat(resposta.restanteMl()).isEqualTo(1538);
+    }
+
 
     @Test
     @DisplayName("expõe os cinco níveis de atividade e os dois sexos como código e descrição")
