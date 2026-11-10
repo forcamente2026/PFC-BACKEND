@@ -6,6 +6,15 @@ Projeto Final de Curso (PFC) — Bacharelado em Sistemas de Informação, Univer
 
 Repositório do front-end: [PFC-FRONTEND](https://github.com/ofelpys/PFC-FRONTEND)
 
+> ### Entrega — consumo de API externa
+>
+> A documentação técnica da integração está em **[docs/integracao-viacep.md](docs/integracao-viacep.md)**.
+>
+> O documento cobre a API consumida ([ViaCEP](https://viacep.com.br/)), a justificativa da escolha, o desenho
+> da integração, o contrato exposto ao front-end, o tratamento de falhas e os testes que o sustentam.
+> A especificação OpenAPI da API externa acompanha a entrega e pode ser consultada, com o back-end
+> no ar, em `http://localhost:8080/viacep/index.html`.
+
 ## Arquitetura
 
 Modelo **cliente-servidor**: o front-end (React, publicado na Vercel) envia requisições HTTPS para o back-end via **API REST** protegida por autenticação **JWT**, com troca de dados em **JSON**. O back-end é estruturado como um **monólito modular**, organizado em cinco módulos principais para facilitar manutenção e evolução independente de cada domínio. A persistência dos dados é feita em um banco **PostgreSQL** hospedado no serviço **Neon**, via conexão **TLS/JDBC**.
@@ -33,9 +42,11 @@ Modelo **cliente-servidor**: o front-end (React, publicado na Vercel) envia requ
 ## Segurança e LGPD
 
 - Autenticação via login e senha com token **JWT** para controle de sessão, com expiração configurada
-- Senhas e dados sensíveis (CPF, histórico de saúde) armazenados com hash **BCrypt**, nunca em texto puro
+- Senhas armazenadas com hash **BCrypt**, nunca em texto puro, e os códigos de verificação também guardados apenas como hash
 - Autorização por perfil de usuário (roles) via **Spring Security**: Aluno, Professor e Administrador
-- Comunicação via **HTTPS** e proteção contra vulnerabilidades comuns de API (injeção SQL, XSS)
+- Proteção contra **injeção de SQL** por construção: todo acesso ao banco passa por JPA com parâmetros vinculados, sem concatenação de consulta
+- Proteção contra **XSS** em duas camadas: o front escapa por padrão e o back recusa abertura de marcação nos campos de texto livre
+- **Pendente para a publicação:** HTTPS com redirecionamento e HSTS, política de conteúdo (CSP) e TLS na conexão com o banco. O sistema roda hoje somente em ambiente local
 - Tratamento de dados pessoais conforme a **LGPD**: consentimento no cadastro, possibilidade de exclusão/anonimização de dados mediante solicitação do titular, e registro de auditoria para acessos a dados sensíveis
 
 ## Módulos principais previstos

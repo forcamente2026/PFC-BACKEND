@@ -1,6 +1,10 @@
 package forcamente.api.entity;
 
+
+import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
+import forcamente.api.entity.enums.TipoCodigoEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,6 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -33,11 +38,11 @@ public class UsuarioEntity {
     @Column(name = "nome_completo", nullable = false)
     private String nomeCompleto;
 
-    @Column(name = "cpf", nullable = false, unique = true, length = 11)
-    private String cpf;
-
     @Column(name = "email", nullable = false, unique = true)
     private String email;
+
+    @Column(name = "email_pendente")
+    private String emailPendente;
 
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
@@ -45,6 +50,99 @@ public class UsuarioEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "papel", nullable = false, length = 20)
     private PapelUsuarioEnum papel;
+
+    @Column(name = "data_nascimento", nullable = true)
+    private LocalDate dataNascimento;
+
+    @Column(name = "cref", length = 11, unique = true)
+    private String cref;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "formacao", length = 20)
+    private FormacaoEnum formacao;
+
+    @Column(name = "aceitou_termos_uso_em")
+    private LocalDateTime aceitouTermosUsoEm;
+
+    @Column(name = "versao_termos_uso", length = 10)
+    private String versaoTermosUso;
+
+    @Column(name = "aceitou_politica_privacidade_em")
+    private LocalDateTime aceitouPoliticaPrivacidadeEm;
+
+    @Column(name = "versao_politica_privacidade", length = 10)
+    private String versaoPoliticaPrivacidade;
+
+    @Column(name = "anonimizacao_solicitada_em")
+    private LocalDateTime anonimizacaoSolicitadaEm;
+
+    @Column(name = "anonimizado_em")
+    private LocalDateTime anonimizadoEm;
+
+    @Column(name = "codigo_hash", length = 60)
+    private String codigoHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "codigo_tipo", length = 20)
+    private TipoCodigoEnum codigoTipo;
+
+    @Column(name = "codigo_expira_em")
+    private LocalDateTime codigoExpiraEm;
+
+    @Column(name = "codigo_tentativas")
+    private Integer codigoTentativas;
+
+    @Column(name = "mfa_pedidos")
+    private Integer mfaPedidos;
+
+    @Column(name = "mfa_janela_inicio")
+    private LocalDateTime mfaJanelaInicio;
+
+    @Column(name = "mfa_bloqueado_ate")
+    private LocalDateTime mfaBloqueadoAte;
+
+    @Column(name = "mfa_ocorrencias_bloqueio")
+    private Integer mfaOcorrenciasBloqueio;
+
+    @Column(name = "redefinicao_pedidos")
+    private Integer redefinicaoPedidos;
+
+    @Column(name = "redefinicao_dia")
+    private LocalDate redefinicaoDia;
+
+    @Column(name = "redefinicao_bloqueado_ate")
+    private LocalDateTime redefinicaoBloqueadoAte;
+
+    @Column(name = "redefinicao_erros_consecutivos")
+    private Integer redefinicaoErrosConsecutivos;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "situacao_cref", length = 20)
+    private StatusAprovacaoEnum situacaoCref;
+
+    @Column(name = "motivo_rejeicao_cref", columnDefinition = "TEXT")
+    private String motivoRejeicaoCref;
+
+    @Column(name = "cref_reenvios")
+    private Integer crefReenvios;
+
+    @Column(name = "cref_reenvio_dia")
+    private LocalDate crefReenvioDia;
+
+    @Column(name="senha_falhas_janela")
+    private Integer senhaFalhasJanela;
+
+    @Column(name="senha_janela_inicio")
+    private LocalDateTime senhaJanelaInicio;
+
+    @Column(name = "senha_erros_consecutivos")
+    private Integer senhaErrosConsecutivos;
+
+    @Column(name = "senha_pausa_ocorrencias")
+    private Integer senhaPausaOcorrencias;
+
+    @Column(name = "senha_bloqueado_ate")
+    private LocalDateTime senhaBloqueadoAte;
 
     @Column(name = "cep", length = 8)
     private String cep;

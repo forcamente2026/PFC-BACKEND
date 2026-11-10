@@ -1,0 +1,68 @@
+name: Testes
+
+on: push
+
+jobs:
+  unitarios:
+    name: Unitarios, sem banco
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - run: chmod +x mvnw
+
+      - run: ./mvnw -B --no-transfer-progress test -Dtest='!*ControllerTest,!*RepositoryTest,!ApiApplicationTests,!SegurancaRotasTest,!EnvioRealDeEmailTest'
+
+  integracao:
+    name: Integracao, com PostgreSQL
+    needs: unitarios
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: forcamente
+          POSTGRES_USER: forcamente
+          POSTGRES_PASSWORD: forcamente
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - run: chmod +x mvnw
+
+      - run: ./mvnw -B --no-transfer-progress test
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/forcamente
+          DB_USERNAME: forcamente
+          DB_PASSWORD: forcamente
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios
+          path: |
+            target/surefire-reports/
+            target/site/jacoco/

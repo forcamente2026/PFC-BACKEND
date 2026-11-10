@@ -1,0 +1,146 @@
+package forcamente.api.config;
+
+
+import forcamente.api.entity.enums.PapelUsuarioEnum;
+import forcamente.api.exception.TratadorDeErrosDeSeguranca;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.web.SecurityFilterChain;
+
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+
+
+@Configuration
+@EnableWebSecurity
+public class SegurancaConfig {
+    private static final String[] EDITORES = {
+            PapelUsuarioEnum.PROFESSOR.name(),
+            PapelUsuarioEnum.ADMINISTRADOR.name()
+    };
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        var conversorDePapel = new JwtGrantedAuthoritiesConverter();
+        conversorDePapel.setAuthoritiesClaimName("papel");
+        conversorDePapel.setAuthorityPrefix("ROLE_");
+
+        var conversor = new JwtAuthenticationConverter();
+        conversor.setJwtGrantedAuthoritiesConverter(conversorDePapel);
+        return conversor;
+    }
+
+    @Bean
+    public SecurityFilterChain cadeiaDeFiltros(HttpSecurity http,
+                                               TratadorDeErrosDeSeguranca tratador,
+                                               JwtAuthenticationConverter conversor) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(rotas -> rotas
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login","/api/auth/login/verificar","/api/auth/esqueci-senha","/api/auth/redefinir-senha", "/api/usuarios" ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/documentos-legais/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/enderecos/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/viacep", "/viacep/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/exercicios/*/aprovacoes")
+                        .hasRole(PapelUsuarioEnum.PROFESSOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/exercicios/pendentes")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.PATCH, "/api/exercicios/*/status")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.POST, "/api/exercicios/**").hasAnyRole(EDITORES)
+                        .requestMatchers(HttpMethod.PUT, "/api/exercicios/**").hasAnyRole(EDITORES)
+                        .requestMatchers(HttpMethod.DELETE, "/api/exercicios/**").hasAnyRole(EDITORES)
+                        .requestMatchers(HttpMethod.POST, "/api/artigos/*/aprovacoes")
+                        .hasRole(PapelUsuarioEnum.PROFESSOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/artigos/pendentes")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.PATCH, "/api/artigos/*/status")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.POST, "/api/artigos").hasAnyRole(EDITORES)
+                        .requestMatchers(HttpMethod.PUT, "/api/artigos/*").hasAnyRole(EDITORES)
+                        .requestMatchers(HttpMethod.DELETE, "/api/artigos/*").hasAnyRole(EDITORES)
+                        .requestMatchers(HttpMethod.POST, "/api/quizzes/*/aprovacoes")
+                        .hasRole(PapelUsuarioEnum.PROFESSOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/quizzes/meus/desempenho")
+                        .hasRole(PapelUsuarioEnum.PROFESSOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/estatisticas/**")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/quizzes/pendentes")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.PATCH, "/api/quizzes/*/status")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.POST, "/api/quizzes").hasAnyRole(EDITORES)
+                        .requestMatchers(HttpMethod.PUT, "/api/quizzes/*").hasAnyRole(EDITORES)
+                        .requestMatchers(HttpMethod.DELETE, "/api/quizzes/*").hasAnyRole(EDITORES)
+                        .requestMatchers("/api/configuracao/**")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios/anonimizacoes-pendentes")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios/*/dados-completos")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios/pendentes-verificacao")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.PATCH, "/api/usuarios/*/verificacao")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.POST, "/api/usuarios/*/anonimizar")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/usuarios/me").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/usuarios/*")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.PATCH, "/api/usuarios/*/ativo")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.GET, "/api/auditoria/**")
+                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
+                        .requestMatchers(HttpMethod.GET,"/api/usuarios/formacoes").permitAll()
+                        .anyRequest().authenticated())
+                .oauth2ResourceServer(recurso -> recurso
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(conversor))
+                        .authenticationEntryPoint(tratador)
+                        .accessDeniedHandler(tratador))
+                .exceptionHandling(erros -> erros
+                        .authenticationEntryPoint(tratador)
+                        .accessDeniedHandler(tratador));
+
+        return http.build();
+    }
+
+    @Bean
+    public JwtEncoder jwtEncoder (@Value("${jwt.segredo}") String segredo) {
+        return new NimbusJwtEncoder(new ImmutableSecret<>(chaveHmac(segredo)));
+    }
+
+    @Bean
+    public JwtDecoder jwtDecoder(@Value("${jwt.segredo}") String segredo) {
+        return NimbusJwtDecoder.withSecretKey(chaveHmac(segredo)).build();
+    }
+    private SecretKey chaveHmac(String segredo) {
+        return new SecretKeySpec(segredo.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    }
+}

@@ -6,8 +6,20 @@ import forcamente.api.dto.VolumeTreinoRequestDTO;
 import forcamente.api.dto.VolumeTreinoResponseDTO;
 import forcamente.api.entity.ExercicioEntity;
 import forcamente.api.entity.enums.GrupoMuscularEnum;
+import forcamente.api.exception.RecursoNaoEncontradoException;
 import forcamente.api.repository.IExercicioRepository;
 import forcamente.api.service.IMetricasService;
+import forcamente.api.dto.GastoEnergeticoRequestDTO;
+import forcamente.api.dto.GastoEnergeticoResponseDTO;
+import forcamente.api.dto.HidratacaoRequestDTO;
+import forcamente.api.dto.HidratacaoResponseDTO;
+import forcamente.api.dto.ConsumoAguaRequestDTO;
+import forcamente.api.dto.ConsumoAguaResponseDTO;
+import forcamente.api.dto.OpcaoDTO;
+import forcamente.api.entity.enums.NivelAtividadeEnum;
+import forcamente.api.entity.enums.SexoBiologicoEnum;
+import forcamente.api.entity.enums.StatusAprovacaoEnum;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -25,6 +38,10 @@ import java.util.stream.Collectors;
 public class MetricasService implements IMetricasService {
 
     private final IExercicioRepository exercicioRepository;
+    private static final String FORMULA_TMB = "Mifflin-St Jeor";
+
+    private static final Set<StatusAprovacaoEnum> NO_SITE = Set.of(
+            StatusAprovacaoEnum.APROVADO, StatusAprovacaoEnum.APROVADO_PELOS_PROFESSORES);
 
     @Override
     @Transactional(readOnly = true)
@@ -40,10 +57,11 @@ public class MetricasService implements IMetricasService {
 
         Map<UUID, ExercicioEntity> exercicios = exercicioRepository.findAllById(ids)
                 .stream()
+                .filter(exercicio -> NO_SITE.contains(exercicio.getStatus()))
                 .collect(Collectors.toMap(ExercicioEntity::getId, exercicio -> exercicio));
 
         if (exercicios.size() < ids.size()) {
-            throw new IllegalArgumentException("Algum exercício informado não existe");
+            throw new RecursoNaoEncontradoException("Algum exercício informado não existe");
         }
 
         double volumeTotalKg = 0;
@@ -80,6 +98,63 @@ public class MetricasService implements IMetricasService {
                 totalRepeticoes,
                 intensidade);
     }
+    @Override
+    public List<OpcaoDTO> listarNiveisAtividade() {
+        return Arrays.stream(NivelAtividadeEnum.values()).map(nivel -> new OpcaoDTO(nivel.name(), nivel.getDescricao())).toList();
+    }
+    @Override
+    public List<OpcaoDTO> listarSexosBiologicos() {
+        return Arrays.stream(SexoBiologicoEnum.values()).map(sexo -> new OpcaoDTO(sexo.name(), sexo.getDescricao())).toList();
+    }
+
+    @Override
+    public GastoEnergeticoResponseDTO calcularGastoEnergetico(GastoEnergeticoRequestDTO gastoEnergeticoRequestDTO) {
+        log.info("calcularGastoEnergetico");
+
+        double base = 10 * gastoEnergeticoRequestDTO.pesoKg()
+                + 6.25 * gastoEnergeticoRequestDTO.alturaCm()
+                - 5 * gastoEnergeticoRequestDTO.idade();
+
+        double tmb = gastoEnergeticoRequestDTO.sexoBiologico() == SexoBiologicoEnum.FEMININO ? base - 161 : base + 5;
+
+        double fator = gastoEnergeticoRequestDTO.nivelAtividade().getFator();
+
+        return new GastoEnergeticoResponseDTO(
+                (int) Math.round(tmb),
+                (int) Math.round(tmb * fator),
+                fator,
+                FORMULA_TMB
+        );
+    }
+
+    @Override
+    public HidratacaoResponseDTO calcularHidratacao(HidratacaoRequestDTO hidratacaoRequestDTO) {
+        log.info("Calcular Hidratacao");
+
+        int baseCorporalMl = (int) Math.round(35 * hidratacaoRequestDTO.pesoKg());
+        int adicionalTreinoMl = (int) Math.round((hidratacaoRequestDTO.minutosTreinoPorDia() / 60.0) * 500);
+        int mlPorDia = baseCorporalMl + adicionalTreinoMl;
+
+        return new HidratacaoResponseDTO(mlPorDia, arredondar(mlPorDia / 1000.0), baseCorporalMl, adicionalTreinoMl);
+    }
+
+    @Override
+    public ConsumoAguaResponseDTO resumirConsumoDeAgua(ConsumoAguaRequestDTO consumoAguaRequestDTO) {
+        log.info("resumirConsumoDeAgua");
+
+        int metaMl = calcularHidratacao(new HidratacaoRequestDTO(
+                consumoAguaRequestDTO.pesoKg(),
+                consumoAguaRequestDTO.minutosTreinoPorDia())).mlPorDia();
+
+        int totalConsumidoMl = consumoAguaRequestDTO.totalConsumidoMl()
+                + consumoAguaRequestDTO.quantidadeMl();
+        int restanteMl = Math.max(0, metaMl - totalConsumidoMl);
+        int percentualDaMeta = (int) Math.round(totalConsumidoMl * 100.0 / metaMl);
+
+        return new ConsumoAguaResponseDTO(metaMl, totalConsumidoMl, restanteMl, percentualDaMeta);
+    }
+
+
 
             private double arredondar(double valor){
                 return Math.round(valor * 100.0) / 100.0;

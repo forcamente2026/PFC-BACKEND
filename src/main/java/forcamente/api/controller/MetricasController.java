@@ -7,6 +7,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import forcamente.api.dto.GastoEnergeticoRequestDTO;
+import forcamente.api.dto.GastoEnergeticoResponseDTO;
+import forcamente.api.dto.HidratacaoRequestDTO;
+import forcamente.api.dto.HidratacaoResponseDTO;
+import forcamente.api.dto.ConsumoAguaRequestDTO;
+import forcamente.api.dto.ConsumoAguaResponseDTO;
+import forcamente.api.dto.OpcaoDTO;
+import java.util.List;
 
 
 @RestController
@@ -23,5 +31,37 @@ public class MetricasController {
         return
                 ResponseEntity.ok(metricasService.calcularVolumeTreino(volumeTreinoRequestDTO));
     }
+
+    @GetMapping("/niveis-atividade")
+    public ResponseEntity<List<OpcaoDTO>> listarNiveisAtividade() {
+        return ResponseEntity.ok(metricasService.listarNiveisAtividade());
+    }
+
+    @GetMapping("/sexos")
+    public ResponseEntity<List<OpcaoDTO>> listarSexosBiologicos() {
+        return ResponseEntity.ok(metricasService.listarSexosBiologicos());
+    }
+
+    @PostMapping("/gasto-energetico")
+    public ResponseEntity<GastoEnergeticoResponseDTO> calcularGastoEnergetico(
+            @Valid @RequestBody GastoEnergeticoRequestDTO gastoEnergeticoRequestDTO
+    ) {
+        return ResponseEntity.ok(metricasService.calcularGastoEnergetico(gastoEnergeticoRequestDTO));
+    }
+
+    @PostMapping("/hidratacao")
+    public ResponseEntity<HidratacaoResponseDTO>calcularHidratacao(
+            @Valid @RequestBody HidratacaoRequestDTO hidratacaoRequestDTO
+    ) {
+        return ResponseEntity.ok(metricasService.calcularHidratacao(hidratacaoRequestDTO));
+    }
+
+    @PostMapping("/hidratacao/consumo")
+    public ResponseEntity<ConsumoAguaResponseDTO> resumirConsumoDeAgua(
+            @Valid @RequestBody ConsumoAguaRequestDTO consumoAguaRequestDTO
+    ) {
+        return ResponseEntity.ok(metricasService.resumirConsumoDeAgua(consumoAguaRequestDTO));
+    }
+
 }
 

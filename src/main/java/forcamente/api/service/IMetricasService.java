@@ -1,10 +1,22 @@
 package forcamente.api.service;
 
-import forcamente.api.dto.VolumeTreinoRequestDTO;
-import forcamente.api.dto.VolumeTreinoResponseDTO;
+import forcamente.api.dto.*;
+
+import java.util.List;
 
 public interface IMetricasService {
 
     VolumeTreinoResponseDTO calcularVolumeTreino(VolumeTreinoRequestDTO volumeTreinoRequestDTO);
+
+    List<OpcaoDTO> listarNiveisAtividade();
+
+    List<OpcaoDTO> listarSexosBiologicos();
+
+    GastoEnergeticoResponseDTO calcularGastoEnergetico(GastoEnergeticoRequestDTO gastoEnergeticoRequestDTO);
+
+    HidratacaoResponseDTO calcularHidratacao(HidratacaoRequestDTO hidratacaoRequestDTO);
+
+    ConsumoAguaResponseDTO resumirConsumoDeAgua(ConsumoAguaRequestDTO consumoAguaRequestDTO);
+
 
 }

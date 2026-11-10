@@ -1,5 +1,6 @@
 package forcamente.api.mapper;
 
+import forcamente.api.dto.UsuarioDetalheResponseDTO;
 import forcamente.api.dto.UsuarioRequestDTO;
 import forcamente.api.dto.UsuarioResponseDTO;
 import forcamente.api.entity.UsuarioEntity;
@@ -15,7 +16,15 @@ public interface UsuarioMapper {
 
     @Mapping(target = "ativo", constant = "true")
     @Mapping(target = "criadoEm", expression = "java(java.time.LocalDateTime.now())")
+    @Mapping(target = "aceitouTermosUsoEm", ignore = true)
+    @Mapping(target = "versaoTermosUso", ignore = true)
+    @Mapping(target = "aceitouPoliticaPrivacidadeEm", ignore = true)
+    @Mapping(target = "versaoPoliticaPrivacidade", ignore = true)
     UsuarioEntity toEntity(UsuarioRequestDTO usuarioRequestDTO);
 
+
     UsuarioResponseDTO toDTO(UsuarioEntity usuarioEntity);
+
+    @Mapping(target = "dataNascimento", dateFormat = "dd/MM/yyyy")
+    UsuarioDetalheResponseDTO toDetalheDTO(UsuarioEntity usuarioEntity);
 }
