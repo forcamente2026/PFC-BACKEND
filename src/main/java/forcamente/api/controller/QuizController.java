@@ -21,7 +21,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/quizzes")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 @RequiredArgsConstructor
 public class QuizController {
 

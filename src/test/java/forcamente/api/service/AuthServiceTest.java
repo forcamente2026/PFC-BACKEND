@@ -134,7 +134,7 @@ class AuthServiceTest {
 
 
     @Test
-    @DisplayName("deve recusar e-mail inexistente sem consultar a senha")
+    @DisplayName("deve recusar e-mail inexistente gastando o mesmo tempo, senao o tempo de resposta diz quem tem conta")
     void deveRecusarEmailInexistente() {
         when(usuarioRepository.findByEmail("ninguem@umc.br")).thenReturn(Optional.empty());
 
@@ -142,7 +142,7 @@ class AuthServiceTest {
                 .isInstanceOf(CredenciaisInvalidasException.class)
                 .hasMessage(MENSAGEM_LOGIN_INVALIDO);
 
-        verify(passwordEncoder, never()).matches(any(), any());
+        verify(passwordEncoder).matches(any(), any());
         verify(codigoVerificacaoService, never()).gerarCodigo(any(), any());
     }
 

@@ -16,6 +16,9 @@ public interface IAuditoriaService {
 
     void registrar(AcaoAuditoriaEnum acao, RecursoAuditoriaEnum recursoTipo, UUID recursoId, UUID usuarioId);
 
+    void registrarComJustificativa(AcaoAuditoriaEnum acao, RecursoAuditoriaEnum recursoTipo,
+                                   UUID recursoId, String justificativa);
+
     PaginaDTO<RegistroAuditoriaResponseDTO> consultar(
             LocalDate de, LocalDate ate, AcaoAuditoriaEnum acao, int pagina, int tamanho);
 

@@ -208,7 +208,7 @@ class AuditoriaServiceTest {
         String[] linhas = csv.split("\n");
 
         assertThat(linhas).hasSize(2);
-        assertThat(linhas[0]).isEqualTo("Quando;Acao;Usuario;E-mail;Recurso;Identificador do recurso");
+        assertThat(linhas[0]).isEqualTo("Quando;Acao;Usuario;E-mail;Recurso;Identificador do recurso;Justificativa");
         assertThat(linhas[1])
                 .as("arquivo baixado sai do alcance do expurgo, entao o e-mail vai mascarado")
                 .startsWith("\"27/09/2026 12:00:00\";\"Criado\";\"Maria Souza\";\"m***@umc.br\"");
@@ -239,7 +239,7 @@ class AuditoriaServiceTest {
 
         String csv = auditoriaService.exportarCsv(null, null, AcaoAuditoriaEnum.EXCLUIDO);
 
-        assertThat(csv.strip()).isEqualTo("Quando;Acao;Usuario;E-mail;Recurso;Identificador do recurso");
+        assertThat(csv.strip()).isEqualTo("Quando;Acao;Usuario;E-mail;Recurso;Identificador do recurso;Justificativa");
     }
 
     @Test
@@ -284,6 +284,25 @@ class AuditoriaServiceTest {
         assertThat(auditoriaService.listarRecursos()).hasSize(5);
         assertThat(auditoriaService.listarRecursos().getFirst().descricao()).isEqualTo("Usuário");
         assertThat(auditoriaService.listarRecursos().getLast().codigo()).isEqualTo("QUIZ");
+    }
+
+    @Test
+    @DisplayName("nome que comeca com sinal de igual sai neutralizado, senao o Excel do administrador executa a formula")
+    void deveNeutralizarFormulaNoCsv() {
+        var usuarioId = UUID.randomUUID();
+        when(registroAuditoriaRepository.findByOcorridoEmBetweenOrderByOcorridoEmDesc(
+                any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of(umRegistro(AcaoAuditoriaEnum.CRIADO, usuarioId)));
+        when(usuarioRepository.findAllById(List.of(usuarioId)))
+                .thenReturn(List.of(umUsuario(
+                        usuarioId, "=HYPERLINK(\"http://exemplo.test\")", "maria@umc.br")));
+
+        String linha = auditoriaService.exportarCsv(null, null, null).split("\n")[1];
+
+        assertThat(linha)
+                .as("o apostrofo na frente faz a planilha tratar o valor como texto")
+                .contains("\"'=HYPERLINK(\"\"http://exemplo.test\"\")\"")
+                .doesNotContain("\"=HYPERLINK");
     }
 
     private RegistroAuditoriaEntity umRegistro(AcaoAuditoriaEnum acao, UUID usuarioId) {

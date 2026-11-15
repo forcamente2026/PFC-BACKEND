@@ -16,6 +16,7 @@ public record RegistroAuditoriaResponseDTO(
         UUID recursoId,
         UUID usuarioId,
         String usuarioNome,
-        String usuarioEmail
+        String usuarioEmail,
+        String justificativa
 ) {
 }

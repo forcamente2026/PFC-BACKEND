@@ -13,15 +13,13 @@ spring:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 1
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration}
 
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
 
   mail:
     host: smtp.gmail.com
@@ -40,20 +38,25 @@ spring:
 
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 logging:
   level:
-    forcamente.api: DEBUG
+    forcamente.api: ${LOG_NIVEL:INFO}
 
 jwt:
-  segredo: ${JWT_SECRET:forcamente-segredo-de-desenvolvimento-troque-em-producao}
-  expiracao-minutos: ${JWT_EXPIRACAO_MINUTOS:120}
+  segredo: ${JWT_SECRET}
+  expiracao-minutos: ${JWT_EXPIRACAO_MINUTOS:60}
+
+cors:
+  origens: ${CORS_ORIGENS:http://localhost:5173,http://localhost:3000}
+
+limite-por-ip:
+  requisicoes: ${LIMITE_POR_IP_REQUISICOES:20}
+  janela-minutos: ${LIMITE_POR_IP_JANELA_MINUTOS:5}
 
 viacep:
   url: ${VIACEP_URL:https://viacep.com.br/ws}
 
 auditoria:
   retencao-meses: ${AUDITORIA_RETENCAO_MESES:6}
-apresentacao:
-  modo: ${MODO_APRESENTACAO:false}

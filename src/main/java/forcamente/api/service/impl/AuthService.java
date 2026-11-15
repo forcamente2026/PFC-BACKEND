@@ -49,6 +49,7 @@ public class AuthService  implements IAuthService {
     private static final int SENHA_BLOQUEIO_HORAS = 1;
     private static final int SENHA_OCORRENCIAS_CADUCAM_HORAS = 24;
     private final Clock clock;
+    private final String hashDescartado;
     private static final String MENSAGEM_LOGIN_INVALIDO = "E-mail ou senha inválidos. Se não lembra a senha, use \"esqueci minha senha\".";
 
 
@@ -81,6 +82,7 @@ public class AuthService  implements IAuthService {
         this.auditoriaService = auditoriaService;
         this.expiracaoMinutos = expiracaoMinutos;
         this.clock = clock;
+        this.hashDescartado = passwordEncoder.encode(java.util.UUID.randomUUID().toString());
     }
 
     @Override
@@ -93,6 +95,8 @@ public class AuthService  implements IAuthService {
         UsuarioEntity usuario = usuarioRepository.findByEmail(loginRequestDTO.email()).orElse(null);
 
         if (usuario == null){
+                passwordEncoder.matches(loginRequestDTO.senha(), hashDescartado);
+
                 auditoriaService.registrar(AcaoAuditoriaEnum.LOGIN_FALHOU, RecursoAuditoriaEnum.USUARIO, null, null);
                 throw new CredenciaisInvalidasException(MENSAGEM_LOGIN_INVALIDO);
         }
@@ -252,6 +256,7 @@ public class AuthService  implements IAuthService {
                 usuario, TipoCodigoEnum.REDEFINICAO_SENHA, redefinirSenhaRequestDTO.codigo()
         );
         usuario.setSenhaHash(passwordEncoder.encode(redefinirSenhaRequestDTO.novaSenha()));
+        usuario.setTokenValidoApos(LocalDateTime.now(clock));
         usuarioRepository.save(usuario);
 
     log.info("Senha redefinida: usuario={}", usuario.getId());

@@ -17,25 +17,25 @@ class RedefinirSenhaRequestDTOTest {
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     @Test
-    @DisplayName("deve aceitar codigo de 4 digitos e senha forte, normalizando o e-mail")
+    @DisplayName("deve aceitar codigo de 6 digitos e senha forte, normalizando o e-mail")
     void deveAceitarDadosValidos() {
-        var dto = new RedefinirSenhaRequestDTO(" Joao@UMC.br ", " 1234 ", "NovaSenha@1");
+        var dto = new RedefinirSenhaRequestDTO(" Joao@UMC.br ", " 123456 ", "NovaSenha@1");
 
         assertThat(dto.email()).isEqualTo("joao@umc.br");
-        assertThat(dto.codigo()).isEqualTo("1234");
+        assertThat(dto.codigo()).isEqualTo("123456");
         assertThat(validar(dto)).isEmpty();
     }
 
     @Test
     @DisplayName("deve recusar senha fraca, com a mesma regra do cadastro")
     void deveRecusarSenhaFraca() {
-        var dto = new RedefinirSenhaRequestDTO("joao@umc.br", "1234", "senhafraca");
+        var dto = new RedefinirSenhaRequestDTO("joao@umc.br", "123456", "senhafraca");
 
         assertThat(validar(dto)).contains("novaSenha");
     }
 
     @Test
-    @DisplayName("deve recusar codigo que nao tenha 4 digitos")
+    @DisplayName("deve recusar codigo que nao tenha 6 digitos")
     void deveRecusarCodigoInvalido() {
         var dto = new RedefinirSenhaRequestDTO("joao@umc.br", "12a", "NovaSenha@1");
 

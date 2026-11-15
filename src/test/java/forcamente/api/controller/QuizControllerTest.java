@@ -722,10 +722,13 @@ class QuizControllerTest {
 
     private List<UUID> professores() {
         var professores = usuarioRepository.findByPapelAndSituacaoCrefOrderByCriadoEm(
-                PapelUsuarioEnum.PROFESSOR, StatusAprovacaoEnum.APROVADO);
+                        PapelUsuarioEnum.PROFESSOR, StatusAprovacaoEnum.APROVADO)
+                .stream()
+                .filter(UsuarioEntity::isAtivo)
+                .toList();
 
         assertThat(professores)
-                .as("a V3 semeia professores e a V7 os deixa aprovados")
+                .as("conta inativa tem o token recusado, entao so as ativas servem aqui")
                 .isNotEmpty();
 
         return professores.stream().map(UsuarioEntity::getId).toList();

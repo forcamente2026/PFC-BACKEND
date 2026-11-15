@@ -20,13 +20,19 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 
 @Configuration
@@ -53,12 +59,40 @@ public class SegurancaConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${cors.origens}") List<String> origens) {
+
+        var configuracao = new CorsConfiguration();
+        configuracao.setAllowedOrigins(origens);
+        configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuracao.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuracao.setExposedHeaders(List.of("Content-Disposition"));
+        configuracao.setAllowCredentials(false);
+
+        var fonte = new UrlBasedCorsConfigurationSource();
+        fonte.registerCorsConfiguration("/**", configuracao);
+
+        return fonte;
+    }
+
+    @Bean
     public SecurityFilterChain cadeiaDeFiltros(HttpSecurity http,
                                                TratadorDeErrosDeSeguranca tratador,
-                                               JwtAuthenticationConverter conversor) throws Exception {
+                                               JwtAuthenticationConverter conversor,
+                                               LimitePorIpFilter limitePorIp,
+                                               RevogacaoDeTokenFilter revogacaoDeToken) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
+                .headers(cabecalhos -> cabecalhos
+                        .addHeaderWriter(new StaticHeadersWriter(
+                                "Referrer-Policy", "strict-origin-when-cross-origin"))
+                        .addHeaderWriter(new StaticHeadersWriter(
+                                "Permissions-Policy", "camera=(), microphone=(), geolocation=()"))
+                        .addHeaderWriter(new StaticHeadersWriter(
+                                "Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")))
+                .addFilterBefore(limitePorIp, BearerTokenAuthenticationFilter.class)
+                .addFilterAfter(revogacaoDeToken, BearerTokenAuthenticationFilter.class)
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(rotas -> rotas
                         .requestMatchers(HttpMethod.POST, "/api/auth/login","/api/auth/login/verificar","/api/auth/esqueci-senha","/api/auth/redefinir-senha", "/api/usuarios" ).permitAll()
@@ -97,8 +131,6 @@ public class SegurancaConfig {
                         .requestMatchers(HttpMethod.POST, "/api/quizzes").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.PUT, "/api/quizzes/*").hasAnyRole(EDITORES)
                         .requestMatchers(HttpMethod.DELETE, "/api/quizzes/*").hasAnyRole(EDITORES)
-                        .requestMatchers("/api/configuracao/**")
-                        .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/anonimizacoes-pendentes")
                         .hasRole(PapelUsuarioEnum.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/*/dados-completos")

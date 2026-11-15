@@ -376,7 +376,7 @@ class MinhaContaControllerTest {
         mockMvc.perform(post("/api/usuarios/me/email/confirmacao")
                         .header("Authorization", "Bearer " + tokenPara(aluno.getId(), "ALUNO"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"codigo\":\"1234\"}"))
+                        .content("{\"codigo\":\"123456\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Nao existe troca de e-mail pendente"));
     }
@@ -418,14 +418,14 @@ class MinhaContaControllerTest {
     }
 
     private String outroCodigoQueNaoO(String codigo) {
-        return "%04d".formatted((Integer.parseInt(codigo) + 1) % 10000);
+        return "%06d".formatted((Integer.parseInt(codigo) + 1) % 1000000);
     }
 
     private String codigoDe(String textoDoEmail) {
-        var encontrado = java.util.regex.Pattern.compile("\\b(\\d{4})\\b")
+        var encontrado = java.util.regex.Pattern.compile("\\b(\\d{6})\\b")
                 .matcher(textoDoEmail);
 
-        assertThat(encontrado.find()).as("o e-mail precisa levar o codigo de 4 digitos").isTrue();
+        assertThat(encontrado.find()).as("o e-mail precisa levar o codigo de 6 digitos").isTrue();
 
         return encontrado.group(1);
     }

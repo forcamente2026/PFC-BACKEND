@@ -108,7 +108,7 @@ class UsuarioServiceTest {
     }
 
     @Test
-    @DisplayName("nao deve cadastrar usuario com e-mail ja existente")
+    @DisplayName("nao deve cadastrar usuario com e-mail ja existente, e a mensagem nao confirma que o e-mail tem conta")
     void naoDeveCadastrarUsuarioComEmailDuplicado() {
         var requestDTO = umaRequisicaoValida();
 
@@ -116,7 +116,8 @@ class UsuarioServiceTest {
 
         assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
                 .isInstanceOf(ConflitoException.class)
-                .hasMessageContaining("Ja existe um usuario cadastrado com o e-mail");
+                .hasMessageContaining("Nao foi possivel concluir o cadastro")
+                .hasMessageNotContaining("joao@umc.br");
 
         verify(usuarioRepository, never()).save(any(UsuarioEntity.class));
     }
@@ -137,7 +138,7 @@ class UsuarioServiceTest {
     }
 
     @Test
-    @DisplayName("nao deve cadastrar professor com CREF ja existente")
+    @DisplayName("nao deve cadastrar professor com CREF ja existente, e a mensagem nao revela que o CREF e o motivo")
     void naoDeveCadastrarProfessorComCrefDuplicado() {
         var requestDTO = umProfessor("123456-G/SP");
 
@@ -146,7 +147,8 @@ class UsuarioServiceTest {
 
         assertThatThrownBy(() -> usuarioService.criarUsuario(requestDTO))
                 .isInstanceOf(ConflitoException.class)
-                .hasMessageContaining("CREF");
+                .hasMessageContaining("Nao foi possivel concluir o cadastro")
+                .hasMessageNotContaining("CREF");
 
         verify(usuarioRepository, never()).save(any(UsuarioEntity.class));
     }

@@ -151,7 +151,7 @@ class MascaraDeDadosControllerTest {
 
         long antes = registroAuditoriaRepository.count();
 
-        mockMvc.perform(get("/api/usuarios/" + professor.getId() + "/dados-completos")
+        mockMvc.perform(get("/api/usuarios/" + professor.getId() + "/dados-completos?justificativa=Conferencia+do+cadastro+no+teste")
                         .header("Authorization", "Bearer " + tokenDeAdministrador()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(professor.getEmail()))
@@ -181,7 +181,7 @@ class MascaraDeDadosControllerTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/usuarios/" + professor.getId() + "/dados-completos")
+        mockMvc.perform(get("/api/usuarios/" + professor.getId() + "/dados-completos?justificativa=Conferencia+do+cadastro+no+teste")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
 
@@ -200,7 +200,7 @@ class MascaraDeDadosControllerTest {
     @DisplayName("professor e aluno recebem 403 nos dados completos, e sem token 401")
     void deveBarrarQuemNaoEAdministradorNosDadosCompletos() throws Exception {
         var professor = umProfessor();
-        String rota = "/api/usuarios/" + professor.getId() + "/dados-completos";
+        String rota = "/api/usuarios/" + professor.getId() + "/dados-completos?justificativa=Conferencia+do+cadastro+no+teste";
 
         mockMvc.perform(get(rota)
                         .header("Authorization", "Bearer " + tokenPara(professor.getId(), "PROFESSOR")))
