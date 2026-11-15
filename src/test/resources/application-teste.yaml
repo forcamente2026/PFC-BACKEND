@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/forcamente_teste}
+
+  flyway:
+    locations: classpath:db/migration,classpath:db/semeadura
+
+jwt:
+  segredo: segredo-apenas-para-a-suite-de-testes-do-forcamente
+
+limite-por-ip:
+  requisicoes: 100000
