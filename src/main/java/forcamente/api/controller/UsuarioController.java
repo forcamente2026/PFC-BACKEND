@@ -19,12 +19,16 @@ import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.service.IUsuarioService;
 import forcamente.api.service.impl.AnonimizacaoService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -42,7 +46,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/usuarios")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
+@Validated
 @RequiredArgsConstructor
 public class UsuarioController {
 
@@ -87,9 +91,14 @@ public class UsuarioController {
 
     @GetMapping("/{id}/dados-completos")
     public ResponseEntity<UsuarioDetalheResponseDTO> buscarDadosCompletos(
-            @PathVariable("id") UUID id) {
+            @PathVariable("id") UUID id,
 
-        return ResponseEntity.ok(usuarioService.buscarDadosCompletos(id));
+            @RequestParam(name = "justificativa")
+            @NotBlank(message = "Informe a justificativa para abrir os dados completos")
+            @Size(min = 10, max = 255, message = "A justificativa deve ter de 10 a 255 caracteres")
+            String justificativa) {
+
+        return ResponseEntity.ok(usuarioService.buscarDadosCompletos(id, justificativa));
     }
 
     @GetMapping
@@ -100,9 +109,12 @@ public class UsuarioController {
 
             @RequestParam(name = "ativo", required = false) Boolean ativo,
 
-            @RequestParam(name = "pagina", defaultValue = "0") int pagina,
+            @RequestParam(name = "pagina", defaultValue = "0")
+            @Min(value = 0, message = "A pagina nao pode ser negativa") int pagina,
 
-            @RequestParam(name = "tamanho", defaultValue = "20") int tamanho) {
+            @RequestParam(name = "tamanho", defaultValue = "20")
+            @Min(value = 1, message = "O tamanho da pagina deve ser de no minimo 1")
+            @Max(value = 100, message = "O tamanho da pagina deve ser de no maximo 100") int tamanho) {
 
         return ResponseEntity.ok(usuarioService.listar(busca, papel, ativo, pagina, tamanho));
     }

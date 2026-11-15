@@ -60,6 +60,10 @@ public class UsuarioService implements IUsuarioService {
 
     private static final int CREF_REENVIOS_POR_DIA = 3;
 
+    private static final String CADASTRO_NAO_CONCLUIDO =
+            "Nao foi possivel concluir o cadastro com estes dados. "
+                    + "Se voce ja tem conta, use \"esqueci minha senha\".";
+
     private final IUsuarioRepository usuarioRepository;
 
     private final UsuarioMapper usuarioMapper;
@@ -80,18 +84,17 @@ public class UsuarioService implements IUsuarioService {
     @Override
     @Transactional
     public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO usuarioRequestDTO) {
-        log.info("criarUsuario: {}", usuarioRequestDTO.email());
+        log.info("criarUsuario");
 
         if (usuarioRequestDTO.papel() == PapelUsuarioEnum.ADMINISTRADOR) {
             throw new RegraDeNegocioException("Administrador nao pode ser criado pelo cadastro publico");
         }
 
-        if (usuarioRepository.existsByEmail(usuarioRequestDTO.email())) {
-            throw new ConflitoException(
-                    "Ja existe um usuario cadastrado com o e-mail: " + usuarioRequestDTO.email());
-        }
-        if (usuarioRequestDTO.cref() != null && usuarioRepository.existsByCref(usuarioRequestDTO.cref())) {
-            throw new ConflitoException("Ja existe um professor cadastrado com este CREF");
+        if (usuarioRepository.existsByEmail(usuarioRequestDTO.email())
+                || (usuarioRequestDTO.cref() != null
+                    && usuarioRepository.existsByCref(usuarioRequestDTO.cref()))) {
+
+            throw new ConflitoException(CADASTRO_NAO_CONCLUIDO);
         }
 
         UsuarioEntity usuarioEntity = usuarioMapper.toEntity(usuarioRequestDTO);
@@ -337,6 +340,7 @@ public class UsuarioService implements IUsuarioService {
         exigirSenhaAtual(usuario, trocarSenhaRequestDTO.senhaAtual(), usuarioId);
 
         usuario.setSenhaHash(passwordEncoder.encode(trocarSenhaRequestDTO.novaSenha()));
+        usuario.setTokenValidoApos(LocalDateTime.now(clock));
 
         usuarioRepository.save(usuario);
 
@@ -568,6 +572,10 @@ public class UsuarioService implements IUsuarioService {
 
         usuario.setAtivo(ativo);
 
+        if (!ativo) {
+            usuario.setTokenValidoApos(LocalDateTime.now(clock));
+        }
+
         UsuarioEntity salvo = usuarioRepository.save(usuario);
 
         auditoriaService.registrar(
@@ -578,13 +586,14 @@ public class UsuarioService implements IUsuarioService {
 
     @Override
     @Transactional
-    public UsuarioDetalheResponseDTO buscarDadosCompletos(UUID usuarioId) {
+    public UsuarioDetalheResponseDTO buscarDadosCompletos(UUID usuarioId, String justificativa) {
         log.info("buscarDadosCompletos: {}", usuarioId);
 
         UsuarioEntity usuario = buscarEntidade(usuarioId);
 
-        auditoriaService.registrar(
-                AcaoAuditoriaEnum.DADO_COMPLETO_LIDO, RecursoAuditoriaEnum.USUARIO, usuarioId);
+        auditoriaService.registrarComJustificativa(
+                AcaoAuditoriaEnum.DADO_COMPLETO_LIDO, RecursoAuditoriaEnum.USUARIO,
+                usuarioId, justificativa);
 
         return usuarioMapper.toDetalheDTO(usuario);
     }

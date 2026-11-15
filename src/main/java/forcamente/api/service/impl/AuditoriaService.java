@@ -44,8 +44,10 @@ public class AuditoriaService implements IAuditoriaService {
 
     private static final String SEPARADOR_CSV = ";";
 
+    private static final String INICIOS_DE_FORMULA = "=+-@\t\r";
+
     private static final String CABECALHO_CSV =
-            "Quando;Acao;Usuario;E-mail;Recurso;Identificador do recurso";
+            "Quando;Acao;Usuario;E-mail;Recurso;Identificador do recurso;Justificativa";
 
     private static final DateTimeFormatter FORMATO_DATA_CSV =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
@@ -71,13 +73,20 @@ public class AuditoriaService implements IAuditoriaService {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrar(AcaoAuditoriaEnum acao, RecursoAuditoriaEnum recursoTipo, UUID recursoId) {
-        gravar(acao, recursoTipo, recursoId, usuarioAutenticado());
+        gravar(acao, recursoTipo, recursoId, usuarioAutenticado(), null);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrar(AcaoAuditoriaEnum acao, RecursoAuditoriaEnum recursoTipo, UUID recursoId, UUID usuarioId) {
-        gravar(acao, recursoTipo, recursoId, usuarioId);
+        gravar(acao, recursoTipo, recursoId, usuarioId, null);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void registrarComJustificativa(AcaoAuditoriaEnum acao, RecursoAuditoriaEnum recursoTipo,
+                                          UUID recursoId, String justificativa) {
+        gravar(acao, recursoTipo, recursoId, usuarioAutenticado(), justificativa);
     }
 
     @Override
@@ -130,6 +139,8 @@ public class AuditoriaService implements IAuditoriaService {
                     .append(escapar(linha.usuarioEmail())).append(SEPARADOR_CSV)
                     .append(escapar(linha.descricaoRecursoTipo())).append(SEPARADOR_CSV)
                     .append(escapar(linha.recursoId() == null ? null : linha.recursoId().toString()))
+                    .append(SEPARADOR_CSV)
+                    .append(escapar(linha.justificativa()))
                     .append("\n");
         }
 
@@ -178,7 +189,12 @@ public class AuditoriaService implements IAuditoriaService {
         if (valor == null) {
             return "";
         }
-        return "\"" + valor.replace("\"", "\"\"") + "\"";
+
+        String neutralizado = !valor.isEmpty() && INICIOS_DE_FORMULA.indexOf(valor.charAt(0)) >= 0
+                ? "'" + valor
+                : valor;
+
+        return "\"" + neutralizado.replace("\"", "\"\"") + "\"";
     }
 
     private List<RegistroAuditoriaResponseDTO> paraDTO(List<RegistroAuditoriaEntity> registros) {
@@ -200,7 +216,8 @@ public class AuditoriaService implements IAuditoriaService {
                             registro.getRecursoId(),
                             registro.getUsuarioId(),
                             usuario == null ? null : usuario.getNomeCompleto(),
-                            usuario == null ? null : Mascaras.email(usuario.getEmail()));
+                            usuario == null ? null : Mascaras.email(usuario.getEmail()),
+                            registro.getJustificativa());
                 })
                 .toList();
     }
@@ -221,13 +238,15 @@ public class AuditoriaService implements IAuditoriaService {
                 .collect(Collectors.toMap(UsuarioEntity::getId, Function.identity()));
     }
 
-    private void gravar(AcaoAuditoriaEnum acao, RecursoAuditoriaEnum recursoTipo, UUID recursoId, UUID usuarioId) {
+    private void gravar(AcaoAuditoriaEnum acao, RecursoAuditoriaEnum recursoTipo, UUID recursoId,
+                        UUID usuarioId, String justificativa) {
         var registro = new RegistroAuditoriaEntity();
         registro.setOcorridoEm(LocalDateTime.now(clock));
         registro.setAcao(acao);
         registro.setRecursoTipo(recursoTipo);
         registro.setRecursoId(recursoId);
         registro.setUsuarioId(usuarioId);
+        registro.setJustificativa(justificativa);
 
         registroAuditoriaRepository.save(registro);
 

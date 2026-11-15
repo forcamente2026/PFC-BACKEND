@@ -20,7 +20,7 @@ class ModoApresentacaoTest {
         var modo = new ModoApresentacao(true);
 
         assertThat(modo.isAtivo()).isTrue();
-        assertThat(modo.getCodigoFixo()).isEqualTo("0000");
+        assertThat(modo.getCodigoFixo()).isEqualTo("000000");
     }
 
     @Test

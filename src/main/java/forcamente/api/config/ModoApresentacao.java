@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class ModoApresentacao {
 
-    private static final String CODIGO_FIXO = "0000";
+    private static final String CODIGO_FIXO = "000000";
 
     private volatile boolean ativo;
 

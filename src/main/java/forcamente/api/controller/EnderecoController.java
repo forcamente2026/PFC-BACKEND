@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/enderecos")
-@CrossOrigin(origins =  {"http://localhost:5173", "http://localhost:3000"})
 @RequiredArgsConstructor
 public class EnderecoController {
 

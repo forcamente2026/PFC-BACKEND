@@ -31,6 +31,10 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
 
     private static final int REDEFINICAO_PEDIDOS_POR_DIA = 6;
 
+    private static final int TROCA_EMAIL_PEDIDOS_POR_DIA = 6;
+
+    private static final int DIGITOS_DO_CODIGO = 1_000_000;
+
     private static final int REDEFINICAO_VALIDADE_MINUTOS = 15;
 
     private static final int REDEFINICAO_ERROS_PARA_BLOQUEIO = 6;
@@ -58,7 +62,7 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
         contarPedido(usuario,tipo,agora);
         String codigo = modoApresentacao.isAtivo()
                 ? modoApresentacao.getCodigoFixo()
-                : String.format("%04d", sorteio.nextInt(10000));
+                : String.format("%06d", sorteio.nextInt(DIGITOS_DO_CODIGO));
 
         usuario.setCodigoHash(passwordEncoder.encode(codigo));
         usuario.setCodigoTipo(tipo);
@@ -129,16 +133,32 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
     }
 
     private void contarPedido(UsuarioEntity usuario, TipoCodigoEnum tipo, LocalDateTime agora) {
-        if (tipo == TipoCodigoEnum.TROCA_DE_EMAIL) {
-            return;
-        }
-
-
         if (tipo == TipoCodigoEnum.MFA) {
             contarPedidoMfa(usuario, agora);
+        } else if (tipo == TipoCodigoEnum.TROCA_DE_EMAIL) {
+            contarPedidoTrocaDeEmail(usuario, agora);
         } else {
             contarPedidoRedefinicao(usuario, agora);
         }
+    }
+
+    private void contarPedidoTrocaDeEmail(UsuarioEntity usuario, LocalDateTime agora) {
+        LocalDate hoje = agora.toLocalDate();
+
+        if (!hoje.equals(usuario.getTrocaEmailDia())) {
+            usuario.setTrocaEmailDia(hoje);
+            usuario.setTrocaEmailPedidos(0);
+        }
+
+        int pedidos = usuario.getTrocaEmailPedidos() == null ? 0 : usuario.getTrocaEmailPedidos();
+
+        if (pedidos >= TROCA_EMAIL_PEDIDOS_POR_DIA) {
+            throw new LimiteDeTentativasException(
+                    "Limite diario de pedidos de troca de e-mail atingido. Tente novamente amanha."
+            );
+        }
+
+        usuario.setTrocaEmailPedidos(pedidos + 1);
     }
 
     private void contarPedidoMfa(UsuarioEntity usuario, LocalDateTime agora) {
@@ -199,6 +219,8 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
 
     private void zerarContadores(UsuarioEntity usuario, TipoCodigoEnum tipo) {
         if (tipo == TipoCodigoEnum.TROCA_DE_EMAIL) {
+            usuario.setTrocaEmailPedidos(0);
+            usuario.setTrocaEmailDia(null);
             return;
         }
 

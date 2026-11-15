@@ -77,7 +77,7 @@ class ModoApresentacaoControllerTest {
                         .content("{\"ativo\":true}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ativo").value(true))
-                .andExpect(jsonPath("$.codigoFixo").value("0000"));
+                .andExpect(jsonPath("$.codigoFixo").value("000000"));
 
         assertThat(modoApresentacao.isAtivo()).isTrue();
 
