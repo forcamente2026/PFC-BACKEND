@@ -1,7 +1,6 @@
 package forcamente.api.service.impl;
 
 
-import forcamente.api.config.ModoApresentacao;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.TipoCodigoEnum;
 import forcamente.api.exception.CredenciaisInvalidasException;
@@ -49,7 +48,6 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
 
     private final Clock clock;
 
-    private final ModoApresentacao modoApresentacao;
 
     private final SecureRandom sorteio = new SecureRandom();
 
@@ -60,9 +58,7 @@ public class CodigoVerificacaoService implements ICodigoVerificacaoService {
 
         verificarBloqueio(usuario, tipo, agora);
         contarPedido(usuario,tipo,agora);
-        String codigo = modoApresentacao.isAtivo()
-                ? modoApresentacao.getCodigoFixo()
-                : String.format("%06d", sorteio.nextInt(DIGITOS_DO_CODIGO));
+        String codigo = String.format("%06d", sorteio.nextInt(DIGITOS_DO_CODIGO));
 
         usuario.setCodigoHash(passwordEncoder.encode(codigo));
         usuario.setCodigoTipo(tipo);

@@ -38,7 +38,7 @@ spring:
 
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 logging:
   level:
@@ -60,5 +60,3 @@ viacep:
 
 auditoria:
   retencao-meses: ${AUDITORIA_RETENCAO_MESES:6}
-apresentacao:
-  modo: ${MODO_APRESENTACAO:false}

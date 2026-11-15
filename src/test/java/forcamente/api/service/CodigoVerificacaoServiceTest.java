@@ -1,6 +1,5 @@
 package forcamente.api.service;
 
-import forcamente.api.config.ModoApresentacao;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.TipoCodigoEnum;
 import forcamente.api.exception.CredenciaisInvalidasException;
@@ -28,38 +27,19 @@ class CodigoVerificacaoServiceTest {
 
     private CodigoVerificacaoService servico;
 
-    private ModoApresentacao modoApresentacao;
-
     private UsuarioEntity usuario;
 
     @BeforeEach
     void configurar() {
         relogio = new RelogioDeTeste(Instant.parse("2026-09-25T10:00:00Z"));
-        modoApresentacao = new ModoApresentacao(false);
-        servico = new CodigoVerificacaoService(new BCryptPasswordEncoder(), relogio, modoApresentacao);
+        servico = new CodigoVerificacaoService(new BCryptPasswordEncoder(), relogio);
         usuario = new UsuarioEntity();
         usuario.setId(UUID.randomUUID());
     }
 
     @Test
-    @DisplayName("com o modo de apresentacao ligado, o codigo e fixo nos tres tipos")
-    void deveGerarOCodigoFixoNoModoApresentacao() {
-        modoApresentacao.definir(true);
-
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).isEqualTo("000000");
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA)).isEqualTo("000000");
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL)).isEqualTo("000000");
-    }
-
-    @Test
-    @DisplayName("desligado, o codigo volta a ser sorteado no mesmo instante")
-    void deveVoltarASortearQuandoDesligado() {
-        modoApresentacao.definir(true);
-
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).isEqualTo("000000");
-
-        modoApresentacao.definir(false);
-
+    @DisplayName("o codigo e sempre sorteado, e nenhum caminho devolve valor fixo")
+    void deveSortearSempre() {
         var sorteados = new java.util.HashSet<String>();
 
         for (int i = 0; i < 20; i++) {
