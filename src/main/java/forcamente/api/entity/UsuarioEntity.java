@@ -110,6 +110,15 @@ public class UsuarioEntity {
     @Column(name = "redefinicao_dia")
     private LocalDate redefinicaoDia;
 
+    @Column(name = "troca_email_pedidos")
+    private Integer trocaEmailPedidos;
+
+    @Column(name = "troca_email_dia")
+    private LocalDate trocaEmailDia;
+
+    @Column(name = "token_valido_apos")
+    private LocalDateTime tokenValidoApos;
+
     @Column(name = "redefinicao_bloqueado_ate")
     private LocalDateTime redefinicaoBloqueadoAte;
 

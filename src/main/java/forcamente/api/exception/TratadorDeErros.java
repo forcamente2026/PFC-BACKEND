@@ -3,6 +3,7 @@ package forcamente.api.exception;
 
 import forcamente.api.dto.ApiErroDTO;
 import forcamente.api.dto.CampoErroDTO;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,6 +61,22 @@ public class TratadorDeErros {
                 .map(erro -> new CampoErroDTO(erro.getField(), erro.getDefaultMessage())).toList();
         return responder(HttpStatus.BAD_REQUEST, "Dados invalidos", campos);
 
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiErroDTO> tratarParametroInvalido(ConstraintViolationException ex) {
+        List<CampoErroDTO> campos = ex.getConstraintViolations().stream()
+                .map(violacao -> new CampoErroDTO(
+                        ultimoNo(violacao.getPropertyPath().toString()), violacao.getMessage()))
+                .toList();
+
+        return responder(HttpStatus.BAD_REQUEST, "Dados invalidos", campos);
+    }
+
+    private String ultimoNo(String caminho) {
+        int ponto = caminho.lastIndexOf('.');
+
+        return ponto < 0 ? caminho : caminho.substring(ponto + 1);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

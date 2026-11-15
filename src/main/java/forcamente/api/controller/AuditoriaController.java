@@ -6,12 +6,14 @@ import forcamente.api.dto.RegistroAuditoriaResponseDTO;
 import forcamente.api.entity.enums.AcaoAuditoriaEnum;
 import forcamente.api.entity.enums.RecursoAuditoriaEnum;
 import forcamente.api.service.IAuditoriaService;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,7 +26,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/auditoria")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
+@Validated
 @RequiredArgsConstructor
 public class AuditoriaController {
 
@@ -44,9 +46,12 @@ public class AuditoriaController {
 
             @RequestParam(name = "acao", required = false) AcaoAuditoriaEnum acao,
 
-            @RequestParam(name = "pagina", defaultValue = "0") int pagina,
+            @RequestParam(name = "pagina", defaultValue = "0")
+            @Min(value = 0, message = "A pagina nao pode ser negativa") int pagina,
 
-            @RequestParam(name = "tamanho", defaultValue = "50") int tamanho) {
+            @RequestParam(name = "tamanho", defaultValue = "50")
+            @Min(value = 1, message = "O tamanho da pagina deve ser de no minimo 1")
+            @Max(value = 100, message = "O tamanho da pagina deve ser de no maximo 100") int tamanho) {
 
         auditoriaService.registrar(AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.AUDITORIA, null);
 

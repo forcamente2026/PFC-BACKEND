@@ -46,9 +46,9 @@ class CodigoVerificacaoServiceTest {
     void deveGerarOCodigoFixoNoModoApresentacao() {
         modoApresentacao.definir(true);
 
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).isEqualTo("0000");
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA)).isEqualTo("0000");
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL)).isEqualTo("0000");
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).isEqualTo("000000");
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA)).isEqualTo("000000");
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL)).isEqualTo("000000");
     }
 
     @Test
@@ -56,29 +56,32 @@ class CodigoVerificacaoServiceTest {
     void deveVoltarASortearQuandoDesligado() {
         modoApresentacao.definir(true);
 
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).isEqualTo("0000");
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).isEqualTo("000000");
 
         modoApresentacao.definir(false);
 
         var sorteados = new java.util.HashSet<String>();
 
         for (int i = 0; i < 20; i++) {
+            usuario.setTrocaEmailDia(null);
+            usuario.setTrocaEmailPedidos(0);
+
             sorteados.add(servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL));
         }
 
         assertThat(sorteados)
-                .as("vinte geracoes seguidas nao podem dar sempre o mesmo codigo; uso o tipo da troca de e-mail porque e o unico sem teto por hora, pela decisao (c) de 01/11")
+                .as("vinte geracoes seguidas nao podem dar sempre o mesmo codigo; a cota diaria da troca de e-mail e zerada entre elas porque aqui o alvo e o sorteio, nao o limite")
                 .hasSizeGreaterThan(1);
 
-        assertThat(sorteados).allMatch(codigo -> codigo.matches("\\d{4}"));
+        assertThat(sorteados).allMatch(codigo -> codigo.matches("\\d{6}"));
     }
 
     @Test
-    @DisplayName("deve gerar codigo de 4 digitos, guardar hash e nao o texto puro")
+    @DisplayName("deve gerar codigo de 6 digitos, guardar hash e nao o texto puro")
     void deveGerarCodigoComHash() {
         String codigo = servico.gerarCodigo(usuario, TipoCodigoEnum.MFA);
 
-        assertThat(codigo).hasSize(4).containsOnlyDigits();
+        assertThat(codigo).hasSize(6).containsOnlyDigits();
         assertThat(usuario.getCodigoHash()).isNotEqualTo(codigo).startsWith("$2");
         assertThat(usuario.getCodigoTipo()).isEqualTo(TipoCodigoEnum.MFA);
         assertThat(usuario.getCodigoTentativas()).isZero();
@@ -132,7 +135,7 @@ class CodigoVerificacaoServiceTest {
     @DisplayName("duas digitacoes erradas anulam o codigo")
     void duasErradasAnulamOCodigo() {
         String codigo = servico.gerarCodigo(usuario, TipoCodigoEnum.MFA);
-        String errado = codigo.equals("0000") ? "1111" : "0000";
+        String errado = codigo.equals("000000") ? "111111" : "000000";
 
         assertThatThrownBy(() -> servico.validarCodigo(usuario, TipoCodigoEnum.MFA, errado))
                 .isInstanceOf(CredenciaisInvalidasException.class);
@@ -177,7 +180,7 @@ class CodigoVerificacaoServiceTest {
 
         relogio.avancar(Duration.ofHours(1).plusMinutes(1));
 
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).hasSize(4);
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).hasSize(6);
     }
 
     @Test
@@ -205,6 +208,30 @@ class CodigoVerificacaoServiceTest {
     }
 
     @Test
+    @DisplayName("a troca de e-mail tem cota diaria, senao a rota manda e-mail sem teto para qualquer endereco")
+    void trocaDeEmailTemCotaDiaria() {
+        for (int i = 0; i < 6; i++) {
+            servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL);
+        }
+
+        assertThatThrownBy(() -> servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL))
+                .isInstanceOf(LimiteDeTentativasException.class)
+                .hasMessageContaining("diario");
+    }
+
+    @Test
+    @DisplayName("no dia seguinte a cota da troca de e-mail volta")
+    void cotaDeTrocaDeEmailVoltaNoDiaSeguinte() {
+        for (int i = 0; i < 6; i++) {
+            servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL);
+        }
+
+        relogio.avancar(Duration.ofDays(1));
+
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.TROCA_DE_EMAIL)).hasSize(6);
+    }
+
+    @Test
     @DisplayName("no dia seguinte a cota de redefinicao volta")
     void cotaDeRedefinicaoVoltaNoDiaSeguinte() {
         for (int i = 0; i < 6; i++) {
@@ -213,7 +240,7 @@ class CodigoVerificacaoServiceTest {
 
         relogio.avancar(Duration.ofDays(1));
 
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA)).hasSize(4);
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA)).hasSize(6);
     }
 
     @Test
@@ -221,7 +248,7 @@ class CodigoVerificacaoServiceTest {
     void seisErrosConsecutivosBloqueiamPorQuatroHoras() {
         for (int i = 0; i < 3; i++) {
             String codigo = servico.gerarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA);
-            String errado = codigo.equals("0000") ? "1111" : "0000";
+            String errado = codigo.equals("000000") ? "111111" : "000000";
 
             assertThatThrownBy(() -> servico.validarCodigo(usuario, TipoCodigoEnum.REDEFINICAO_SENHA, errado))
                     .isInstanceOf(CredenciaisInvalidasException.class);
@@ -272,7 +299,7 @@ class CodigoVerificacaoServiceTest {
 
         relogio.avancar(Duration.ofDays(7).plusHours(3));
 
-        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).hasSize(4);
+        assertThat(servico.gerarCodigo(usuario, TipoCodigoEnum.MFA)).hasSize(6);
         assertThat(usuario.getMfaOcorrenciasBloqueio()).isNull();
     }
 

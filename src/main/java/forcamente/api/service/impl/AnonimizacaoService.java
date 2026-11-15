@@ -151,6 +151,7 @@ public class AnonimizacaoService implements IAnonimizacaoService {
 
         usuario.setAtivo(false);
         usuario.setAnonimizadoEm(LocalDateTime.now(clock));
+        usuario.setTokenValidoApos(LocalDateTime.now(clock));
 
         usuarioRepository.save(usuario);
 

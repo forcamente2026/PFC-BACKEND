@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Pattern;
 public record ConfirmarEmailRequestDTO(
 
         @NotBlank(message = "Informe o codigo")
-        @Pattern(regexp = "\\d{4}", message = "O codigo tem 4 digitos")
+        @Pattern(regexp = "\\d{6}", message = "O codigo tem 6 digitos")
         String codigo
 ) {
 }

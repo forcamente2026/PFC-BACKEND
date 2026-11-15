@@ -50,4 +50,7 @@ public class RegistroAuditoriaEntity {
 
     @Column(name = "usuario_id")
     private UUID usuarioId;
+
+    @Column(name = "justificativa", length = 255)
+    private String justificativa;
 }

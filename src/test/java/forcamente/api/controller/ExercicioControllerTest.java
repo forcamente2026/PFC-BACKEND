@@ -245,10 +245,13 @@ class ExercicioControllerTest {
 
     private List<UsuarioEntity> professores() {
         var encontrados = usuarioRepository.findByPapelAndSituacaoCrefOrderByCriadoEm(
-                PapelUsuarioEnum.PROFESSOR, StatusAprovacaoEnum.APROVADO);
+                        PapelUsuarioEnum.PROFESSOR, StatusAprovacaoEnum.APROVADO)
+                .stream()
+                .filter(UsuarioEntity::isAtivo)
+                .toList();
 
         assertThat(encontrados)
-                .as("a V3 semeia professores aprovados, e o limiar precisa de autor mais tres")
+                .as("conta inativa tem o token recusado, entao o limiar precisa de quatro ativas")
                 .hasSizeGreaterThanOrEqualTo(4);
 
         return encontrados;

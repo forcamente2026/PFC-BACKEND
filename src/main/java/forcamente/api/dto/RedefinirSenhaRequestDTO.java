@@ -12,7 +12,7 @@ public record RedefinirSenhaRequestDTO(
         String email,
 
         @NotBlank(message = "O codigo e obrigatorio")
-        @Pattern(regexp = "\\d{4}", message = "O codigo deve ter 4 digitos")
+        @Pattern(regexp = "\\d{6}", message = "O codigo deve ter 6 digitos")
         String codigo,
 
         @NotBlank(message = "A nova senha e obrigatoria")

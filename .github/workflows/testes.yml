@@ -19,7 +19,7 @@ jobs:
 
       - run: chmod +x mvnw
 
-      - run: ./mvnw -B --no-transfer-progress test -Dtest='!*ControllerTest,!*RepositoryTest,!ApiApplicationTests,!SegurancaRotasTest,!EnvioRealDeEmailTest'
+      - run: ./mvnw -B --no-transfer-progress test -Dtest='!*ControllerTest,!*RepositoryTest,!ApiApplicationTests,!SegurancaRotasTest,!ProtecoesDeSegurancaTest,!LimitePorIpTest,!EnvioRealDeEmailTest'
 
   integracao:
     name: Integracao, com PostgreSQL
