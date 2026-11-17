@@ -48,6 +48,8 @@ public class ExercicioService implements IExercicioService {
 
     private static final int APROVACOES_DE_PROFESSORES_PARA_PUBLICAR = 3;
 
+    private static final int EXERCICIOS_AGUARDANDO_POR_PROFESSOR = 3;
+
     private final IExercicioRepository exercicioRepository;
 
     private final IExercicioAprovacaoRepository exercicioAprovacaoRepository;
@@ -72,6 +74,10 @@ public class ExercicioService implements IExercicioService {
 
         PapelUsuarioEnum papel = papelAutenticado();
         UUID usuarioId = usuarioAutenticado();
+
+        if (papel == PapelUsuarioEnum.PROFESSOR) {
+            exigirVagaDoProfessor(usuarioId);
+        }
 
         var exercicioEntity = exercicioMapper.toEntity(exercicioRequestDTO);
 
@@ -290,6 +296,18 @@ public class ExercicioService implements IExercicioService {
                 RecursoAuditoriaEnum.EXERCICIO, exercicioId);
 
         return paraDTO(List.of(salvo), papel, usuarioId).getFirst();
+    }
+
+    private void exigirVagaDoProfessor(UUID professorId) {
+        usuarioRepository.buscarParaEscrita(professorId);
+
+        long aguardando = exercicioRepository.countByAutorIdAndStatusNot(
+                professorId, StatusAprovacaoEnum.APROVADO);
+
+        if (aguardando >= EXERCICIOS_AGUARDANDO_POR_PROFESSOR) {
+            throw new ConflitoException("Você atingiu o limite de " + EXERCICIOS_AGUARDANDO_POR_PROFESSOR
+                    + " exercícios aguardando a aprovação do administrador. Aguarde uma aprovação para criar outro.");
+        }
     }
 
     private void exigirAutorOuAdministrador(ExercicioEntity exercicio,

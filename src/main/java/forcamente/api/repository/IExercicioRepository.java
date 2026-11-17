@@ -37,6 +37,7 @@ public interface IExercicioRepository extends JpaRepository<ExercicioEntity, UUI
             @Param("usuarioId") UUID usuarioId,
             @Param("grupoMuscular") GrupoMuscularEnum grupoMuscular
     );
+    long countByAutorIdAndStatusNot(UUID autorId, StatusAprovacaoEnum status);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from ExercicioEntity e where e.id = :exercicioId")
     Optional<ExercicioEntity> buscarParaEscrita(@Param("exercicioId") UUID exercicioId);

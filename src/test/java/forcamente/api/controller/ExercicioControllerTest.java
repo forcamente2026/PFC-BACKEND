@@ -1,5 +1,6 @@
 package forcamente.api.controller;
 
+import forcamente.api.entity.ExercicioEntity;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
@@ -25,8 +26,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -249,6 +253,94 @@ class ExercicioControllerTest {
                 .andExpect(jsonPath("$.campos[0].campo").value("nome"));
     }
 
+    @Test
+    @DisplayName("o professor com tres exercicios aguardando o administrador nao cria o quarto: 409, e nada e gravado")
+    void deveRecusarOQuartoExercicioDoProfessor() throws Exception {
+        var autor = professores().get(0);
+        preencherOTeto(autor);
+
+        tentarCriar(autor.getId(), "PROFESSOR")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", containsString("limite de 3")));
+
+        assertThat(aguardando(autor)).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("so a aprovacao do administrador libera vaga: a rejeicao e os tres votos de professor nao liberam")
+    void deveLiberarVagaSoNaAprovacaoDoAdministrador() throws Exception {
+        var professores = professores();
+        var autor = professores.get(0);
+        preencherOTeto(autor);
+        var pendentes = pendentesDe(autor);
+
+        decidir(pendentes.get(0), """
+                {"status": "REJEITADO", "motivo": "Falta detalhar a fase excentrica."}
+                """).andExpect(status().isOk());
+
+        tentarCriar(autor.getId(), "PROFESSOR").andExpect(status().isConflict());
+
+        aprovar(pendentes.get(1), professores.get(1)).andExpect(status().isOk());
+        aprovar(pendentes.get(1), professores.get(2)).andExpect(status().isOk());
+        aprovar(pendentes.get(1), professores.get(3))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APROVADO_PELOS_PROFESSORES"));
+
+        tentarCriar(autor.getId(), "PROFESSOR").andExpect(status().isConflict());
+
+        decidir(pendentes.get(1), """
+                {"status": "APROVADO"}
+                """).andExpect(status().isOk());
+
+        tentarCriar(autor.getId(), "PROFESSOR").andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("o teto e de cada professor: com o de um cheio, outro professor continua criando")
+    void deveSepararOTetoPorProfessor() throws Exception {
+        var professores = professores();
+        preencherOTeto(professores.get(0));
+
+        tentarCriar(professores.get(1).getId(), "PROFESSOR").andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("o administrador nao passa pelo teto, mesmo numa conta com tres pendentes")
+    void deveDeixarOAdministradorCriarSemTeto() throws Exception {
+        var conta = professores().get(0);
+        preencherOTeto(conta);
+
+        tentarCriar(conta.getId(), "PROFESSOR").andExpect(status().isConflict());
+        tentarCriar(conta.getId(), "ADMINISTRADOR").andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("com o teto cheio, editar continua permitido: edicao nao e criacao")
+    void deveDeixarEditarComOTetoCheio() throws Exception {
+        var autor = professores().get(0);
+        preencherOTeto(autor);
+        var exercicio = exercicioRepository.findById(pendentesDe(autor).get(0)).orElseThrow();
+
+        mockMvc.perform(put("/api/exercicios/" + exercicio.getId())
+                        .header("Authorization", "Bearer " + tokenPara(autor.getId(), "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoDoExercicio(exercicio.getNome(), "Descricao revisada com o teto cheio.")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("excluir um exercicio pendente libera a vaga dele")
+    void deveLiberarVagaAoExcluir() throws Exception {
+        var autor = professores().get(0);
+        preencherOTeto(autor);
+
+        mockMvc.perform(delete("/api/exercicios/" + pendentesDe(autor).get(0))
+                        .header("Authorization", "Bearer " + tokenPara(autor.getId(), "PROFESSOR")))
+                .andExpect(status().isNoContent());
+
+        tentarCriar(autor.getId(), "PROFESSOR").andExpect(status().isCreated());
+    }
+
     private UUID criarComoProfessor(UsuarioEntity autor) throws Exception {
         String nome = "Exercicio de teste " + UUID.randomUUID();
 
@@ -307,6 +399,39 @@ class ExercicioControllerTest {
                   "gifUrl": "%s"
                 }
                 """.formatted(nome, gifUrl);
+    }
+
+    private void preencherOTeto(UsuarioEntity autor) throws Exception {
+        while (aguardando(autor) < 3) {
+            criarComoProfessor(autor);
+        }
+    }
+
+    private long aguardando(UsuarioEntity autor) {
+        return exercicioRepository.countByAutorIdAndStatusNot(autor.getId(), StatusAprovacaoEnum.APROVADO);
+    }
+
+    private List<UUID> pendentesDe(UsuarioEntity autor) {
+        return exercicioRepository.findAll().stream()
+                .filter(exercicio -> autor.getId().equals(exercicio.getAutorId()))
+                .filter(exercicio -> exercicio.getStatus() == StatusAprovacaoEnum.PENDENTE)
+                .map(ExercicioEntity::getId)
+                .toList();
+    }
+
+    private ResultActions tentarCriar(UUID contaId, String papel) throws Exception {
+        return mockMvc.perform(post("/api/exercicios")
+                .header("Authorization", "Bearer " + tokenPara(contaId, papel))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(corpoDoExercicio("Exercicio alem do teto " + UUID.randomUUID(),
+                        "Descricao da execucao do exercicio de teste.")));
+    }
+
+    private ResultActions decidir(UUID exercicioId, String corpo) throws Exception {
+        return mockMvc.perform(patch("/api/exercicios/" + exercicioId + "/status")
+                .header("Authorization", "Bearer " + tokenPara(UUID.randomUUID(), "ADMINISTRADOR"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(corpo));
     }
 
     private List<UsuarioEntity> professores() {
