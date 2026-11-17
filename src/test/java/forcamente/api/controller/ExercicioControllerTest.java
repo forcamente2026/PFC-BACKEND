@@ -195,6 +195,60 @@ class ExercicioControllerTest {
                 .andExpect(jsonPath("$.videoYoutubeId").doesNotExist());
     }
 
+    @Test
+    @DisplayName("aceita o GIF por link https e devolve o campo no corpo")
+    void deveGuardarOGifHttps() throws Exception {
+        var autor = professores().get(0);
+
+        mockMvc.perform(post("/api/exercicios")
+                        .header("Authorization", "Bearer " + tokenPara(autor.getId(), "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoComGif("Exercicio com gif " + UUID.randomUUID(),
+                                "https://media.exemplo.com/agachamento.gif")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.gifUrl").value("https://media.exemplo.com/agachamento.gif"));
+    }
+
+    @Test
+    @DisplayName("GIF vazio, como o formulario manda quando o campo fica em branco, e tratado como ausente")
+    void deveTratarGifVazioComoAusente() throws Exception {
+        var autor = professores().get(0);
+
+        mockMvc.perform(post("/api/exercicios")
+                        .header("Authorization", "Bearer " + tokenPara(autor.getId(), "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoComGif("Exercicio sem gif " + UUID.randomUUID(), "")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.gifUrl").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("recusa GIF que nao e link https e aponta o campo gifUrl")
+    void deveRecusarGifForaDoFormato() throws Exception {
+        var autor = professores().get(0);
+
+        mockMvc.perform(post("/api/exercicios")
+                        .header("Authorization", "Bearer " + tokenPara(autor.getId(), "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoComGif("Exercicio com script " + UUID.randomUUID(),
+                                "javascript:alert(1)")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos[0].campo").value("gifUrl"));
+    }
+
+    @Test
+    @DisplayName("recusa marcacao HTML no nome do exercicio e aponta o campo nome")
+    void deveRecusarMarcacaoNoNome() throws Exception {
+        var autor = professores().get(0);
+
+        mockMvc.perform(post("/api/exercicios")
+                        .header("Authorization", "Bearer " + tokenPara(autor.getId(), "PROFESSOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoComGif("<script>alert(1)</script>", "")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos[0].campo").value("nome"));
+    }
+
     private UUID criarComoProfessor(UsuarioEntity autor) throws Exception {
         String nome = "Exercicio de teste " + UUID.randomUUID();
 
@@ -241,6 +295,18 @@ class ExercicioControllerTest {
                   "videoYoutubeId": "%s"
                 }
                 """.formatted(nome, videoYoutubeId);
+    }
+
+    private String corpoComGif(String nome, String gifUrl) {
+        return """
+                {
+                  "nome": "%s",
+                  "grupoMuscular": "PEITO",
+                  "nivel": "INICIANTE",
+                  "descricaoExecucao": "Descricao da execucao do exercicio de teste.",
+                  "gifUrl": "%s"
+                }
+                """.formatted(nome, gifUrl);
     }
 
     private List<UsuarioEntity> professores() {
