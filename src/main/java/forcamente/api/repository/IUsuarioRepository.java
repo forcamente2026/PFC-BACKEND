@@ -3,9 +3,11 @@ package forcamente.api.repository;
 import forcamente.api.entity.UsuarioEntity;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -48,4 +50,8 @@ public interface IUsuarioRepository extends JpaRepository<UsuarioEntity, UUID> {
             @Param("ativo") Boolean ativo,
             @Param("busca") String busca,
             Pageable paginacao);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from UsuarioEntity u where u.id = :usuarioId")
+    Optional<UsuarioEntity> buscarParaEscrita(@Param("usuarioId") UUID usuarioId);
 }

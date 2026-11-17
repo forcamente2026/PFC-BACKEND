@@ -46,6 +46,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -139,6 +140,46 @@ class ExercicioServiceTest {
                 .hasMessageContaining("Ja existe um exercicio cadastrado");
 
         verify(exercicioRepository, never()).save(any(ExercicioEntity.class));
+    }
+
+    @Test
+    @DisplayName("professor com tres exercicios aguardando o administrador nao cria o quarto: 409 e nada e gravado")
+    void deveRecusarOQuartoExercicioDoProfessor() {
+        autenticarComo(ID_AUTOR, PapelUsuarioEnum.PROFESSOR);
+
+        var requestDTO = umaRequisicaoValida();
+
+        when(exercicioRepository.existsByNomeIgnoreCase("Supino reto")).thenReturn(false);
+        when(exercicioRepository.countByAutorIdAndStatusNot(ID_AUTOR, StatusAprovacaoEnum.APROVADO))
+                .thenReturn(3L);
+
+        assertThatThrownBy(() -> exercicioService.criarExercicio(requestDTO))
+                .isInstanceOf(ConflitoException.class)
+                .hasMessageContaining("limite de 3");
+
+        var ordem = inOrder(usuarioRepository, exercicioRepository);
+        ordem.verify(usuarioRepository).buscarParaEscrita(ID_AUTOR);
+        ordem.verify(exercicioRepository).countByAutorIdAndStatusNot(ID_AUTOR, StatusAprovacaoEnum.APROVADO);
+
+        verify(exercicioRepository, never()).save(any(ExercicioEntity.class));
+    }
+
+    @Test
+    @DisplayName("o administrador nao passa pelo teto: nao trava a conta nem conta pendentes")
+    void naoDeveAplicarOTetoAoAdministrador() {
+        autenticarComo(ID_AUTOR, PapelUsuarioEnum.ADMINISTRADOR);
+
+        var requestDTO = umaRequisicaoValida();
+        var entity = umaEntidade(null, null);
+
+        when(exercicioRepository.existsByNomeIgnoreCase("Supino reto")).thenReturn(false);
+        when(exercicioMapper.toEntity(requestDTO)).thenReturn(entity);
+        when(exercicioRepository.save(entity)).thenReturn(entity);
+
+        exercicioService.criarExercicio(requestDTO);
+
+        verify(usuarioRepository, never()).buscarParaEscrita(any());
+        verify(exercicioRepository, never()).countByAutorIdAndStatusNot(any(), any());
     }
 
     @Test
