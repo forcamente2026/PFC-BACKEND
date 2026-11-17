@@ -39,6 +39,9 @@ spring:
 
 server:
   port: ${PORT:8080}
+  tomcat:
+    threads:
+      max: ${TOMCAT_THREADS_MAX:4}
 
 logging:
   level:
