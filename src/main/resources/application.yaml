@@ -51,6 +51,10 @@ jwt:
   segredo: ${JWT_SECRET}
   expiracao-minutos: ${JWT_EXPIRACAO_MINUTOS:60}
 
+cifra-de-email:
+  chave: ${EMAIL_CHAVE_CIFRA}
+  chave-indice: ${EMAIL_CHAVE_INDICE}
+
 cors:
   origens: ${CORS_ORIGENS:http://localhost:5173,http://localhost:3000}
 

@@ -1,5 +1,6 @@
 package forcamente.api.service.impl;
 
+import forcamente.api.cifra.CifraDeEmail;
 import forcamente.api.dto.ConfirmarEmailRequestDTO;
 import forcamente.api.dto.MinhaContaRequestDTO;
 import forcamente.api.dto.TrocarEmailRequestDTO;
@@ -79,6 +80,8 @@ public class UsuarioService implements IUsuarioService {
     private final ICodigoVerificacaoService codigoVerificacaoService;
 
     private final IEmailService emailService;
+
+    private final CifraDeEmail cifraDeEmail;
 
 
     @Override
@@ -161,7 +164,7 @@ public class UsuarioService implements IUsuarioService {
         String termo = (busca == null || busca.isBlank()) ? null : busca.trim();
 
         Page<UsuarioEntity> resultado = usuarioRepository.buscarComFiltros(
-                papel, ativo, termo, PageRequest.of(pagina, tamanho));
+                papel, ativo, termo, cifraDeEmail.indice(termo), PageRequest.of(pagina, tamanho));
 
         auditoriaService.registrar(AcaoAuditoriaEnum.LIDO, RecursoAuditoriaEnum.USUARIO, null);
 

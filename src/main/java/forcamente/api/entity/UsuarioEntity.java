@@ -1,12 +1,16 @@
 package forcamente.api.entity;
 
 
+import forcamente.api.cifra.EmailCifradoConverter;
+import forcamente.api.cifra.IndiceDeEmailListener;
 import forcamente.api.entity.enums.FormacaoEnum;
 import forcamente.api.entity.enums.PapelUsuarioEnum;
 import forcamente.api.entity.enums.StatusAprovacaoEnum;
 import forcamente.api.entity.enums.TipoCodigoEnum;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -24,6 +28,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "usuarios")
+@EntityListeners(IndiceDeEmailListener.class)
 @Getter
 @Setter
 @AllArgsConstructor
@@ -38,10 +43,15 @@ public class UsuarioEntity {
     @Column(name = "nome_completo", nullable = false)
     private String nomeCompleto;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Convert(converter = EmailCifradoConverter.class)
+    @Column(name = "email", nullable = false, length = 500)
     private String email;
 
-    @Column(name = "email_pendente")
+    @Column(name = "email_hash", length = 64, unique = true)
+    private String emailHash;
+
+    @Convert(converter = EmailCifradoConverter.class)
+    @Column(name = "email_pendente", length = 500)
     private String emailPendente;
 
     @Column(name = "senha_hash", nullable = false)

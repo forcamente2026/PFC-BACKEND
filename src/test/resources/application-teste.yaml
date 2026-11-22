@@ -8,5 +8,9 @@ spring:
 jwt:
   segredo: segredo-apenas-para-a-suite-de-testes-do-forcamente
 
+cifra-de-email:
+  chave: lPIA3B3uY1T/jQ++GEOYBbS8yyLyF5/yD9J7M0H/KUo=
+  chave-indice: 0z7gvnwxy2RQpzQfo8hDGVQde+0yJTrfADrwP/FSiRk=
+
 limite-por-ip:
   requisicoes: 100000

@@ -1,8 +1,14 @@
 -- Dados de apresentacao do ForcaMente.
 --
 -- NAO e migracao: roda a mao, e sai inteiro com o limpar-apresentacao.sql.
--- A marca de tudo que este script cria e o dominio @apresentacao.test.
+-- A marca das contas e o nome: 'Administrador da Apresentacao' e
+-- 'Professor Apresentacao NN'. O e-mail nao serve de marca, porque fica cifrado.
 -- Senha de todas as contas: Senha@123 (o mesmo hash da V3).
+--
+-- O script grava os e-mails em claro, porque o banco nao tem a chave da cifra.
+-- Depois de rodar, reinicie o back: ao subir, ele cifra esses e-mails. Ate la,
+-- as contas da apresentacao nao conseguem entrar.
+-- Os ids sao fixos, entao rodar duas vezes falha em vez de duplicar as contas.
 --
 -- Rodar:  psql -U <usuario> -d forcamente -f scripts/popular-apresentacao.sql
 -- Desfazer: psql -U <usuario> -d forcamente -f scripts/limpar-apresentacao.sql
@@ -15,7 +21,7 @@ INSERT INTO usuarios (id, nome_completo, email, senha_hash, papel, data_nascimen
                       aceitou_termos_uso_em, versao_termos_uso,
                       aceitou_politica_privacidade_em, versao_politica_privacidade,
                       ativo, criado_em)
-VALUES (gen_random_uuid(), 'Administrador da Apresentacao', 'admin@apresentacao.test',
+VALUES (md5('forcamente-apresentacao-admin')::uuid, 'Administrador da Apresentacao', 'admin@apresentacao.test',
         '$2a$10$07bwu4iU3hyYxLL..K6CGePx8a0vtbOr45yxEcf/eZ0K9nHEWClxi',
         'ADMINISTRADOR', DATE '1985-05-20',
         NULL, NULL, NULL,
@@ -29,7 +35,7 @@ INSERT INTO usuarios (id, nome_completo, email, senha_hash, papel, data_nascimen
                       aceitou_termos_uso_em, versao_termos_uso,
                       aceitou_politica_privacidade_em, versao_politica_privacidade,
                       ativo, criado_em)
-SELECT gen_random_uuid(),
+SELECT md5('forcamente-apresentacao-professor-' || i)::uuid,
        'Professor Apresentacao ' || lpad(i::text, 2, '0'),
        'professor' || lpad(i::text, 2, '0') || '@apresentacao.test',
        '$2a$10$07bwu4iU3hyYxLL..K6CGePx8a0vtbOr45yxEcf/eZ0K9nHEWClxi',
@@ -56,8 +62,7 @@ SELECT gen_random_uuid(),
        'Perder a neutralidade da coluna e usar impulso no inicio do movimento.',
        'Barra, banco e anilhas',
        'https://exemplo.test/gif/apresentacao-' || i,
-       (SELECT id FROM usuarios
-        WHERE email = 'professor' || lpad((1 + (i % 30))::text, 2, '0') || '@apresentacao.test'),
+       md5('forcamente-apresentacao-professor-' || (1 + (i % 30)))::uuid,
        'PENDENTE',
        now()
 FROM generate_series(1, 15) AS i;
@@ -77,8 +82,7 @@ SELECT gen_random_uuid(),
             WHEN i <= 13 THEN 'PENDENTE'
             ELSE 'REJEITADO' END,
        CASE WHEN i > 13 THEN 'Fonte sem revisao por pares.' END,
-       (SELECT id FROM usuarios
-        WHERE email = 'professor' || lpad((1 + (i % 30))::text, 2, '0') || '@apresentacao.test'),
+       md5('forcamente-apresentacao-professor-' || (1 + (i % 30)))::uuid,
        now() - (i * interval '1 hour')
 FROM generate_series(1, 15) AS i;
 
@@ -93,8 +97,7 @@ SELECT gen_random_uuid(),
             WHEN i <= 9 THEN 'PENDENTE'
             ELSE 'REJEITADO' END,
        CASE WHEN i > 9 THEN 'Enunciado da terceira pergunta esta ambiguo.' END,
-       (SELECT id FROM usuarios
-        WHERE email = 'professor' || lpad((1 + (i % 30))::text, 2, '0') || '@apresentacao.test'),
+       md5('forcamente-apresentacao-professor-' || (1 + (i % 30)))::uuid,
        now() - (i * interval '1 hour')
 FROM generate_series(1, 10) AS i;
 
@@ -125,10 +128,10 @@ SELECT gen_random_uuid(), a.id, p.id, now()
 FROM artigos a
          JOIN LATERAL (SELECT u.id
                        FROM usuarios u
-                       WHERE u.email LIKE '%@apresentacao.test'
+                       WHERE u.nome_completo LIKE 'Professor Apresentacao %'
                          AND u.papel = 'PROFESSOR'
                          AND u.id <> a.autor_id
-                       ORDER BY u.email
+                       ORDER BY u.nome_completo
                        LIMIT 3) p ON true
 WHERE a.titulo LIKE 'Artigo de apresentacao %'
   AND a.status = 'APROVADO';
@@ -138,10 +141,10 @@ SELECT gen_random_uuid(), q.id, p.id, now()
 FROM quizzes q
          JOIN LATERAL (SELECT u.id
                        FROM usuarios u
-                       WHERE u.email LIKE '%@apresentacao.test'
+                       WHERE u.nome_completo LIKE 'Professor Apresentacao %'
                          AND u.papel = 'PROFESSOR'
                          AND u.id <> q.autor_id
-                       ORDER BY u.email
+                       ORDER BY u.nome_completo
                        LIMIT 3) p ON true
 WHERE q.titulo LIKE 'Quiz de apresentacao %'
   AND q.status = 'APROVADO';
@@ -173,7 +176,8 @@ COMMIT;
 
 SELECT 'usuarios' AS tabela, count(*) AS criados
 FROM usuarios
-WHERE email LIKE '%@apresentacao.test'
+WHERE nome_completo = 'Administrador da Apresentacao'
+   OR nome_completo LIKE 'Professor Apresentacao %'
 UNION ALL
 SELECT 'exercicios', count(*) FROM exercicios WHERE nome LIKE 'Exercicio de apresentacao %'
 UNION ALL
