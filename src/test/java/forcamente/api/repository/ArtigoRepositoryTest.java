@@ -1,5 +1,6 @@
 package forcamente.api.repository;
 
+import forcamente.api.cifra.CifraDeEmail;
 import forcamente.api.entity.ArtigoAprovacaoEntity;
 import forcamente.api.entity.ArtigoEntity;
 import forcamente.api.entity.UsuarioEntity;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.context.annotation.Import;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(CifraDeEmail.class)
 @DisplayName("Artigos no banco - as consultas executadas contra o PostgreSQL")
 class ArtigoRepositoryTest {
 

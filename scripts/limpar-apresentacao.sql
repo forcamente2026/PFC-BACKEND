@@ -4,12 +4,16 @@
 -- apresentacao fizeram durante a gravacao: tentativas de quiz e aprovacoes
 -- dadas em conteudo que nao veio deste script.
 --
+-- Acha as contas pelo nome, e nao pelo e-mail, porque o e-mail fica cifrado.
+--
 -- Rodar: psql -U <usuario> -d forcamente -f scripts/limpar-apresentacao.sql
 
 BEGIN;
 
 CREATE TEMPORARY TABLE contas_de_apresentacao AS
-SELECT id FROM usuarios WHERE email LIKE '%@apresentacao.test';
+SELECT id FROM usuarios
+WHERE nome_completo = 'Administrador da Apresentacao'
+   OR nome_completo LIKE 'Professor Apresentacao %';
 
 DELETE FROM quiz_tentativas
 WHERE usuario_id IN (SELECT id FROM contas_de_apresentacao);
@@ -47,7 +51,8 @@ COMMIT;
 
 SELECT 'contas restantes' AS conferencia, count(*) AS total
 FROM usuarios
-WHERE email LIKE '%@apresentacao.test'
+WHERE nome_completo = 'Administrador da Apresentacao'
+   OR nome_completo LIKE 'Professor Apresentacao %'
 UNION ALL
 SELECT 'artigos restantes', count(*) FROM artigos WHERE titulo LIKE 'Artigo de apresentacao %'
 UNION ALL

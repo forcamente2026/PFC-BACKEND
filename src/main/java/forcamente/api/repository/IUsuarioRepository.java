@@ -17,9 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface IUsuarioRepository extends JpaRepository<UsuarioEntity, UUID> {
-
-    Optional<UsuarioEntity> findByEmail(String email);
+public interface IUsuarioRepository extends JpaRepository<UsuarioEntity, UUID>, UsuarioPorEmailRepository {
 
     long countByPapelAndAnonimizadoEmIsNull(PapelUsuarioEnum papel);
 
@@ -28,11 +26,7 @@ public interface IUsuarioRepository extends JpaRepository<UsuarioEntity, UUID> {
     List<UsuarioEntity> findByPapelAndSituacaoCrefOrderByCriadoEm(
             PapelUsuarioEnum papel, StatusAprovacaoEnum situacaoCref);
 
-    boolean existsByEmail(String email);
-
     boolean existsByCref(String cref);
-
-    boolean existsByEmailAndIdNot(String email, UUID id);
 
     boolean existsByCrefAndIdNot(String cref, UUID id);
 
@@ -42,13 +36,14 @@ public interface IUsuarioRepository extends JpaRepository<UsuarioEntity, UUID> {
               and (:ativo is null or u.ativo = :ativo)
               and (:busca is null
                    or lower(u.nomeCompleto) like lower(concat('%', cast(:busca as string), '%'))
-                   or lower(u.email) = lower(cast(:busca as string)))
+                   or u.emailHash = :buscaIndice)
             order by u.nomeCompleto
             """)
     Page<UsuarioEntity> buscarComFiltros(
             @Param("papel") PapelUsuarioEnum papel,
             @Param("ativo") Boolean ativo,
             @Param("busca") String busca,
+            @Param("buscaIndice") String buscaIndice,
             Pageable paginacao);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
